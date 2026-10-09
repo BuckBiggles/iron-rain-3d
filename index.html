@@ -227,7 +227,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-08.7';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-08.8';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -1145,7 +1145,7 @@ function predictImpact() {
   for (let i = 0; i < 2400; i++) {
     const r = advance(s, DT);
     since += Math.hypot(s.x - px, s.y - py, s.z - pz); px = s.x; py = s.y; pz = s.z;
-    if (since > 7) { since = 0; if (!s.under) aimPath.push(s.x, s.y, s.z); }
+    if (since > 7 && aimPath.length < AIM_N * 3) { since = 0; if (!s.under) aimPath.push(s.x, s.y, s.z); }
     if (r === 'ground' || r === 'boom') { aimImpact = s; break; }
     if (r === 'out') break;
     if (!s.clear && Math.hypot(s.x - s.ox, s.y - s.oy, s.z - s.oz) > 6) s.clear = true;
@@ -1475,11 +1475,11 @@ function driveFx(t, dt, thr) {
 }
 
 // ================================================================ aim line: dots along the shell's whole flight to where it lands
-const AIM_N = 260;
+const AIM_N = 18;   // a short stub of the arc, like Iron Rain: about the first second of flight
 const aimGeo = new THREE.BufferGeometry();
 aimGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(AIM_N * 3), 3));
 aimGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(AIM_N * 3), 3));
-const aimDots = new THREE.Points(aimGeo, new THREE.PointsMaterial({size: 5, sizeAttenuation: false, map: SOFT_TEX, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false}));
+const aimDots = new THREE.Points(aimGeo, new THREE.PointsMaterial({size: .55, map: SOFT_TEX, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false}));
 aimDots.frustumCulled = false; aimDots.visible = false; aimDots.renderOrder = 4; scene.add(aimDots);
 const hitGeo = new THREE.BufferGeometry(); hitGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
 const hitDot = new THREE.Points(hitGeo, new THREE.PointsMaterial({size: 16, sizeAttenuation: false, map: SOFT_TEX, color: 0xff7a4a, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, fog: false}));
@@ -1487,12 +1487,12 @@ hitDot.frustumCulled = false; hitDot.visible = false; hitDot.renderOrder = 5; sc
 function updateAimDots() {
   const t = player;
   aimDots.visible = !!(mode === 'game' && t && t.alive && state === 'battle' && !followShell && !camHold);
-  hitDot.visible = aimDots.visible && !!aimImpact;
+  hitDot.visible = false;
   if (!aimDots.visible) return;
   const pos = aimGeo.attributes.position.array, col = aimGeo.attributes.color.array, n = Math.min(AIM_N, aimPath.length / 3);
   for (let i = 0; i < n; i++) {
     pos[i * 3] = aimPath[i * 3]; pos[i * 3 + 1] = aimPath[i * 3 + 1]; pos[i * 3 + 2] = aimPath[i * 3 + 2];
-    const f = i < 2 ? .35 : .95; col[i * 3] = f; col[i * 3 + 1] = .86 * f; col[i * 3 + 2] = .5 * f;
+    const f = 1 - i / AIM_N * .85; col[i * 3] = f; col[i * 3 + 1] = .88 * f; col[i * 3 + 2] = .54 * f;
   }
   aimGeo.setDrawRange(0, n); aimGeo.attributes.position.needsUpdate = aimGeo.attributes.color.needsUpdate = true;
   if (aimImpact) { const h = hitGeo.attributes.position.array; h[0] = aimImpact.x; h[1] = aimImpact.y + .4; h[2] = aimImpact.z; hitGeo.attributes.position.needsUpdate = true;
