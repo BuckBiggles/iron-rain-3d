@@ -23,6 +23,7 @@ A first-person, real-time take on [Iron Rain](https://buckbiggles.github.io/iron
 | 1–4 · Q | Shell type · arm a supply special |
 | V · C | Hold to ride with your shell · always follow (a shell cam inset shows every shot) |
 | T · Esc | Chat (online) · menu |
+| [ · ] | Mouse sensitivity down · up (full settings: Esc menu or the SETTINGS tab) |
 
 ## Online
 Host a room and share the 5-letter code or invite link. Play is peer-to-peer over WebRTC (PeerJS's public broker only introduces players), with the host's browser running the battle. A dropped player gets their seat back by rejoining with the same code; a CPU drives their tank in the meantime.

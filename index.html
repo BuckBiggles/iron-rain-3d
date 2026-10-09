@@ -112,6 +112,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-
 .card label{display:grid;grid-template-columns:1fr 150px;align-items:center;gap:10px;font-size:16px;letter-spacing:.04em}
 .card label.chk{grid-template-columns:20px 1fr}
 input[type=range]{accent-color:var(--brass);width:100%}
+.sets{display:flex;flex-direction:column;gap:10px}
+.card .sets label,.sets label{display:grid;grid-template-columns:minmax(0,1fr) 150px 48px;align-items:center;gap:10px;font-size:16px;letter-spacing:.04em}
+.card .sets label.chk,.sets label.chk{grid-template-columns:20px 1fr}
+.sets output{font-family:var(--f-data);color:var(--brass);text-align:right}
+#pause .card{width:min(460px,100%)}
 input[type=checkbox]{accent-color:var(--brass);width:16px;height:16px}
 .pay{font-family:var(--f-data);font-size:16px;color:var(--brass)}
 .tablewrap{overflow-x:auto}
@@ -155,6 +160,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
       <button role="tab" id="tabBtn-cpu" data-tab="cpu">VS CPU</button>
       <button role="tab" id="tabBtn-online" data-tab="online">ONLINE</button>
       <button role="tab" id="tabBtn-store" data-tab="store">STORE</button>
+      <button role="tab" id="tabBtn-settings" data-tab="settings">SETTINGS</button>
     </nav>
 
     <div class="pane" id="tab-cpu">
@@ -191,6 +197,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
       </div>
     </div>
 
+    <div class="pane" id="tab-settings" hidden><div class="sets" id="menuSettings"></div><p class="fine">In battle: [ and ] change mouse sensitivity, Esc opens these settings.</p></div>
     <div class="pane" id="tab-store" hidden>
       <div class="row" id="storeCats"></div>
       <div class="sgrid" id="storeGrid"></div>
@@ -204,11 +211,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
   <div class="card">
     <h2 id="pauseTitle">PAUSED</h2>
     <button class="btn primary" id="resume">RESUME</button>
-    <label for="vol">VOLUME <input id="vol" type="range" min="0" max="1" step="0.05"></label>
-    <label for="sens">MOUSE SPEED <input id="sens" type="range" min="0.3" max="2.5" step="0.1"></label>
-    <label class="chk" for="shellcam"><input id="shellcam" type="checkbox"> FOLLOW MY SHELLS (C)</label>
-    <label class="chk" for="invert"><input id="invert" type="checkbox"> INVERT ELEVATION</label>
-    <label class="chk" for="shadows"><input id="shadows" type="checkbox"> SHADOWS</label>
+    <div class="sets" id="pauseSettings"></div>
     <button class="btn warn" id="quit">LEAVE BATTLE</button>
   </div>
 </div>
@@ -227,7 +230,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-08.9';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-08.10';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -249,7 +252,7 @@ function load(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); retur
 function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 const cleanName = s => String(s || '').toUpperCase().replace(/[^A-Z0-9 \-.]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14);
 
-const settings = load('ironrain3d.settings', {vol: .7, sens: 1, shellCam: false, invert: false, shadows: true});
+const settings = load('ironrain3d.settings', {vol: .7, sens: 1, zsens: 1, shellCam: false, invert: false, shadows: true});
 if (settings.v !== 2) { settings.v = 2; settings.shellCam = false; save('ironrain3d.settings', settings); }   // real-time now: the shell camera starts off
 const setup = load('ironrain3d.setup', {tank: 0, map: 0, foes: 2, lvl: 1, seats: 2});
 let myName = (() => { try { return cleanName(localStorage.getItem('ironrain3d.name') || localStorage.getItem('ironrain.name') || ''); } catch (e) { return ''; } })();
@@ -1849,7 +1852,7 @@ glc.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('mousemove', e => {
   if (mode !== 'game' || paused || chatOpen) return;   // no button needed: the mouse always aims (pointer lock just keeps the cursor from hitting the screen edge)
   const t = player; if (!t || !t.alive || state === 'over') return;
-  const zf = zoom > .5 ? .22 : 1, s = settings.sens;
+  const zf = zoom > .5 ? .22 * settings.zsens : 1, s = settings.sens;
   t.yaw = wrapA(t.yaw - e.movementX * .0021 * s * zf);
   aimPitch = clamp(aimPitch - e.movementY * .07 * s * zf * (settings.invert ? -1 : 1), -35, 40);   // the mouse moves your view; the gun lays itself to hit what you look at
 });
@@ -1886,6 +1889,7 @@ addEventListener('keydown', e => {
   if (k === 'r' && state === 'battle' && player.alive) { const rf = rangefind(); if (rf) { setZero(rf.d, 'lase'); feedMsg('LASED ' + Math.round(rf.d) + ' m · zero set', '#e6b44c'); } else sfx.bad(); }
   if (k === 'x' && state === 'battle' && player.alive) { arcPref = arcPref ? 0 : 1; sfx.tick(arcPref ? 1200 : 800); feedMsg(arcPref ? 'LOB: high arc over cover' : 'DIRECT: flat, fast shot', '#e6b44c'); }
   if (k === 'v' && myShell && !myShell.dead) followShell = myShell;   // hold V: ride along with your shell full-screen
+  if (k === '[' || k === ']') { nudgeSens(k === ']' ? 1.1 : 1 / 1.1); return; }
   if (k === 'c') { settings.shellCam = !settings.shellCam; save('ironrain3d.settings', settings); feedMsg('Follow-shell camera ' + (settings.shellCam ? 'ON' : 'OFF'), '#d6c99c'); }
   if (k === 'm') { settings.vol = settings.vol > 0 ? 0 : .7; if (master) master.gain.value = settings.vol; save('ironrain3d.settings', settings); }
   if (state === 'over' && overT > 2.5 && (k === 'enter' || k === ' ')) { showEnd(); return; }
@@ -2502,9 +2506,10 @@ function optBtn(label, sub, on, click, chip) {
 }
 function showTab(tab) {
   activeTab = tab;
-  for (const t of ['cpu', 'online', 'store']) { $('tab-' + t).hidden = t !== tab; $('tabBtn-' + t).setAttribute('aria-selected', t === tab ? 'true' : 'false'); }
+  for (const t of ['cpu', 'online', 'store', 'settings']) { $('tab-' + t).hidden = t !== tab; $('tabBtn-' + t).setAttribute('aria-selected', t === tab ? 'true' : 'false'); }
   if (tab !== 'store' && previewCos) { previewCos = null; if (mode === 'menu') menuTankSwap(); }
   if (tab === 'store') renderStore();
+  if (tab === 'settings') renderSettings();
   if (tab === 'online') renderOnline();
 }
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => { audioInit(); showTab(b.dataset.tab); }));
@@ -2645,6 +2650,43 @@ function preview(cat, id) {
   previewCos = Object.assign({}, profile.equip, {[cat]: id}); menuTankSwap();
 }
 
+// settings panel, built into both the Esc menu and the main menu's SETTINGS tab
+const SET_ROWS = [
+  {k: 'sens',  label: 'MOUSE SENSITIVITY', min: .1, max: 4, step: .05, fmt: v => v.toFixed(2)},
+  {k: 'zsens', label: 'SIGHT SENSITIVITY (ZOOMED)', min: .1, max: 3, step: .05, fmt: v => v.toFixed(2)},
+  {k: 'vol',   label: 'VOLUME', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%'},
+  {k: 'invert',   label: 'INVERT MOUSE Y', check: true},
+  {k: 'shellCam', label: 'ALWAYS FOLLOW MY SHELLS (C)', check: true},
+  {k: 'shadows',  label: 'SHADOWS', check: true},
+];
+function applySetting(k) {
+  if (k === 'vol' && master) master.gain.value = settings.vol;
+  if (k === 'shadows') { renderer.shadowMap.enabled = settings.shadows; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
+  save('ironrain3d.settings', settings);
+}
+function renderSettings() {
+  for (const el of [$('pauseSettings'), $('menuSettings')]) {
+    el.innerHTML = '';
+    const pre = el.id === 'pauseSettings' ? 'p-' : 'm-';
+    for (const r of SET_ROWS) {
+      const lab = document.createElement('label'), id = pre + r.k; lab.htmlFor = id;
+      if (r.check) {
+        lab.className = 'chk'; lab.innerHTML = `<input id="${id}" type="checkbox"> ${r.label}`;
+        const inp = lab.querySelector('input'); inp.checked = !!settings[r.k];
+        inp.addEventListener('change', () => { settings[r.k] = inp.checked; applySetting(r.k); });
+      } else {
+        lab.innerHTML = `<span>${r.label}</span><input id="${id}" type="range" min="${r.min}" max="${r.max}" step="${r.step}"><output>${r.fmt(settings[r.k])}</output>`;
+        const inp = lab.querySelector('input'), out = lab.querySelector('output'); inp.value = settings[r.k];
+        inp.addEventListener('input', () => { settings[r.k] = +inp.value; out.textContent = r.fmt(settings[r.k]); applySetting(r.k); });
+      }
+      el.appendChild(lab);
+    }
+  }
+}
+function nudgeSens(f) {   // [ and ] in battle
+  settings.sens = clamp(Math.round(settings.sens * f * 100) / 100, .1, 4); applySetting('sens');
+  feedMsg('Mouse sensitivity ' + settings.sens.toFixed(2) + '  ([ lower · ] higher)', '#e6b44c'); sfx.tick(f > 1 ? 1100 : 800);
+}
 // pause / results
 function setPaused(p) {
   if (mode !== 'game') return;
@@ -2652,16 +2694,11 @@ function setPaused(p) {
   for (const k in keys) keys[k] = false; zoomHeld = dragging = false;
   $('pauseTitle').textContent = net ? 'MENU' : 'PAUSED';
   $('quit').textContent = net ? (net.role === 'host' ? 'CLOSE ROOM' : 'LEAVE ROOM') : 'LEAVE BATTLE';
-  if (p) { $('vol').value = settings.vol; $('sens').value = settings.sens; $('shellcam').checked = settings.shellCam; $('invert').checked = settings.invert; $('shadows').checked = settings.shadows; quitArmed = false; if (AC && !net) AC.suspend(); }
+  if (p) { renderSettings(); quitArmed = false; if (AC && !net) AC.suspend(); }
   else { if (AC) AC.resume(); }
 }
 let quitArmed = false;
 $('resume').addEventListener('click', () => { setPaused(false); requestLock(); });
-$('vol').addEventListener('input', e => { settings.vol = +e.target.value; if (master) master.gain.value = settings.vol; save('ironrain3d.settings', settings); });
-$('sens').addEventListener('input', e => { settings.sens = +e.target.value; save('ironrain3d.settings', settings); });
-$('shellcam').addEventListener('change', e => { settings.shellCam = e.target.checked; save('ironrain3d.settings', settings); });
-$('invert').addEventListener('change', e => { settings.invert = e.target.checked; save('ironrain3d.settings', settings); });
-$('shadows').addEventListener('change', e => { settings.shadows = e.target.checked; renderer.shadowMap.enabled = settings.shadows; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); save('ironrain3d.settings', settings); });
 $('quit').addEventListener('click', () => {
   if (!quitArmed) { quitArmed = true; $('quit').textContent = 'CLICK AGAIN TO CONFIRM'; return; }
   if (net) leaveRoom(); else toMenu();
