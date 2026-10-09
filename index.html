@@ -227,7 +227,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-08.6';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-08.7';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2110,18 +2110,18 @@ function updateCamera(dt) {
     if (zoom > .5) { px = base.x + fx * (m.gp.x + .3); py = base.y + m.gp.y + .45; pz = base.z + fz * (m.gp.x + .3); }   // the sight sits on the gun's trunnion (no recoil)
     // smooth the eye point: the hull rocks on the terrain at the 60 Hz sim rate, and through a x4 sight that reads as shaking
     if (!camEye.ok || Math.hypot(px - camEye.x, py - camEye.y, pz - camEye.z) > 4) camEye = {x: px, y: py, z: pz, ok: true};
-    const ke = 1 - Math.exp(-dt * (zoom > .5 ? 14 : 30));
+    const ke = zoom > .5 ? 1 : 1 - Math.exp(-dt * 30);   // in the sight the eye is locked to the gun: no easing, no drift
     camEye.x += (px - camEye.x) * ke; camEye.y += (py - camEye.y) * ke; camEye.z += (pz - camEye.z) * ke;
     camera.position.set(camEye.x, camEye.y, camEye.z);
     // free look: the mouse moves the view; aimSolve() lays the gun so the shell lands under the crosshair
-    camera.rotation.set((aimPitch - camKick * 1.2 * (1 - zoom * .85)) * D2R, t.yaw - Math.PI / 2, 0, 'YXZ');
+    camera.rotation.set((aimPitch - camKick * 1.2 * (zoom > .5 ? 0 : 1)) * D2R, t.yaw - Math.PI / 2, 0, 'YXZ');
   }
-  if (camShake > 0) {   // scaled by the field of view, so the x4 sight doesn't magnify every distant blast
+  if (camShake > 0 && zoom <= .5) {   // no shake at all in the x4 sight: magnified, it read as the view drifting in and out
     const a = camShake * camShake * (camera.fov / 70) * (zoom > .5 ? .35 : 1);
     camera.rotation.x += (Math.random() - .5) * .03 * a; camera.rotation.y += (Math.random() - .5) * .03 * a;
     if (zoom < .5) camera.position.y += (Math.random() - .5) * .25 * a;
   }
-  if (Math.abs(camera.fov - fovTarget) > .05) { camera.fov += (fovTarget - camera.fov) * (1 - Math.exp(-dt * 12)); camera.updateProjectionMatrix(); }
+  if (camera.fov !== fovTarget) { camera.fov = Math.abs(camera.fov - fovTarget) < .05 ? fovTarget : camera.fov + (fovTarget - camera.fov) * (1 - Math.exp(-dt * 12)); camera.updateProjectionMatrix(); }
   const own = zoom < .5 || !!followShell || !!camHold || spectating;
   m.turret.visible = own || !!t.deb; m.hull.visible = own || !!t.deb;
   m.gun.visible = !(zoom < .5 && !followShell && !camHold && !spectating && !t.deb && t.elev > 28);   // a steep barrel would stand right across your view
@@ -2748,11 +2748,11 @@ requestAnimationFrame(frame);
     if (!m || m[1] === BUILD) return;
     let tried = false;
     try { tried = sessionStorage.getItem('ironrain3d.reloadedFor') === m[1]; sessionStorage.setItem('ironrain3d.reloadedFor', m[1]); } catch (e) {}
-    if (!tried && mode === 'menu' && !net) location.reload();
+    if (!tried && mode === 'menu' && !net) { const u = new URL(location.href); u.searchParams.set('b', m[1]); location.replace(u); }   // a new URL, so the browser can't hand back the cached old page
   }).catch(() => {});
 })();
 // test hook
 window.__ir = {get state() { return state; }, get tanks() { return tanks; }, get player() { return player; }, get shells() { return shells; }, get net() { return net; }, get lobby() { return lobby; },
-  step, render, fire, startOffline, setup, solve, groundAt, explosionFx, deathFx, hostRoom, joinRoom, hostStart, showTab, get followShell() { return followShell; }, get camHold() { return camHold; }, camera, get aimPt() { return aimPt; }, get aimImpact() { return aimImpact; }, get aimSol() { return aimSol; }, setPitch: v => { aimPitch = v; }};
+  step, render, fire, startOffline, setup, solve, groundAt, explosionFx, deathFx, hostRoom, joinRoom, hostStart, showTab, get followShell() { return followShell; }, get camHold() { return camHold; }, camera, get aimPt() { return aimPt; }, get aimImpact() { return aimImpact; }, get aimSol() { return aimSol; }, setPitch: v => { aimPitch = v; }, frameMs: ms => { lastDt = ms / 1000; if (lastDt > 1 / 40) { step(lastDt / 2); step(lastDt / 2); } else step(lastDt); render(); }, get zoom() { return zoom; }};
 </script>
 </html>
