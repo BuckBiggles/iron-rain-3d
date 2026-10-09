@@ -227,7 +227,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-08.5';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-08.6';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -1923,7 +1923,8 @@ function step(dt) {
   stateT += dt;
   if (paused) for (const k in keys) keys[k] = false;
   playerInput(dt);
-  zoom += ((zoomHeld || keys.z) && player && player.alive && !camHold && !followShell ? 1 : 0) - zoom > 0 ? Math.min(dt * 7, 1 - zoom) : -Math.min(dt * 7, zoom);
+  { const zt = (zoomHeld || keys.z) && player && player.alive && !camHold && !followShell ? 1 : 0;   // ease toward the target and stop there (it used to overshoot and bounce every frame)
+    zoom = zt > zoom ? Math.min(zt, zoom + dt * 7) : Math.max(zt, zoom - dt * 7); }
   if (auth()) hostStep(dt); else clientStep(dt);
   // shared visuals
   for (const s of shells) {
