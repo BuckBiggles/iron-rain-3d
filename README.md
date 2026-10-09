@@ -15,9 +15,9 @@ A first-person, real-time take on [Iron Rain](https://buckbiggles.github.io/iron
 ## Controls
 | Key | Action |
 | --- | --- |
-| Mouse / arrow keys | Look and aim: put the crosshair on a target and the gun lays itself to hit it |
+| Mouse / arrow keys | Aim (no button needed). The gun follows the crosshair, zeroed for the range shown beside it |
 | W A S D | Drive |
-| Wheel | Up: high lob over ridges · down: flat direct shot |
+| Wheel · R · X | Set the sight zero · lase the target to set it · high lob |
 | Right mouse · Z | Gunsight with rangefinder |
 | Click · Space | Fire |
 | 1–4 · Q | Shell type · arm a supply special |

@@ -136,8 +136,8 @@ td:first-child{font-family:var(--f-display);font-size:18px}
     <h1>IRON RAIN<span>3D</span></h1>
     <p>Real-time tank artillery from inside the turret. Drive, range the target, set your charge and lob it over the ridge before they reload.</p>
     <div class="keys">
-      <b>MOUSE / ARROWS</b><span>Look and aim: put the crosshair on a target and the gun lays itself to hit it</span>
-      <b>WHEEL</b><span>Up: high lob over ridges · down: flat direct shot</span>
+      <b>MOUSE / ARROWS</b><span>Aim. The gun follows your crosshair, zeroed for the range shown beside it</span>
+      <b>WHEEL · R · X</b><span>Set the zero range · lase the target to set it · high lob over ridges</span>
       <b>W A S D</b><span>Drive</span>
       <b>RIGHT MOUSE · Z</b><span>Gunsight optic with rangefinder</span>
       <b>1 – 4 · Q</b><span>Pick a shell · arm a supply-drop special</span>
@@ -227,7 +227,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-08.8';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-08.9';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -1047,7 +1047,7 @@ function createBattle(cfg) {
     t.elev = 35;
   }
   mySeat = net ? (net.role === 'host' ? 0 : net.seat) : 0;
-  aimPitch = 0; aimSol = null; arcPref = 0;
+  aimPitch = 0; arcPref = 0;
   player = tanks[mySeat];
   mode = 'game'; paused = false; worldTime = 0; nextFlight = rnd(10, 20);
   hideScreens();
@@ -1841,13 +1841,13 @@ glc.addEventListener('mousedown', e => {
   audioInit();
   if (mode !== 'game' || paused) return;
   if (e.button === 2) zoomHeld = true;
-  if (e.button === 0) { if (locked) myFire(); else dragging = true; }
+  if (e.button === 0) myFire();
   if (!locked) requestLock();
 });
 addEventListener('mouseup', e => { if (e.button === 2) zoomHeld = false; if (e.button === 0) dragging = false; });
 glc.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('mousemove', e => {
-  if (mode !== 'game' || paused || !(locked || dragging)) return;
+  if (mode !== 'game' || paused || chatOpen) return;   // no button needed: the mouse always aims (pointer lock just keeps the cursor from hitting the screen edge)
   const t = player; if (!t || !t.alive || state === 'over') return;
   const zf = zoom > .5 ? .22 : 1, s = settings.sens;
   t.yaw = wrapA(t.yaw - e.movementX * .0021 * s * zf);
@@ -1856,7 +1856,7 @@ addEventListener('mousemove', e => {
 glc.addEventListener('wheel', e => {
   if (mode !== 'game' || paused || !player) return;
   e.preventDefault();
-  if (state === 'battle' && player.alive) { const want = e.deltaY < 0 ? 1 : 0; if (want !== arcPref) { arcPref = want; aimSol = null; sfx.tick(want ? 1200 : 800); feedMsg(want ? 'LOB: high arc over cover' : 'DIRECT: flat, fast shot', '#e6b44c'); } }   // wheel up = lob, down = direct
+  if (state === 'battle' && player.alive) setZero(zeroRange + (e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 5 : 25));   // wheel: sight zero range
 }, {passive: false});
 function myFire() {
   if (!player || !player.alive || state !== 'battle') return;
@@ -1883,6 +1883,8 @@ addEventListener('keydown', e => {
   keys[k] = true; keys.shift = e.shiftKey;
   if (e.repeat) return;
   audioInit();
+  if (k === 'r' && state === 'battle' && player.alive) { const rf = rangefind(); if (rf) { setZero(rf.d, 'lase'); feedMsg('LASED ' + Math.round(rf.d) + ' m · zero set', '#e6b44c'); } else sfx.bad(); }
+  if (k === 'x' && state === 'battle' && player.alive) { arcPref = arcPref ? 0 : 1; sfx.tick(arcPref ? 1200 : 800); feedMsg(arcPref ? 'LOB: high arc over cover' : 'DIRECT: flat, fast shot', '#e6b44c'); }
   if (k === 'v' && myShell && !myShell.dead) followShell = myShell;   // hold V: ride along with your shell full-screen
   if (k === 'c') { settings.shellCam = !settings.shellCam; save('ironrain3d.settings', settings); feedMsg('Follow-shell camera ' + (settings.shellCam ? 'ON' : 'OFF'), '#d6c99c'); }
   if (k === 'm') { settings.vol = settings.vol > 0 ? 0 : .7; if (master) master.gain.value = settings.vol; save('ironrain3d.settings', settings); }
@@ -2000,47 +2002,31 @@ function payRound() {
   if (total > 0) { profile = loadProfile(); profile.money += total; saveProfile(profile); }
 }
 
-// ---- point-and-shoot gunnery: whatever is under the crosshair is the target, and the gun elevates itself (at a
-// mechanical 40°/s) to drop a full-charge shell on it. Wheel up picks the high lob (over ridges), wheel down the flat shot.
-let aimPitch = 0, arcPref = 0, aimPt = null, aimSol = null;
-function aimRay(t) {
-  const [fx, fz] = fwd(t.yaw), e = t.mesh.eye, cp = Math.cos(aimPitch * D2R), sp = Math.sin(aimPitch * D2R);
-  const ox = t.base.x + fx * e.x, oy = t.base.y + e.y, oz = t.base.z + fz * e.x;   // above the gun's own axis, so bearing needs no correction
-  for (let d = 3; d < 1500; d += d < 200 ? 1.5 : 3) {
-    const x = ox + fx * cp * d, y = oy + sp * d, z = oz + fz * cp * d;
-    if (Math.abs(x) > HALF || Math.abs(z) > HALF) return null;
-    for (const o of tanks) if (o !== t && o.alive && inTank(o, x, y, z, .3)) return {x: o.x, y: o.y + 1, z: o.z, tank: o, d};
-    if (y < groundAt(x, z)) return {x, y, z, d};
-  }
-  return null;
+// ---- gunnery, like a real tank sight: the mouse moves the crosshair (your line of sight) and the gun follows it,
+// raised by the superelevation for the ZERO range. A target at the zero range is hit dead on the crosshair; for
+// nearer or farther targets use the range marks on the reticle (hold over). Wheel sets the zero, R lases the range
+// under the crosshair and sets the zero to it, X switches to the high lob solution for that range.
+let aimPitch = 0, arcPref = 0, zeroRange = 300, zeroOut = false;
+const ZERO_MIN = 50, ZERO_MAX = 725;
+function gunElevFor(t, pitchDeg, R, lob) {   // gun elevation (deg) that drops a full-charge shell on the sight line at range R
+  const v = shotSpeed(POWER), p = pitchDeg * D2R;
+  const eyeY = t.base.y + t.mesh.eye.y, pivY = t.base.y + t.mesh.gp.y;
+  const dx = Math.max(5, R - t.mesh.gp.x), h = eyeY + R * Math.tan(p) - pivY;
+  const disc = v ** 4 - G * (G * dx * dx + 2 * h * v * v);
+  if (disc < 0) return null;   // out of reach
+  return Math.atan((v * v + (lob ? 1 : -1) * Math.sqrt(disc)) / (G * dx)) / D2R;
 }
-function solveArc(t, tx, tz, w, pref) {
-  const yaw = t.yaw, [fx, fz] = fwd(yaw), D = (tx - t.base.x) * fx + (tz - t.base.z) * fz;
-  const arcs = [[ELEV_MIN, 45, 1], [45, ELEV_MAX, -1]], res = [];
-  for (const [a0, a1, dir] of (w.kind === 'drill' ? [[ELEV_MIN, 30, 1]] : arcs)) {
-    let lo = a0, hi = a1, s = null;
-    for (let it = 0; it < 15; it++) {
-      const e = (lo + hi) / 2; s = simulate(t, yaw, e, POWER, w);
-      const along = s ? (s.x - t.base.x) * fx + (s.z - t.base.z) * fz : 1e9;
-      if ((along > D) === (dir > 0)) hi = e; else lo = e;
-    }
-    const e = (lo + hi) / 2; s = simulate(t, yaw, e, POWER, w);
-    res.push({elev: e, err: s ? Math.hypot(s.x - tx, s.z - tz) : 1e9});
-  }
-  const want = res[Math.min(pref, res.length - 1)];
-  return want.err < 6 ? want : res.reduce((a, b) => b.err < a.err ? b : a);
-}
-function aimSolve(dt) {
+function gunLay(dt) {
   const t = player;
-  if (!t || !t.alive || mode !== 'game' || state !== 'battle') { aimPt = null; return; }
-  aimPt = aimRay(t);
-  const w = weaponOf(t).kind === 'drill' ? WEAPONS[3] : WEAPONS[0];
-  if (!aimPt) aimSol = {x: 1e9, z: 1e9, elev: 45, err: 1e9, at: worldTime, sky: true};   // looking at sky: full range on this bearing
-  else if (!aimSol || aimSol.sky || Math.hypot(aimPt.x - aimSol.x, aimPt.z - aimSol.z) > .6 || worldTime - aimSol.at > .25) {
-    const s = solveArc(t, aimPt.x, aimPt.z, w, arcPref);
-    aimSol = {x: aimPt.x, z: aimPt.z, elev: s.elev, err: s.err, at: worldTime};
-  }
-  t.elev += clamp(aimSol.elev - t.elev, -40 * dt, 40 * dt);
+  if (!t || !t.alive || mode !== 'game' || state !== 'battle') return;
+  const e = gunElevFor(t, aimPitch, zeroRange, arcPref);
+  zeroOut = e == null;
+  const want = clamp(e == null ? 45 : e, ELEV_MIN, ELEV_MAX);
+  t.elev += clamp(want - t.elev, -120 * dt, 120 * dt);   // fast enough to feel locked to the mouse
+}
+function setZero(r, why) {
+  zeroRange = clamp(Math.round(r / 5) * 5, ZERO_MIN, ZERO_MAX);
+  sfx.tick(why === 'lase' ? 1500 : 900);
 }
 // ================================================================ camera
 let camEye = {ok: false}, camAim = {p: null};
@@ -2113,7 +2099,7 @@ function updateCamera(dt) {
     const ke = zoom > .5 ? 1 : 1 - Math.exp(-dt * 30);   // in the sight the eye is locked to the gun: no easing, no drift
     camEye.x += (px - camEye.x) * ke; camEye.y += (py - camEye.y) * ke; camEye.z += (pz - camEye.z) * ke;
     camera.position.set(camEye.x, camEye.y, camEye.z);
-    // free look: the mouse moves the view; aimSolve() lays the gun so the shell lands under the crosshair
+    // free look: the mouse moves the line of sight; gunLay() keeps the gun on it, zeroed for zeroRange
     camera.rotation.set((aimPitch - camKick * 1.2 * (zoom > .5 ? 0 : 1)) * D2R, t.yaw - Math.PI / 2, 0, 'YXZ');
   }
   if (camShake > 0 && zoom <= .5) {   // no shake at all in the x4 sight: magnified, it read as the view drifting in and out
@@ -2196,7 +2182,7 @@ function drawHUD() {
   if (chatOpen) drawChat();
   if (net && net.role === 'client' && net.re) { hx.fillStyle = 'rgba(6,7,5,.7)'; hx.fillRect(0, Hh / 2 - 40, W, 80); txt('CONNECTION LOST · RECONNECTING…', W / 2, Hh / 2 + 6, 26, '#e6b44c', 'center', 'display'); txt('Esc to give up', W / 2, Hh / 2 + 28, 13, '#d6c99c', 'center', 'data'); }
   if (dmgFlash > 0) { const g = hx.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .3, W / 2, Hh / 2, Math.max(W, Hh) * .7); g.addColorStop(0, 'rgba(160,20,10,0)'); g.addColorStop(1, `rgba(160,20,10,${dmgFlash * .55})`); hx.fillStyle = g; hx.fillRect(0, 0, W, Hh); }
-  if (!locked && !paused && state !== 'over' && t.alive && !chatOpen) { hx.shadowColor = 'rgba(0,0,0,.8)'; hx.shadowBlur = 6; txt('CLICK TO TAKE THE GUN (mouse aim) · or drag / use arrow keys', W / 2, Hh - 184, 16, '#e6b44c', 'center', 'body', '600'); hx.shadowBlur = 0; }
+  if (!locked && !paused && state !== 'over' && t.alive && !chatOpen) { hx.shadowColor = 'rgba(0,0,0,.8)'; hx.shadowBlur = 6; txt('CLICK to capture the mouse (Esc frees it)', W / 2, Hh - 184, 16, '#e6b44c', 'center', 'body', '600'); hx.shadowBlur = 0; }
 }
 function reloadRing(cx, cy, r) {   // around the sight: fills as the gun loads, brass when ready
   const t = player, f = t.reloadMax > 0 ? 1 - t.reload / t.reloadMax : 1;
@@ -2213,13 +2199,29 @@ function drawReticle() {
   hx.beginPath(); hx.moveTo(cx - 14, cy); hx.lineTo(cx - 5, cy); hx.moveTo(cx + 5, cy); hx.lineTo(cx + 14, cy); hx.moveTo(cx, cy + 5); hx.lineTo(cx, cy + 14); hx.moveTo(cx, cy - 5); hx.lineTo(cx, cy - 14); hx.stroke();
   hx.shadowBlur = 0;
 }
-function aimNote() {   // only when it matters: the target is beyond reach, or the gun is still laying
-  const t = player; if (!aimSol || !t.alive) return;
-  let s = "", c = "#f0a28f";
-  if (aimSol.err > 8) s = aimSol.sky ? "NO TARGET · MAX RANGE" : "OUT OF RANGE";
-  else if (Math.abs(aimSol.elev - t.elev) > .3) { s = "LAYING GUN…"; c = "#e6b44c"; }
-  if (!s) return;
-  hx.shadowColor = "rgba(0,0,0,.9)"; hx.shadowBlur = 4; txt(s, W / 2, Hh / 2 + 34, 13, c, "center", "data"); hx.shadowBlur = 0;
+// zero readout beside the crosshair, and (in the sight) a range ladder: put the mark for the target's range on the
+// target and the shell lands there. Marks below centre are farther than the zero, marks above are nearer.
+function aimNote() {
+  const t = player; if (!t.alive || state !== 'battle') return;
+  hx.shadowColor = 'rgba(0,0,0,.9)'; hx.shadowBlur = 4;
+  const zoomed = zoom > .5, x = W / 2 + (zoomed ? 40 : 22), y = Hh / 2 - (zoomed ? 8 : 6);
+  txt((arcPref ? 'LOB ' : '') + zeroRange, x, y, zoomed ? 15 : 13, zeroOut ? '#f0a28f' : '#e6b44c', 'left', 'data');
+  if (zeroOut) txt('OUT OF RANGE', W / 2, Hh / 2 + 34, 13, '#f0a28f', 'center', 'data');
+  hx.shadowBlur = 0;
+  if (!zoomed) return;
+  const e0 = gunElevFor(t, aimPitch, zeroRange, arcPref); if (e0 == null) return;
+  const f = (Hh / 2) / Math.tan(camera.fov * D2R / 2), cx = W / 2, cy = Hh / 2;
+  hx.strokeStyle = 'rgba(242,230,184,.95)'; hx.lineWidth = 1.6; hx.shadowColor = 'rgba(0,0,0,.95)'; hx.shadowBlur = 3;
+  for (let r = 100; r <= 700; r += 50) {
+    if (Math.abs(r - zeroRange) < 20) continue;
+    const e = gunElevFor(t, aimPitch, r, arcPref); if (e == null) continue;
+    const yy = cy + Math.tan((e - e0) * D2R) * f;
+    if (Math.abs(yy - cy) < 10 || Math.abs(yy - cy) > Math.min(W, Hh) * .4) continue;
+    const major = r % 100 === 0, w = major ? 16 : 8;
+    hx.beginPath(); hx.moveTo(cx - w, yy); hx.lineTo(cx - 4, yy); hx.moveTo(cx + 4, yy); hx.lineTo(cx + w, yy); hx.stroke();
+    if (major) txt(String(r), cx + w + 4, yy + 4, 11, '#e6b44c', 'left', 'data');
+  }
+  hx.shadowBlur = 0;
 }
 let rangeCache = {t: -1, v: null};
 function rangefind() {
@@ -2243,7 +2245,6 @@ function drawOptic() {
   hx.lineWidth = 1.6; hx.beginPath(); hx.moveTo(cx - 12, cy + 12); hx.lineTo(cx, cy); hx.lineTo(cx + 12, cy + 12); hx.stroke();
   const pxPerDeg = Hh / camera.fov;
   for (let k = -6; k <= 6; k++) { if (!k) continue; const x = cx + k * pxPerDeg * .5; hx.beginPath(); hx.moveTo(x, cy - (k % 2 ? 4 : 8)); hx.lineTo(x, cy); hx.stroke(); }
-  for (let k = 1; k <= 6; k++) { const y = cy + k * pxPerDeg * .5; hx.beginPath(); hx.moveTo(cx - (k % 2 ? 4 : 8), y); hx.lineTo(cx + (k % 2 ? 4 : 8), y); hx.stroke(); }
   hx.restore();
   if (worldTime - rangeCache.t > .1 || worldTime < rangeCache.t) rangeCache = {t: worldTime, v: rangefind()};
   const r = rangeCache.v, lx = cx + R * .52, ly = cy + R * .62;
@@ -2436,7 +2437,7 @@ function drawLastShot() {
 }
 function drawHints() {
   let s = '';
-  if (state === 'battle' && player.alive) s = 'CLICK fire · Z sight · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
+  if (state === 'battle' && player.alive) s = 'CLICK fire · WHEEL zero · R lase · Z sight · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
   if (!s) return;
   hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 5;
@@ -2717,7 +2718,7 @@ function render() {
   flushTerrain();
   predictImpact();
   updateCamera(lastDt);
-  aimSolve(lastDt);
+  gunLay(lastDt);
   updateAimDots();
   placeSun();
   const s = renderer.domElement.height / (2 * Math.tan(camera.fov * D2R / 2));
@@ -2753,6 +2754,6 @@ requestAnimationFrame(frame);
 })();
 // test hook
 window.__ir = {get state() { return state; }, get tanks() { return tanks; }, get player() { return player; }, get shells() { return shells; }, get net() { return net; }, get lobby() { return lobby; },
-  step, render, fire, startOffline, setup, solve, groundAt, explosionFx, deathFx, hostRoom, joinRoom, hostStart, showTab, get followShell() { return followShell; }, get camHold() { return camHold; }, camera, get aimPt() { return aimPt; }, get aimImpact() { return aimImpact; }, get aimSol() { return aimSol; }, setPitch: v => { aimPitch = v; }, frameMs: ms => { lastDt = ms / 1000; if (lastDt > 1 / 40) { step(lastDt / 2); step(lastDt / 2); } else step(lastDt); render(); }, get zoom() { return zoom; }};
+  step, render, fire, startOffline, setup, solve, groundAt, explosionFx, deathFx, hostRoom, joinRoom, hostStart, showTab, get followShell() { return followShell; }, get camHold() { return camHold; }, camera, get aimImpact() { return aimImpact; }, get zero() { return zeroRange; }, setZero: r => { zeroRange = r; }, setPitch: v => { aimPitch = v; }, frameMs: ms => { lastDt = ms / 1000; if (lastDt > 1 / 40) { step(lastDt / 2); step(lastDt / 2); } else step(lastDt); render(); }, get zoom() { return zoom; }};
 </script>
 </html>
