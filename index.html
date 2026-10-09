@@ -136,13 +136,13 @@ td:first-child{font-family:var(--f-display);font-size:18px}
     <h1>IRON RAIN<span>3D</span></h1>
     <p>Real-time tank artillery from inside the turret. Drive, range the target, set your charge and lob it over the ridge before they reload.</p>
     <div class="keys">
-      <b>MOUSE / ARROWS</b><span>Traverse turret and elevate the gun (hold Shift for fine laying)</span>
+      <b>MOUSE / ARROWS</b><span>Aim: the crosshair is where the shell lands (full charge every shot). Shift for fine laying</span>
       <b>W A S D</b><span>Drive</span>
-      <b>WHEEL · R / F</b><span>Powder charge (power); Shift + wheel for 5 at a time</span>
       <b>RIGHT MOUSE · Z</b><span>Gunsight optic with rangefinder</span>
       <b>1 – 4 · Q</b><span>Pick a shell · arm a supply-drop special</span>
       <b>CLICK · SPACE</b><span>Fire, then wait out the reload</span>
-      <b>C · T · ESC</b><span>Follow-shell camera · chat (online) · menu</span>
+      <b>V · C</b><span>Hold to ride with your shell · always follow your shells (a small shell cam shows every shot)</span>
+      <b>T · ESC</b><span>Chat (online) · menu</span>
     </div>
   </div>
   <div class="setup">
@@ -226,7 +226,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-08.2';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-08.4';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -362,7 +362,8 @@ let profile = loadProfile();
 
 // ================================================================ world constants
 const SIZE = 1400, HALF = SIZE / 2, SEG = 280, N = SEG + 1, CELL = SIZE / SEG, PLAY = 540;
-const G = 25, VMAX = 135, DT = 1 / 120, STEP = 1 / 60;   // range on the flat at 45°: VMAX² · power/100 / G  (≈ 7.3 m per power point)
+const G = 25, VMAX = 135, DT = 1 / 120, STEP = 1 / 60;   // every shot is a full charge: 729 m max range on the flat at 45°
+const POWER = 100;   // fixed: aiming is all elevation and bearing
 const shotSpeed = p => VMAX * Math.sqrt(clamp(p, 0, 100) / 100);
 const ELEV_MIN = -5, ELEV_MAX = 80;
 
@@ -411,9 +412,9 @@ const glc = document.getElementById('gl');
 let renderer;
 try { renderer = new THREE.WebGLRenderer({canvas: glc, antialias: true, powerPreference: 'high-performance'}); }
 catch (e) { document.body.insertAdjacentHTML('beforeend', '<div id="nogl">WebGL is not available in this browser, so the battlefield cannot be drawn.</div>'); throw e; }
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
 renderer.shadowMap.enabled = settings.shadows;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, 1, .1, 4200);
 camera.rotation.order = 'YXZ';
@@ -490,8 +491,20 @@ function updateRegion(i0, i1, j0, j1) {
     if (scorch[k] > 0) c.lerp(C.scorch, Math.min(scorch[k], 1) * .78);
     col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b;
   }
-  terrGeo.attributes.position.needsUpdate = terrGeo.attributes.normal.needsUpdate = terrGeo.attributes.color.needsUpdate = true;
+  terrDirty[0] = Math.min(terrDirty[0], j0); terrDirty[1] = Math.max(terrDirty[1], j1);
   radarDirty = true;
+}
+// upload only the rows a crater touched (the whole mesh is ~2.8 MB; re-sending it per explosion caused hitches)
+const terrDirty = [Infinity, -1];
+function flushTerrain() {
+  if (terrDirty[1] < 0) return;
+  const off = terrDirty[0] * N * 3, cnt = (terrDirty[1] - terrDirty[0] + 1) * N * 3;
+  for (const a of [terrGeo.attributes.position, terrGeo.attributes.normal, terrGeo.attributes.color]) {
+    if (a.updateRange.count !== -1) { const lo = Math.min(a.updateRange.offset, off), hi = Math.max(a.updateRange.offset + a.updateRange.count, off + cnt); a.updateRange.offset = lo; a.updateRange.count = hi - lo; }
+    else { a.updateRange.offset = off; a.updateRange.count = cnt; }
+    a.needsUpdate = true;
+  }
+  terrDirty[0] = Infinity; terrDirty[1] = -1;
 }
 
 function genTerrain(mi, seed) {
@@ -607,7 +620,9 @@ function makePool(max, additive, tex) {
         P[n++] = p;
       }
       P.length = n; geo.setDrawRange(0, n);
-      geo.attributes.position.needsUpdate = geo.attributes.size.needsUpdate = geo.attributes.col.needsUpdate = true;
+      if (!n && !this.had) return;   // nothing alive, nothing to upload
+      this.had = n > 0;
+      for (const [a, k] of [[geo.attributes.position, 3], [geo.attributes.size, 1], [geo.attributes.col, 4]]) { a.updateRange.offset = 0; a.updateRange.count = Math.max(n, 1) * k; a.needsUpdate = true; }
     }};
 }
 const fireP = makePool(3000, true, SOFT_TEX), smokeP = makePool(3800, false, PUFF_TEX), chipP = makePool(1500, false, SOFT_TEX);
@@ -931,6 +946,7 @@ const sfx = {
   pop() { if (!AC) return; const t = AC.currentTime; nz(t, .4, 3000, 300, .3); },
   chat() { if (!AC) return; const t = AC.currentTime; tone(t, .08, 1300, 1300, .08, 'triangle'); tone(t + .08, .1, 1700, 1700, .08, 'triangle'); },
   cash() { if (!AC) return; const t = AC.currentTime; [1568, 2093].forEach((f, i) => tone(t + i * .08, .2, f, f, .12, 'triangle')); },
+  heart() { if (!AC) return; const t = AC.currentTime; tone(t, .12, 70, 45, .5); tone(t + .17, .12, 62, 40, .35); },
 };
 
 // ================================================================ HUD canvas
@@ -994,7 +1010,7 @@ function spawnPoints(n, rand) {
 function makeTank(i, cfg, x, z, hullYaw) {
   const spec = TANKS[cfg.spec] || TANKS[0], m = makeTankMesh(spec, cfg.cos);
   const t = {i, specIdx: cfg.spec, spec, ai: !!cfg.ai, remote: !!cfg.remote, dropped: false, color: SEAT_COLORS[i], name: cfg.name, cos: cleanCos(cfg.cos), x, z, y: groundAt(x, z), vy: 0, falling: false, fallFrom: 0,
-    hullYaw, yaw: hullYaw, elev: 30, power: 60, pitch: 0, roll: 0, mesh: m, alive: true, hp: spec.hp, maxHp: spec.hp,
+    hullYaw, yaw: hullYaw, elev: 10, power: POWER, pitch: 0, roll: 0, mesh: m, alive: true, hp: spec.hp, maxHp: spec.hp,
     ammo: WEAPONS.map(w => w.ammo), weapon: 0, stock: [], armed: 0, reload: 2, reloadMax: 2, lastHitBy: null, moving: 0,
     ai2: {planAt: rnd(.5, 2), moveAt: rnd(2, 6), goal: null},
     recoil: 0, base: new THREE.Vector3(), stats: {shots: 0, hits: 0, dmg: 0, kills: 0, taken: 0}, mem: {target: null, tries: 0}, plan: null, deb: null, burnT: 0, smokeAcc: 0,
@@ -1008,7 +1024,7 @@ function clearBattle() {
   tanks = []; player = null; shells.forEach(s => s.mesh && scene.remove(s.mesh)); shells = []; pending = [];
   sprites.forEach(s => scene.remove(s.obj)); sprites = [];
   fireP.clear(); smokeP.clear(); chipP.clear(); flights.forEach(f => f.planes.forEach(p => scene.remove(p))); flights = [];
-  banner = null; feed = []; pops = []; spot = null; impacts = []; reels = []; result = null; winner = -1; roundPay = null; camHold = null; followShell = null; lastShot = null;
+  banner = null; feed = []; pops = []; spot = null; impacts = []; reels = []; result = null; winner = -1; roundPay = null; camHold = null; followShell = null; lastShot = null; myShell = null; pip.hold = null; pip.on = false;
   carveLog = []; evq = []; chatOpen = false; aimDots.visible = false; state = 'idle';
 }
 function nameTanks() {
@@ -1073,12 +1089,12 @@ function onHit(by) {
 }
 
 // ================================================================ firing and ballistics
-function muzzleOf(t, yaw, elev) {
-  const gp = t.mesh.gp, [fx, fz] = fwd(yaw), ce = Math.cos(elev * D2R), se = Math.sin(elev * D2R), gl = t.mesh.gunLen - t.recoil * .5;
+function muzzleOf(t, yaw, elev, still) {
+  const gp = t.mesh.gp, [fx, fz] = fwd(yaw), ce = Math.cos(elev * D2R), se = Math.sin(elev * D2R), gl = t.mesh.gunLen - (still ? 0 : t.recoil * .5);
   return {x: t.base.x + fx * gp.x + fx * ce * gl, y: t.base.y + gp.y + se * gl, z: t.base.z + fz * gp.x + fz * ce * gl, dx: fx * ce, dy: se, dz: fz * ce};
 }
 function newShell(t, w, yaw, elev, power) {
-  const m = muzzleOf(t, yaw, elev), v = shotSpeed(power);
+  const m = muzzleOf(t, yaw, elev, true), v = shotSpeed(power);   // shells always leave from the gun at rest, so the sight's prediction is exact
   return {x: m.x, y: m.y, z: m.z, ox: m.x, oy: m.y, oz: m.z, vx: m.dx * v, vy: m.dy * v, vz: m.dz * v, w, owner: t, bore: w.bore || 0, bored: false, under: false,
     bounces: w.bounces || 0, t: 0, clear: false, dead: false, split: false, mesh: null, whistled: false, trail: 0};
 }
@@ -1106,21 +1122,41 @@ function advance(s, dt) {
   if (Math.abs(s.x) > HALF - 3 || Math.abs(s.z) > HALF - 3 || s.y < -300 || s.t > 25) return 'out';
   return null;
 }
-function simulate(t, yaw, elev, power, w) {
+function simulate(t, yaw, elev, power, w, tanksToo) {
   const s = newShell(t, w, yaw, elev, power);
   for (let i = 0; i < 2400; i++) {
     const r = advance(s, DT);
     if (r === 'ground' || r === 'boom') return s;
     if (r === 'out') return null;
+    if (tanksToo) { if (!s.clear && Math.hypot(s.x - s.ox, s.y - s.oy, s.z - s.oz) > 6) s.clear = true;
+      for (const o of tanks) if (o.alive && (o !== t || s.clear) && inTank(o, s.x, s.y, s.z, .15)) { s.hit = o; return s; } }
   }
   return null;
+}
+// the ballistic sight: where your shell would land right now (ground or a tank), recomputed every frame
+let aimImpact = null, aimPath = [];
+function predictImpact() {
+  const t = player; aimPath = []; aimImpact = null;
+  if (!(t && t.alive && mode === 'game')) return;
+  const s = newShell(t, weaponOf(t).kind === 'drill' ? WEAPONS[3] : WEAPONS[0], t.yaw, t.elev, POWER);
+  let since = 0, px = s.x, py = s.y, pz = s.z;
+  for (let i = 0; i < 2400; i++) {
+    const r = advance(s, DT);
+    since += Math.hypot(s.x - px, s.y - py, s.z - pz); px = s.x; py = s.y; pz = s.z;
+    if (since > 7) { since = 0; if (!s.under) aimPath.push(s.x, s.y, s.z); }
+    if (r === 'ground' || r === 'boom') { aimImpact = s; break; }
+    if (r === 'out') break;
+    if (!s.clear && Math.hypot(s.x - s.ox, s.y - s.oy, s.z - s.oz) > 6) s.clear = true;
+    let hit = null; for (const o of tanks) if (o.alive && (o !== t || s.clear) && inTank(o, s.x, s.y, s.z, .15)) { hit = o; break; }
+    if (hit) { s.hit = hit; aimImpact = s; break; }
+  }
 }
 
 const shellGeo = new THREE.SphereGeometry(.32, 8, 6);
 function shellMesh(w) { const m = new THREE.Mesh(shellGeo, new THREE.MeshBasicMaterial({color: w.col, fog: false})); scene.add(m); return m; }
 function fire(t) {
   if (!canFire(t)) return;
-  const w = weaponOf(t), p = Math.round(t.power);
+  const w = weaponOf(t), p = POWER;
   const base = t.weapon === 'S' ? RELOAD.special : RELOAD[w.key] || 4;
   t.reload = t.reloadMax = base * t.spec.atk / 100 * (t.ai ? CPU_RELOAD[battleLvl] || 1.5 : 1);
   if (t.weapon === 'S') { t.stock.splice(t.armed, 1); t.weapon = 0; t.armed = 0; }
@@ -1133,7 +1169,7 @@ function fire(t) {
   for (const [yaw, elev] of list) { const s = newShell(t, w, yaw, elev, p); s.id = shellId++; s.mesh = shellMesh(w); s.mesh.position.set(s.x, s.y, s.z); shells.push(s); }
   const sid = shells[shells.length - 1 - Math.floor(list.length / 2)].id;
   emit({t: 'fire', i: t.i, y: r3(t.yaw), e: r2(t.elev), p, w: w.name, sid});
-  if (t === player && settings.shellCam) followShell = shells.find(s => s.id === sid);
+  if (t === player) { myShell = shells.find(s => s.id === sid); if (settings.shellCam || keys.v) followShell = myShell; }
   if (t.ai) t.plan = null;
 }
 function fireFx(t) {
@@ -1165,6 +1201,7 @@ function stepShells(dt) {
         const c = Object.assign({}, s, {id: shellId++, w: MIRV_CHILD, dead: false, split: true, vx: Math.cos(yaw + o * .055) * sp * (1 + o * .02), vz: -Math.sin(yaw + o * .055) * sp * (1 + o * .02), clear: true});
         c.mesh = shellMesh(MIRV_CHILD); shells.push(c);
         if (followShell === s && o === 0) followShell = c;
+        if (myShell === s && o === 0) myShell = c;
       }
       emit({t: 'pfx', x: r2(s.x), y: r2(s.y), z: r2(s.z)});
     }
@@ -1173,6 +1210,7 @@ function stepShells(dt) {
   shells = shells.filter(s => !s.dead);
 }
 function shellGone(s) {
+  if (myShell === s) { myShell = null; pip.hold = {x: s.x, y: s.y, z: s.z, t: 1.6}; }
   if (s.mesh) { scene.remove(s.mesh); s.mesh.material.dispose(); s.mesh = null; }
   if (followShell === s) { camHold = {x: s.x, y: s.y, z: s.z, t: 1.4}; followShell = null; }
 }
@@ -1312,33 +1350,36 @@ function aiPlan(t) {
   if (sol.err > 18 && L.drill && t.ammo[3] > 0 && t.weapon !== 'S') { const s2 = solve(t, tg, WEAPONS[3]); if (s2.err < sol.err - 6) { sol = s2; t.weapon = 3; } }
   const m = Math.pow(.7, t.mem.tries);
   t.mem.tries++;
-  t.plan = {yaw: sol.yaw + gauss() * L.err * .45 * m * D2R, elev: sol.elev, power: clamp(sol.power + gauss() * L.err * .35 * m, 1, 100), think: rnd(.7, 1.3)};
+  t.plan = {yaw: sol.yaw + gauss() * L.err * .45 * m * D2R, elev: clamp(sol.elev + gauss() * L.err * .11 * m, ELEV_MIN, ELEV_MAX), power: POWER, think: rnd(.7, 1.3)};
 }
+// full charge every shot, so aiming is elevation only: binary-search the low arc (range grows with elevation up to 45°)
+// and the high lob (range shrinks above 45°), and keep whichever lands nearer the target
 function solve(t, tg, w) {
   const yaw = Math.atan2(-(tg.z - t.z), tg.x - t.x), D = Math.hypot(tg.x - t.x, tg.z - t.z), [fx, fz] = fwd(yaw);
-  let best = {yaw, elev: 45, power: 60, err: 1e9};
-  const elevs = w.kind === 'drill' ? [12, 6, 18, 25] : [45, 35, 55, 25, 65, 15, 75];
-  for (const elev of elevs) {
-    let lo = 2, hi = 100;
-    for (let it = 0; it < 15; it++) {
-      const p = (lo + hi) / 2, s = simulate(t, yaw, elev, p, w);
+  let best = {yaw, elev: 20, power: POWER, err: 1e9};
+  const arcs = w.kind === 'drill' ? [[ELEV_MIN, 30, 1]] : [[ELEV_MIN, 45, 1], [45, ELEV_MAX, -1]];
+  for (const [a0, a1, dir] of arcs) {
+    let lo = a0, hi = a1;
+    for (let it = 0; it < 14; it++) {
+      const e = (lo + hi) / 2, s = simulate(t, yaw, e, POWER, w);
       const along = s ? (s.x - t.x) * fx + (s.z - t.z) * fz : 1e9;
-      if (along > D) hi = p; else lo = p;
+      if ((along > D) === (dir > 0)) hi = e; else lo = e;
     }
-    const p = Math.round((lo + hi) / 2), s = simulate(t, yaw, elev, p, w);
+    const e = (lo + hi) / 2, s = simulate(t, yaw, e, POWER, w);
     const err = s ? Math.hypot(s.x - tg.x, s.z - tg.z) : 1e9;
-    if (err < best.err) best = {yaw, elev, power: p, err};
+    if (err < best.err) best = {yaw, elev: e, power: POWER, err};
     if (best.err < 3) break;
   }
   return best;
 }
 // real-time CPU: re-plan when the target has moved or the plan is old, lay the gun, fire once loaded, reposition now and then
+let aiBudget = 1;
 function aiThink(t, dt) {
   const a = t.ai2;
   a.planAt -= dt; a.moveAt -= dt;
   const tg = t.mem.target;
   if (!t.plan || a.planAt <= 0 || !tg || !tg.alive || (t.plan && Math.hypot(tg.x - t.mem.tx, tg.z - t.mem.tz) > 6 && t.reload < 1)) {
-    if (t.reload < 1.2 || !t.plan) { aiPlan(t); a.planAt = rnd(4, 7); }
+    if ((t.reload < 1.2 || !t.plan) && aiBudget > 0) { aiBudget--; aiPlan(t); a.planAt = rnd(4, 7); }   // one CPU plans per tick, so their searches never pile into one frame
   }
   const p = t.plan;
   if (p) {
@@ -1431,25 +1472,29 @@ function driveFx(t, dt, thr) {
   if (Math.random() < dt * 10) { const dc = dirtColor().map(v => v * 1.9); puffSmoke(t.x + rnd(-2, 2), t.y + .3, t.z + rnd(-2, 2), {vy: .8, life: 1.6, s0: 1, s1: 4, a: .3, c0: dc, c1: dc}); }
 }
 
-// ================================================================ aim preview dots (short stub, like Iron Rain)
-const AIM_N = 18;
+// ================================================================ aim line: dots along the shell's whole flight to where it lands
+const AIM_N = 260;
 const aimGeo = new THREE.BufferGeometry();
 aimGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(AIM_N * 3), 3));
 aimGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(AIM_N * 3), 3));
-const aimDots = new THREE.Points(aimGeo, new THREE.PointsMaterial({size: .55, map: SOFT_TEX, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false}));
-aimDots.frustumCulled = false; aimDots.visible = false; scene.add(aimDots);
+const aimDots = new THREE.Points(aimGeo, new THREE.PointsMaterial({size: 5, sizeAttenuation: false, map: SOFT_TEX, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false}));
+aimDots.frustumCulled = false; aimDots.visible = false; aimDots.renderOrder = 4; scene.add(aimDots);
+const hitGeo = new THREE.BufferGeometry(); hitGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
+const hitDot = new THREE.Points(hitGeo, new THREE.PointsMaterial({size: 16, sizeAttenuation: false, map: SOFT_TEX, color: 0xff7a4a, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, fog: false}));
+hitDot.frustumCulled = false; hitDot.visible = false; hitDot.renderOrder = 5; scene.add(hitDot);
 function updateAimDots() {
   const t = player;
-  aimDots.visible = !!(mode === 'game' && t && t.alive && state === 'battle' && !zoom && !followShell && !camHold);
+  aimDots.visible = !!(mode === 'game' && t && t.alive && state === 'battle' && !followShell && !camHold);
+  hitDot.visible = aimDots.visible && !!aimImpact;
   if (!aimDots.visible) return;
-  const s = newShell(t, weaponOf(t), t.yaw, t.elev, Math.round(t.power)), pos = aimGeo.attributes.position.array, col = aimGeo.attributes.color.array;
-  let n = 0;
-  for (let i = 0; i < 110 && n < AIM_N; i++) {
-    s.vy -= G * DT; s.x += s.vx * DT; s.y += s.vy * DT; s.z += s.vz * DT;
-    if (s.y < groundAt(s.x, s.z)) break;
-    if (i % 6 === 5) { pos[n * 3] = s.x; pos[n * 3 + 1] = s.y; pos[n * 3 + 2] = s.z; const f = 1 - n / AIM_N * .85; col[n * 3] = f; col[n * 3 + 1] = .88 * f; col[n * 3 + 2] = .54 * f; n++; }
+  const pos = aimGeo.attributes.position.array, col = aimGeo.attributes.color.array, n = Math.min(AIM_N, aimPath.length / 3);
+  for (let i = 0; i < n; i++) {
+    pos[i * 3] = aimPath[i * 3]; pos[i * 3 + 1] = aimPath[i * 3 + 1]; pos[i * 3 + 2] = aimPath[i * 3 + 2];
+    const f = i < 2 ? .35 : .95; col[i * 3] = f; col[i * 3 + 1] = .86 * f; col[i * 3 + 2] = .5 * f;
   }
   aimGeo.setDrawRange(0, n); aimGeo.attributes.position.needsUpdate = aimGeo.attributes.color.needsUpdate = true;
+  if (aimImpact) { const h = hitGeo.attributes.position.array; h[0] = aimImpact.x; h[1] = aimImpact.y + .4; h[2] = aimImpact.z; hitGeo.attributes.position.needsUpdate = true;
+    hitDot.material.color.setHex(aimImpact.hit && aimImpact.hit !== t ? 0x7dff6a : 0xff7a4a); }
 }
 
 // ================================================================ events: everything visible or audible goes through here
@@ -1487,7 +1532,7 @@ function applyEvent(e) {
     }
     case 'fire': { const t = T(e.i); if (!t) break;
       if (t !== player) { t.yaw = e.y; t.elev = e.e; }
-      else lastShot = {p: e.p, elev: e.e, brg: bearingOf(e.y), w: e.w, res: null, x: t.x, z: t.z};
+      else lastShot = {rng: aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null, elev: e.e, brg: bearingOf(e.y), w: e.w, res: null, x: t.x, z: t.z};
       fireFx(t); break; }
     case 'hurt': { const t = T(e.i); if (!t) break; pops.push({x: t.x, y: t.y + t.mesh.top + 2, z: t.z, s: '-' + e.d, c: e.f ? '#d6c99c' : '#ffb199', t: 0}); if (t === player) { dmgFlash = Math.min(1, .45 + e.d / 60); camShake = Math.max(camShake, .8); } break; }
     case 'kill': { const t = T(e.i); if (t) killVisual(t, e.b); break; }
@@ -1614,7 +1659,6 @@ function hostData(conn, d) {
   if (d.t === 'in' || d.t === 'fire') {
     if (Number.isFinite(+d.y)) t.yaw = wrapA(+d.y);
     if (Number.isFinite(+d.e)) t.elev = clamp(+d.e, ELEV_MIN, ELEV_MAX);
-    if (Number.isFinite(+d.p)) t.power = clamp(+d.p, 0, 100);
     if (d.w === -1 && t.stock.length) { t.weapon = 'S'; t.armed = clamp(d.a | 0, 0, t.stock.length - 1); }
     else if (d.w >= 0 && d.w < 4 && t.ammo[d.w | 0] > 0) t.weapon = d.w | 0;
     if (d.t === 'fire') fire(t);   // fire() itself refuses while reloading
@@ -1761,7 +1805,7 @@ function applySnap(m) {
       const w = ALLW[a[7]] || WEAPONS[0];
       s = {id: a[0], w, owner: tanks[a[9]], trail: 0, whistled: false, under: false, mesh: shellMesh(w)};
       shells.push(s);
-      if (s.owner === player && settings.shellCam && !followShell) followShell = s;
+      if (s.owner === player && (!myShell || myShell.dead)) { myShell = s; if (settings.shellCam || keys.v) followShell = s; }
       else if (!player.alive && !followShell) followShell = s;
     }
     s.x = a[1]; s.y = a[2]; s.z = a[3]; s.vx = a[4]; s.vy = a[5]; s.vz = a[6]; s.under = !!a[8];
@@ -1810,7 +1854,7 @@ addEventListener('mousemove', e => {
 glc.addEventListener('wheel', e => {
   if (mode !== 'game' || paused || !player) return;
   e.preventDefault();
-  if (state === 'battle' && player.alive) player.power = clamp(Math.round(player.power) + (e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 5 : 1), 0, 100);
+  if (state === 'battle' && player.alive) player.elev = clamp(player.elev + (e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? .05 : .2), ELEV_MIN, ELEV_MAX);   // wheel: fine elevation
 }, {passive: false});
 function myFire() {
   if (!player || !player.alive || state !== 'battle') return;
@@ -1837,6 +1881,7 @@ addEventListener('keydown', e => {
   keys[k] = true; keys.shift = e.shiftKey;
   if (e.repeat) return;
   audioInit();
+  if (k === 'v' && myShell && !myShell.dead) followShell = myShell;   // hold V: ride along with your shell full-screen
   if (k === 'c') { settings.shellCam = !settings.shellCam; save('ironrain3d.settings', settings); feedMsg('Follow-shell camera ' + (settings.shellCam ? 'ON' : 'OFF'), '#d6c99c'); }
   if (k === 'm') { settings.vol = settings.vol > 0 ? 0 : .7; if (master) master.gain.value = settings.vol; save('ironrain3d.settings', settings); }
   if (state === 'over' && overT > 2.5 && (k === 'enter' || k === ' ')) { showEnd(); return; }
@@ -1847,7 +1892,7 @@ addEventListener('keydown', e => {
     if (k === ' ') myFire();
   }
 });
-addEventListener('keyup', e => { const k = e.key.toLowerCase(); keys[k] = false; keys.shift = e.shiftKey; });
+addEventListener('keyup', e => { const k = e.key.toLowerCase(); keys[k] = false; keys.shift = e.shiftKey; if (k === 'v' && !settings.shellCam) { followShell = null; camHold = null; } });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; zoomHeld = dragging = false; if (mode === 'game' && !paused && !net) setPaused(true); });
 
 function playerInput(dt) {
@@ -1858,8 +1903,6 @@ function playerInput(dt) {
   if (keys.arrowright) t.yaw -= 40 * D2R * dt * fine * zf;
   if (keys.arrowup) t.elev = clamp(t.elev + 12 * dt * fine * zf, ELEV_MIN, ELEV_MAX);
   if (keys.arrowdown) t.elev = clamp(t.elev - 12 * dt * fine * zf, ELEV_MIN, ELEV_MAX);
-  if (keys.r) t.power = clamp(t.power + 20 * dt * fine, 0, 100);
-  if (keys.f) t.power = clamp(t.power - 20 * dt * fine, 0, 100);
   const thr = chatOpen ? 0 : (keys.w ? 1 : 0) - (keys.s ? 1 : 0), str = chatOpen ? 0 : (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
   if (auth()) t.drv = {th: thr, st: str};
   engineLevel = Math.max(Math.abs(thr), Math.abs(str) * .6);
@@ -1920,6 +1963,7 @@ function step(dt) {
 }
 function hostStep(dt) {
   if (state !== 'battle') return;
+  aiBudget = 1;
   for (const t of tanks) {
     if (!t.alive) continue;
     if (t.reload > 0) { t.reload = Math.max(0, t.reload - dt); if (t.reload === 0 && t === player) sfx.clank(); }
@@ -1954,7 +1998,41 @@ function payRound() {
 }
 
 // ================================================================ camera
-let camEye = {ok: false};
+let camEye = {ok: false}, camAim = {p: null};
+// shell cam: a small picture-in-picture that chases your latest shell (and lingers on the blast) while you keep driving
+let myShell = null;
+const pipCam = new THREE.PerspectiveCamera(55, 1.6, .5, 4200);
+const pip = {on: false, hold: null, ok: false, x: 0, y: 0, w: 0, h: 0};
+function pipRect() { const w = Math.round(clamp(W * .24, 220, 340)), h = Math.round(w * .62); return {x: 16, y: Hh - 92 - 12 - h, w, h}; }
+function renderPip(dt) {
+  pip.on = false;
+  if (mode !== 'game' || followShell || camHold || zoom > .5) { pip.ok = false; return; }
+  const s = myShell && !myShell.dead && myShell.mesh ? myShell : null;
+  if (pip.hold && !s) { pip.hold.t -= dt; if (pip.hold.t <= 0) pip.hold = null; }
+  if (!s && !pip.hold) { pip.ok = false; return; }
+  const r = pipRect(); Object.assign(pip, r);
+  if (s) {
+    const sp = Math.hypot(s.vx, s.vy, s.vz) || 1;
+    const tx = s.x - s.vx / sp * 14, ty = s.y - s.vy / sp * 14 + 4, tz = s.z - s.vz / sp * 14;
+    if (!pip.ok) { pipCam.position.set(tx, ty, tz); pip.ok = true; }
+    const k = 1 - Math.exp(-dt * 8);
+    pipCam.position.x += (tx - pipCam.position.x) * k; pipCam.position.y += (ty - pipCam.position.y) * k; pipCam.position.z += (tz - pipCam.position.z) * k;
+    pipCam.lookAt(s.x + s.vx * .1, s.y + s.vy * .1, s.z + s.vz * .1);
+  } else if (pip.ok) pipCam.lookAt(pip.hold.x, Math.max(pip.hold.y, groundAt(pip.hold.x, pip.hold.z)) + 2, pip.hold.z);
+  else return;
+  const g = groundAt(pipCam.position.x, pipCam.position.z) + 1.5; if (pipCam.position.y < g) pipCam.position.y = g;
+  pipCam.aspect = r.w / r.h; pipCam.updateProjectionMatrix();
+  const ps = r.h * renderer.getPixelRatio() / (2 * Math.tan(pipCam.fov * D2R / 2));
+  for (const p of [fireP, smokeP, chipP]) p.mat.uniforms.scale.value = ps;
+  const own = player && player.mesh, hv = own && own.hull.visible, tv = own && own.turret.visible, gv = own && own.gun.visible; if (own) { own.hull.visible = own.turret.visible = own.gun.visible = true; }
+  const dots = aimDots.visible, hd = hitDot.visible; aimDots.visible = hitDot.visible = false;
+  renderer.setScissorTest(true);
+  renderer.setScissor(r.x, Hh - r.y - r.h, r.w, r.h); renderer.setViewport(r.x, Hh - r.y - r.h, r.w, r.h);
+  renderer.render(scene, pipCam);
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, W, Hh);
+  aimDots.visible = dots; hitDot.visible = hd; if (own) { own.hull.visible = hv; own.turret.visible = tv; own.gun.visible = gv; }
+  pip.on = true;
+}
 function updateCamera(dt) {
   if (mode === 'menu') return;
   const t = player; if (!t) return;
@@ -1990,8 +2068,15 @@ function updateCamera(dt) {
     const ke = 1 - Math.exp(-dt * (zoom > .5 ? 14 : 30));
     camEye.x += (px - camEye.x) * ke; camEye.y += (py - camEye.y) * ke; camEye.z += (pz - camEye.z) * ke;
     camera.position.set(camEye.x, camEye.y, camEye.z);
-    const pitchU = clamp(t.elev * .3 - 3, -6, 22), pitch = lerp(pitchU, t.elev, zoom);
-    camera.rotation.set((pitch - camKick * 1.2 * (1 - zoom * .85)) * D2R, t.yaw - Math.PI / 2, 0, 'YXZ');
+    // ballistic sight: look straight at where the shell will land, so the centre of the screen is the impact point
+    let ax, ay, az;
+    if (aimImpact && !t.deb) { ax = aimImpact.x; ay = aimImpact.y; az = aimImpact.z; }
+    else { ax = camEye.x + fx * 800; ay = camEye.y + Math.tan(clamp(t.elev, -10, 10) * D2R) * 800; az = camEye.z + fz * 800; }
+    const hd = Math.hypot(ax - camEye.x, az - camEye.z) || 1;
+    const yawT = Math.atan2(-(az - camEye.z), ax - camEye.x), pitchT = clamp(Math.atan2(ay - camEye.y, hd) / D2R, -35, 30);
+    if (camAim.p == null || Math.abs(pitchT - camAim.p) > 25) camAim.p = pitchT;
+    camAim.p += (pitchT - camAim.p) * (1 - Math.exp(-dt * 16));   // eases jumps when the impact point hops a ridge
+    camera.rotation.set((camAim.p - camKick * 1.2 * (1 - zoom * .85)) * D2R, yawT - Math.PI / 2, 0, 'YXZ');
   }
   if (camShake > 0) {   // scaled by the field of view, so the x4 sight doesn't magnify every distant blast
     const a = camShake * camShake * (camera.fov / 70) * (zoom > .5 ? .35 : 1);
@@ -2001,6 +2086,7 @@ function updateCamera(dt) {
   if (Math.abs(camera.fov - fovTarget) > .05) { camera.fov += (fovTarget - camera.fov) * (1 - Math.exp(-dt * 12)); camera.updateProjectionMatrix(); }
   const own = zoom < .5 || !!followShell || !!camHold || spectating;
   m.turret.visible = own || !!t.deb; m.hull.visible = own || !!t.deb;
+  m.gun.visible = !(zoom < .5 && !followShell && !camHold && !spectating && !t.deb && t.elev > 28);   // a steep barrel would stand right across your view
 }
 function placeSun() {
   const c = camera.position, [fx, fz] = mode === 'game' && player ? fwd(player.yaw) : [0, 0];
@@ -2065,13 +2151,13 @@ function drawHUD() {
   hx.textBaseline = 'alphabetic';
   const t = player, inShellCam = !!(followShell || camHold), spectating = net && !t.alive;
   if (zoom > .5 && !inShellCam) drawOptic(); else if (!inShellCam && t.alive) drawReticle();
-  drawTags(); drawPops(); drawCompass(); drawRoster(); drawRadar(); drawPanel(); drawLastShot(); drawFeed(); drawSpot(); drawBanner(); drawHints();
+  drawTags(); drawPops(); drawCompass(); drawRoster(); drawRadar(); drawPanel(); drawHealth(); drawLastShot(); drawPipFrame(); drawFeed(); drawSpot(); drawBanner(); drawHints();
   if (spectating && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt('KNOCKED OUT · SPECTATING', W / 2, 92, 18, '#e0573a', 'center', 'display'); hx.shadowBlur = 0; }
   if (myReel()) drawReel(myReel());
   if (chatOpen) drawChat();
   if (net && net.role === 'client' && net.re) { hx.fillStyle = 'rgba(6,7,5,.7)'; hx.fillRect(0, Hh / 2 - 40, W, 80); txt('CONNECTION LOST · RECONNECTING…', W / 2, Hh / 2 + 6, 26, '#e6b44c', 'center', 'display'); txt('Esc to give up', W / 2, Hh / 2 + 28, 13, '#d6c99c', 'center', 'data'); }
   if (dmgFlash > 0) { const g = hx.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .3, W / 2, Hh / 2, Math.max(W, Hh) * .7); g.addColorStop(0, 'rgba(160,20,10,0)'); g.addColorStop(1, `rgba(160,20,10,${dmgFlash * .55})`); hx.fillStyle = g; hx.fillRect(0, 0, W, Hh); }
-  if (!locked && !paused && state !== 'over' && t.alive && !chatOpen) { hx.shadowColor = 'rgba(0,0,0,.8)'; hx.shadowBlur = 6; txt('CLICK TO TAKE THE GUN (mouse aim) · or drag / use arrow keys', W / 2, Hh - 128, 16, '#e6b44c', 'center', 'body', '600'); hx.shadowBlur = 0; }
+  if (!locked && !paused && state !== 'over' && t.alive && !chatOpen) { hx.shadowColor = 'rgba(0,0,0,.8)'; hx.shadowBlur = 6; txt('CLICK TO TAKE THE GUN (mouse aim) · or drag / use arrow keys', W / 2, Hh - 184, 16, '#e6b44c', 'center', 'body', '600'); hx.shadowBlur = 0; }
 }
 function reloadRing(cx, cy, r) {   // around the sight: fills as the gun loads, brass when ready
   const t = player, f = t.reloadMax > 0 ? 1 - t.reload / t.reloadMax : 1;
@@ -2084,10 +2170,9 @@ function reloadRing(cx, cy, r) {   // around the sight: fills as the gun loads, 
 function drawReticle() {
   const cx = W / 2, cy = Hh / 2;
   hx.strokeStyle = 'rgba(240,230,190,.85)'; hx.lineWidth = 1.5;
-  hx.beginPath(); hx.moveTo(cx - 14, cy); hx.lineTo(cx - 5, cy); hx.moveTo(cx + 5, cy); hx.lineTo(cx + 14, cy); hx.moveTo(cx, cy + 5); hx.lineTo(cx, cy + 14); hx.stroke();
-  reloadRing(cx, cy, 22);
-  const m = muzzleOf(player, player.yaw, player.elev), p = toScreen(m.x + m.dx * 300, m.y + m.dy * 300, m.z + m.dz * 300);
-  if (p) { hx.strokeStyle = 'rgba(230,180,76,.9)'; hx.beginPath(); hx.arc(p.x, p.y, 7, 0, TAU); hx.stroke(); hx.beginPath(); hx.moveTo(p.x, p.y - 11); hx.lineTo(p.x, p.y - 7); hx.stroke(); }
+  hx.shadowColor = "rgba(0,0,0,.8)"; hx.shadowBlur = 3;
+  hx.beginPath(); hx.moveTo(cx - 14, cy); hx.lineTo(cx - 5, cy); hx.moveTo(cx + 5, cy); hx.lineTo(cx + 14, cy); hx.moveTo(cx, cy + 5); hx.lineTo(cx, cy + 14); hx.moveTo(cx, cy - 5); hx.lineTo(cx, cy - 14); hx.stroke();
+  hx.shadowBlur = 0;
 }
 let rangeCache = {t: -1, v: null};
 function rangefind() {
@@ -2123,7 +2208,6 @@ function drawOptic() {
   txt('x4 OPTIC', cx - R * .52, ly - 22, 12, 'rgba(230,180,76,.85)', 'right', 'data');
   txt(player.reload > 0 ? 'LOADING' : 'READY', cx, cy - R * .7, 14, player.reload > 0 ? '#f0a28f' : '#e6b44c', 'center', 'data');
   hx.shadowBlur = 0;
-  reloadRing(cx, cy, 30);
 }
 function drawTags() {
   for (const t of tanks) {
@@ -2188,9 +2272,10 @@ let radarAt = -9;
 const RR = PLAY + 40;
 function buildRadar() {
   const S = 150, im = rcx.createImageData(S, S), lo = new THREE.Color(theme.low), hi = new THREE.Color(theme.high), c = new THREE.Color();
+  const gi = v => clamp(Math.round((v + HALF) / CELL), 1, SEG - 1);   // nearest grid vertex: far cheaper than bilinear samples
   for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
-    const x = -RR + (px + .5) / S * 2 * RR, z = -RR + (py + .5) / S * 2 * RR, h = groundAt(x, z);
-    const sh = clamp(.75 + (groundAt(x - 6, z - 6) - groundAt(x + 6, z + 6)) * .05, .35, 1.25);
+    const i = gi(-RR + (px + .5) / S * 2 * RR), j = gi(-RR + (py + .5) / S * 2 * RR), h = H[j * N + i];
+    const sh = clamp(.75 + (H[(j - 1) * N + i - 1] - H[(j + 1) * N + i + 1]) * .05, .35, 1.25);
     c.copy(lo).lerp(hi, sstep(theme.h0, theme.h1, h)).multiplyScalar(sh * .62);
     const k = (py * S + px) * 4; im.data[k] = c.r * 255; im.data[k + 1] = c.g * 255; im.data[k + 2] = c.b * 255; im.data[k + 3] = 255;
   }
@@ -2205,7 +2290,7 @@ function drawRadar() {
   hx.strokeStyle = 'rgba(214,201,156,.15)'; hx.lineWidth = 1;
   for (let k = 1; k < 4; k++) { hx.beginPath(); hx.moveTo(x + k * S / 4, y); hx.lineTo(x + k * S / 4, y + S); hx.moveTo(x, y + k * S / 4); hx.lineTo(x + S, y + k * S / 4); hx.stroke(); }
   if (player.alive) {
-    const [px, py] = map(player.x, player.z), [fx, fz] = fwd(player.yaw), rng = VMAX * VMAX * Math.round(player.power) / 100 / G * Math.sin(2 * clamp(player.elev, 0, 90) * D2R);
+    const [px, py] = map(player.x, player.z), [fx, fz] = fwd(player.yaw), rng = aimImpact ? Math.hypot(aimImpact.x - player.x, aimImpact.z - player.z) : 700;
     hx.strokeStyle = 'rgba(230,180,76,.55)'; hx.setLineDash([3, 3]); hx.beginPath(); hx.moveTo(px, py); const [ex, ey] = map(player.x + fx * rng, player.z + fz * rng); hx.lineTo(ex, ey); hx.stroke(); hx.setLineDash([]);
   }
   for (const i of impacts) { const [ix, iy] = map(i.x, i.z); hx.strokeStyle = `rgba(255,140,90,${Math.min(1, i.t / 2)})`; hx.lineWidth = 1.5; hx.beginPath(); hx.moveTo(ix - 4, iy - 4); hx.lineTo(ix + 4, iy + 4); hx.moveTo(ix + 4, iy - 4); hx.lineTo(ix - 4, iy + 4); hx.stroke(); }
@@ -2252,9 +2337,45 @@ function drawPanel() {
   panel(gx, y, 270, h);
   txt('ELEV', gx + 14, y + 22, 11, '#8f8869', 'left', 'data'); txt(t.elev.toFixed(1) + '°', gx + 14, y + 46, 24, '#f2e6b8', 'left', 'data');
   txt('BRG', gx + 104, y + 22, 11, '#8f8869', 'left', 'data'); txt(String(Math.round(bearingOf(t.yaw)) % 360).padStart(3, '0') + '°', gx + 104, y + 46, 24, '#f2e6b8', 'left', 'data');
-  txt('POWER', gx + 256, y + 22, 11, '#8f8869', 'right', 'data'); txt(String(Math.round(t.power)), gx + 256, y + 46, 30, '#e6b44c', 'right', 'data');
-  bar(gx + 14, y + 58, 242, 8, t.power / 100, '#e6b44c');
+  const rg = aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null;
+  txt('RANGE', gx + 256, y + 22, 11, '#8f8869', 'right', 'data'); txt(rg != null ? rg + ' m' : 'OUT', gx + 256, y + 46, 26, aimImpact && aimImpact.hit && aimImpact.hit !== t ? '#a8e07a' : '#e6b44c', 'right', 'data');
+  bar(gx + 14, y + 58, 242, 8, rg != null ? rg / 730 : 1, '#e6b44c');
   for (let k = 1; k < 10; k++) { hx.fillStyle = 'rgba(14,16,11,.8)'; hx.fillRect(gx + 14 + 242 * k / 10, y + 58, 1, 8); }
+}
+// your hull integrity: a wide bar above the shell strip. Lost HP shows as a pale chunk that drains away; below 30% the
+// bar pulses, the screen edges glow red and a heartbeat plays, so you know to get out of the line of fire.
+let shownHp = null, heartT = 0;
+function drawPipFrame() {
+  if (!pip.on) return;
+  hx.strokeStyle = 'rgba(230,180,76,.8)'; hx.lineWidth = 2; hx.strokeRect(pip.x - 1, pip.y - 1, pip.w + 2, pip.h + 2);
+  hx.fillStyle = 'rgba(14,16,11,.8)'; hx.fillRect(pip.x - 1, pip.y - 19, pip.w + 2, 18);
+  txt(myShell ? 'SHELL CAM' : 'SHELL CAM · IMPACT', pip.x + 6, pip.y - 6, 11, '#e6b44c', 'left', 'data');
+  txt('hold V · full view', pip.x + pip.w - 6, pip.y - 6, 10, '#8f8869', 'right', 'data');
+}
+function drawHealth() {
+  const t = player; if (!t) return;
+  const f = clamp(t.hp / t.maxHp, 0, 1), low = t.alive && f < .3;
+  if (shownHp == null || shownHp < t.hp) shownHp = t.hp;
+  shownHp = Math.max(t.hp, shownHp - t.maxHp * .5 * lastDt);
+  const w = Math.min(560, W - 600 > 300 ? W - 600 : 300), x = W / 2 - w / 2, y = Hh - 92 - 40, h = 22;
+  const pulse = low ? .5 + .5 * Math.sin(worldTime * (f < .15 ? 14 : 8)) : 0;
+  panel(x - 4, y - 4, w + 8, h + 8);
+  hx.fillStyle = 'rgba(0,0,0,.55)'; hx.fillRect(x, y, w, h);
+  hx.fillStyle = 'rgba(255,240,210,.75)'; hx.fillRect(x, y, w * clamp(shownHp / t.maxHp, 0, 1), h);
+  hx.fillStyle = f > .5 ? '#7fb24a' : f > .3 ? '#e6b44c' : `rgb(${200 + pulse * 55},${50 + pulse * 40},${35})`;
+  hx.fillRect(x, y, w * f, h);
+  hx.fillStyle = 'rgba(0,0,0,.35)'; for (let k = 1; k < 10; k++) hx.fillRect(x + w * k / 10, y, 1, h);
+  hx.shadowColor = 'rgba(0,0,0,.9)'; hx.shadowBlur = 4;
+  txt('HULL', x + 8, y + 16, 13, '#f2e6b8', 'left', 'data');
+  txt(Math.max(0, t.hp) + ' / ' + t.maxHp, x + w - 8, y + 16, 15, '#fff', 'right', 'data');
+  if (low) txt(f < .15 ? 'HULL CRITICAL' : 'HULL DAMAGED', W / 2, Hh / 2 - 46, 20, `rgba(255,${110 + pulse * 60},90,${.7 + pulse * .3})`, 'center', 'display', '700');
+  hx.shadowBlur = 0;
+  if (low) {   // red edges, stronger as you get closer to death
+    const a = (.18 + (1 - f / .3) * .25) * (.6 + .4 * pulse);
+    const g = hx.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .35, W / 2, Hh / 2, Math.max(W, Hh) * .72);
+    g.addColorStop(0, 'rgba(150,15,8,0)'); g.addColorStop(1, `rgba(150,15,8,${a})`); hx.fillStyle = g; hx.fillRect(0, 0, W, Hh);
+    if ((heartT -= lastDt) <= 0) { heartT = .55 + f * 2.5; sfx.heart(); }
+  }
 }
 // your latest shot's settings and where it landed, kept on screen until you fire again
 function drawLastShot() {
@@ -2262,17 +2383,17 @@ function drawLastShot() {
   const w = 270, x = W - 16 - w, y = Hh - 92 - 8 - 50 - 24;
   panel(x, y, w, 50);
   txt('LAST SHOT · ' + L.w, x + 12, y + 17, 11, '#8f8869', 'left', 'data');
-  txt('PWR ' + L.p + '  ELEV ' + (+L.elev).toFixed(1) + '°  BRG ' + String(Math.round(L.brg) % 360).padStart(3, '0') + '°', x + 12, y + 32, 13, '#f2e6b8', 'left', 'data');
+  txt((L.rng != null ? 'RNG ' + L.rng + ' m  ' : '') + 'ELEV ' + (+L.elev).toFixed(1) + '°  BRG ' + String(Math.round(L.brg) % 360).padStart(3, '0') + '°', x + 12, y + 32, 13, '#f2e6b8', 'left', 'data');
   hx.font = `12px ${FONT.data}`; let r = L.res || 'in flight…'; while (hx.measureText(r).width > w - 24 && r.length > 4) r = r.slice(0, -2) + '…';
   txt(r, x + 12, y + 45, 12, L.res && L.res.startsWith('DIRECT') ? '#a8e07a' : '#e6b44c', 'left', 'data');
 }
 function drawHints() {
   let s = '';
-  if (state === 'battle' && player.alive) s = 'WASD drive · MOUSE aim · WHEEL or R/F power · 1-4 shell · Q supply · Z sight · CLICK fire' + (net ? ' · T chat' : '');
+  if (state === 'battle' && player.alive) s = 'CLICK fire · Z sight · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
   if (!s) return;
   hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 5;
-  txt(s, W / 2, Hh - 104, 16, '#e9dfb9', 'center', 'body', '600'); hx.shadowBlur = 0;
+  txt(s, W / 2, Hh - 160, 15, '#e9dfb9', 'center', 'body', '600'); hx.shadowBlur = 0;
 }
 function drawFeed() {
   const x = W - 16, y0 = 14 + 170 + 8 + 18 + 22;
@@ -2281,7 +2402,7 @@ function drawFeed() {
   hx.globalAlpha = 1; hx.shadowBlur = 0;
 }
 function drawChat() {
-  const x = 16, y = Hh - 130, w = 360;
+  const x = 16, y = pip.on ? pip.y - 56 : Hh - 130, w = 360;
   panel(x, y, w, 30);
   txt('SAY', x + 10, y + 20, 12, '#e6b44c', 'left', 'data');
   txt(chatBuf + (Math.floor(worldTime * 2) % 2 ? '_' : ''), x + 46, y + 20, 15, '#f2e6b8', 'left', 'body', '600');
@@ -2531,31 +2652,39 @@ function showEnd() {
 }
 
 // ================================================================ loops
-// Fixed 60 Hz simulation from a Web Worker timer, so a host keeps running in a background tab (browsers throttle
-// rAF and normal timers there, which would freeze everyone else's game). Rendering runs on rAF.
+// The simulation steps once per drawn frame (with that frame's real dt), so motion lines up with the display and
+// never judders. In a background tab rAF stops, so a Web Worker timer keeps a host's battle running at 60 Hz
+// (otherwise everyone else's game would freeze).
 let lastTick = performance.now(), acc = 0, lastDt = 1 / 60;
-function tick() {
+function hiddenTick() {
+  if (!document.hidden) return;
   const now = performance.now(); acc += Math.min(250, now - lastTick); lastTick = now;
   netTick();
   for (let n = 0; acc >= 1000 / 60 && n < 8; n++, acc -= 1000 / 60) step(STEP);
 }
 try {
   const wk = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 16);'], {type: 'text/javascript'})));
-  wk.onmessage = tick;
-} catch (e) { setInterval(tick, 16); }
+  wk.onmessage = hiddenTick;
+} catch (e) { setInterval(hiddenTick, 16); }
 function render() {
+  flushTerrain();
+  predictImpact();
   updateCamera(lastDt);
   updateAimDots();
   placeSun();
   const s = renderer.domElement.height / (2 * Math.tan(camera.fov * D2R / 2));
   fireP.mat.uniforms.scale.value = s; smokeP.mat.uniforms.scale.value = s; chipP.mat.uniforms.scale.value = s;
   renderer.render(scene, camera);
+  renderPip(lastDt);
   drawHUD();
 }
 let lastFrame = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
   lastDt = Math.min(.05, Math.max(0, (now - lastFrame) / 1000)); lastFrame = now;
+  lastTick = performance.now(); acc = 0;
+  netTick();
+  if (lastDt > 1 / 40) { step(lastDt / 2); step(lastDt / 2); } else if (lastDt > 0) step(lastDt);
   render();
 }
 resize();

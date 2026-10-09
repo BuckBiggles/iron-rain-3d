@@ -15,13 +15,14 @@ A first-person, real-time take on [Iron Rain](https://buckbiggles.github.io/iron
 ## Controls
 | Key | Action |
 | --- | --- |
-| Mouse / arrow keys | Traverse turret, elevate gun (Shift for fine) |
+| Mouse / arrow keys | Aim: the crosshair is where the shell lands; dotted line shows the flight |
 | W A S D | Drive |
-| Wheel · R / F | Power |
+| Wheel | Fine elevation (every shot is full power) |
 | Right mouse · Z | Gunsight with rangefinder |
 | Click · Space | Fire |
 | 1–4 · Q | Shell type · arm a supply special |
-| C · T · Esc | Follow-shell camera · chat (online) · menu |
+| V · C | Hold to ride with your shell · always follow (a shell cam inset shows every shot) |
+| T · Esc | Chat (online) · menu |
 
 ## Online
 Host a room and share the 5-letter code or invite link. Play is peer-to-peer over WebRTC (PeerJS's public broker only introduces players), with the host's browser running the battle. A dropped player gets their seat back by rejoining with the same code; a CPU drives their tank in the meantime.
