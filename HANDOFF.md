@@ -2,6 +2,51 @@
 
 This branch holds the downloaded and processed assets for the next big Iron Rain 3D update, plus the plan. Work on this branch and merge to `main` when it plays well. `main` (the live GitHub Pages site) is still build 2026-10-10.7.
 
+## PC session log (2026-10-10 evening, newest last; kept up to date as work lands)
+
+Test harness on the PC: serve `repo/` and open **`/index.html`** (the bare `/` path served an empty page there). Debug helpers live in the
+browser's localStorage (`__dbg`; `eval(localStorage.getItem('__dbg')); await __boot()`): `__rot(name, turretYaw, camYaw, camEl, dist, colours)`
+renders a tank with hull grey / turret red / gun blue and the turret turned, `__top(name, y0, y1)` a top view coloured by height with a metre
+grid, `__side(name)` a side view with a 10 cm height grid, `__raw(model, /regex/)` the raw .glb with matching node names in red. They are
+not in the repo; recreate them if needed (each is ~10 lines of three.js render-to-target code).
+
+Done and pushed:
+- **Ashton** (all in `index.html`): Mixamo-rigged soldier + RPG-7 models with IK (`poseSoldier`, `reach2`, `aimBone`), run cycle, rocket in
+  the tube, reload animation, first person shows his arms (his Head bone is shrunk). **Hands follow the real RPG-7 hold** (reference photos:
+  Wikimedia Commons "RPG-7" firing/aiming shots, e.g. the ANA commando "tests the sight picture"): right hand on the trigger grip
+  (`infTpl.rpg.grip`), left hand on the second (rear) pistol grip just behind it (`infTpl.rpg.fore`, found from the plastic grip mesh).
+- **C4** is planted, not thrown: `fire()` for `kind 'c4'` emits a `fire` event with `pt` = the plant target from `c4Target(t)` (nearest
+  tank plate within `PLANT_REACH` 2.2 m of his hands, else the ground 0.7 m ahead); every client plays the plant (`t.plantT`, `PLANT_T`
+  2.1 s); the host calls `plantNow()` at `PLANT_AT` 1.05 s, which emits the usual `c4` event (`ry`, `sd` = side plate). **10 s timer**
+  (`C4_FUSE`), no detonator; the light blinks and the beep speeds up in the last 3 s. **Two plant animations**: on a tank he stands and
+  presses it onto the armour; on the ground he crouches (`m.crouch`, legs IK, spine lean, first-person eye drops). In both he **slings the
+  RPG on his back** (`m.stowK`, diagonal across Spine2) and carries the charge in both hands (`m.c4h`). He can't move while planting.
+- **C4 model**: `assets/infantry/c4.glb` = "Makeshift C-4 Explosive" by lion.gelders (CC BY; credited in CREDITS.md and the in-game
+  credits). `prepC4()` lays it flat, 0.3 m long; its `Light` mesh is the blinking LED. A code-built charge (`c4Parts`) stands in until it
+  loads. (The first C4 tried was a Counter-Strike rip, `w_eq_c4`; deleted, don't use it.)
+- Tanks: with no flag equipped the mast is a 1.2 m radio whip instead of the 2.6 m flag pole.
+
+In progress (tank models, user: "clean up the tank models, they are wrong", "broken under the turret"):
+- New `prepTank` options: `names.within` (named turret meshes keep only triangles over the ring, above `T.y - tol`; named gun pieces low
+  down go to the hull: hull MG), `names.grab` (unused now), and for merged models **`foot` + `cut` (+ `cuts`)**: a hand-drawn turret
+  outline from above (`[[x, z], ...]` counter-clockwise, tank frame metres) and the ring height (`cuts: [[fromX, y], ...]` when the deck
+  steps); triangles are clipped at the cut height and along every edge of the outline, so only what's over the turret turns.
+- `makeModelTank` adds a dark **turret-ring disc** to the hull under every turret (the models have no roof there; a turned turret showed a hole).
+- Checked with `__rot`: KV-2, KV-1, StuG IV, Leopard 2A6, Sherman fine. Fixed: **T-34** (names; fenders and rear plate were turning with
+  the turret), **Panzer IV** (`DrawCall_1/8` turret, `_6/_7` barrel + mantlet), **Tiger** (`TigerTurret*`, `TigerCannon*`, hullOnly; tow
+  cables and hull MG were in the turret), **Abrams** (`foot`/`cut` 1.72, verified). **Merkava** (`foot`, cut 1.62) mostly right.
+  **Challenger 2** (cut 1.65) and **KF51** (`cuts` 2.05 / 1.68) still need tuning: use `__top` + `__side` to read the outline and the
+  turret's underside height, then `__rot` to check. T-90M: a few hull bits still turn with its turret.
+
+Queue (user requests not done yet, in order):
+1. Finish the tank splits above, then "make them look good" generally (check each with real materials).
+2. Verify each tank's aiming numbers (`elev`, `trav`, `erate`, `arc`) against sources (user: "research how each tank aims and act accordingly").
+3. Rider must sit **on** the deck, not above or inside it (`seatRider` / `tpl.deck`; check every tank).
+4. RPG reload animation: base it on real RPG-7 reload footage, may be inspired by Call of Duty's but not a copy (user's words).
+5. Rider voices (more female voices; item 4 of the cloud list below).
+6. **Menu**: optimise it and make sure the tank panels/cards are aligned properly.
+7. Later: merge to `main`, bump `BUILD`, upload `assets/` to the artifact. Don't do the final handoff until the user says so.
+
 ## Status (updated by the cloud session, build 2026-10-10.8)
 
 The cloud session can't reach Sketchfab, Poly Haven, itch.io, jsDelivr or cdnjs (all blocked there), so **anything that needs a download has to be done on the PC**. It *can* fetch GitHub release files and npm packages.

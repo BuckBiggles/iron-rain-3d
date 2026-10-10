@@ -406,13 +406,13 @@ const TANKS = [
   {name:'KV-2', role:'Soviet heavy assault tank', era:'ww2', model:'kv2', nation:'SU', armor:110, speed:34, gun:'152 mm M-10T', cal:152, round:'BR-540', mv:432, kg:40, rof:2, weight:52, crew:6, L:6.95, W:3.32,
    elev:[-3, 18], trav:9, erate:4, cfg:{turret:{y:1.95, x:.2, rx:1.6, rz:1.3}, gun:{r:.28}}},
   {name:'PANZER IV', role:'Ausf. H · German medium', era:'ww2', model:'pz4', nation:'DE', armor:80, speed:38, gun:'7.5 cm KwK 40 L/48', cal:75, round:'PzGr. 39', mv:790, kg:6.8, rof:8, weight:25, crew:5, L:5.92, W:2.88,
-   elev:[-8, 20], trav:14, erate:6, cfg:{pca:true, fwdFromGun:true, unshear:true, turret:{auto:true, y:1.75, x:.15, rx:1.45, rz:1.25}, gun:{r:.18}}},
+   elev:[-8, 20], trav:14, erate:6, cfg:{pca:true, fwdFromGun:true, unshear:true, turret:{auto:true, y:1.75, x:.15, rx:1.45, rz:1.25}, gun:{r:.18}, names:{turret: /DrawCall_[18]\b/, gun: /DrawCall_[67]\b/, hullOnly: true, within: true}}},
   {name:'KV-1', role:'1941 · Soviet heavy', era:'ww2', model:'kv1', nation:'SU', armor:90, speed:35, gun:'76.2 mm ZiS-5', cal:76, round:'BR-350A', mv:662, kg:6.3, rof:6, weight:45, crew:5, L:6.75, W:3.32,
    elev:[-5, 25], trav:12, erate:6, cfg:{turret:{y:1.75, x:.35, rx:1.45, rz:1.35}, gun:{r:.2}}},
   {name:'T-34', role:'T-34/76 1943 · Soviet medium', era:'ww2', model:'t34', nation:'SU', armor:90, speed:53, gun:'76.2 mm F-34', cal:76, round:'BR-350A', mv:662, kg:6.3, rof:6, weight:30.9, crew:4, L:6.68, W:3.0,
    elev:[-5, 30], trav:25, erate:8, cfg:{turret:{y:1.55, x:.6, rx:1.35, rz:1.25}, gun:{r:.18}, names:{turret: /Turret_Plate|Details_Turret|Turret_Details/i, gun: /Turret_Barrel/i, hullOnly: true, within: true}}},
   {name:'TIGER I', role:'German heavy', era:'ww2', model:'tiger', nation:'DE', armor:100, speed:45, gun:'8.8 cm KwK 36', cal:88, round:'PzGr. 39', mv:773, kg:10.2, rof:6, weight:57, crew:5, L:6.32, W:3.56,
-   elev:[-8, 15], trav:8, erate:5, cfg:{turret:{y:1.85, x:-.05, rx:1.6, rz:1.55}, gun:{r:.22}, names:{turret: /Turret|Hatch/i, gun: /Cannon_Low|TigerGun/i}}},
+   elev:[-8, 15], trav:8, erate:5, cfg:{turret:{y:1.85, x:-.05, rx:1.6, rz:1.55}, gun:{r:.22}, names:{turret: /TigerTurret/, gun: /TigerCannon/, hullOnly: true}}},
   {name:'STUG IV', role:'German assault gun · casemate', era:'ww2', model:'stug4', nation:'DE', armor:80, speed:38, gun:'7.5 cm StuK 40 L/48', cal:75, round:'PzGr. 39', mv:790, kg:6.8, rof:8, weight:23, crew:4, L:5.93, W:2.95,
    elev:[-6, 20], trav:6, erate:5, arc:10, cfg:{casemate:true, turret:{y:9, x:0, rx:1, rz:1}, gun:{r:.2, back:.5}}},
   {name:'SHERMAN', role:'M4A2 · US medium', era:'ww2', model:'sherman', nation:'US', armor:91, speed:48, gun:'75 mm M3', cal:75, round:'M61 APC', mv:619, kg:6.79, rof:8, weight:31.3, crew:5, L:5.92, W:2.62,
@@ -420,13 +420,13 @@ const TANKS = [
   {name:'LEOPARD 2A6', role:'German main battle tank', era:'modern', model:'leo2', nation:'DE', armor:800, speed:72, gun:'120 mm L/55', cal:120, round:'DM53', mv:1750, kg:4.6, rof:10, weight:62.3, crew:4, L:7.7, W:3.75,
    elev:[-9, 20], trav:40, erate:25, cfg:{turret:{y:1.75, x:-.6, rx:2.4, rz:1.9}, gun:{r:.22}, names:{turret: /turret/i, gun: /gun/i, hullOnly: true}}},
   {name:'CHALLENGER 2', role:'British main battle tank', era:'modern', model:'chall2', nation:'UK', armor:850, speed:59, gun:'120 mm L30A1', cal:120, round:'L27A1', mv:1700, kg:4.5, rof:8, weight:62.5, crew:4, L:8.3, W:3.5,
-   elev:[-10, 20], trav:36, erate:25, cfg:{turret:{auto:true, y:1.9, x:-.4, rx:2.6, rz:1.75}, gun:{r:.22}}},
+   elev:[-10, 20], trav:36, erate:25, cfg:{clipAll:true, cut:1.65, foot:[[-2.35, -1.15], [2.1, -1.18], [3.1, -.6], [3.1, .6], [2.1, 1.18], [-2.35, 1.15]], turret:{y:1.65, x:.1, rx:2.6, rz:1.75}, gun:{r:.22}}},
   {name:'KF51 PANTHER', role:'German next-gen MBT', era:'modern', model:'kf51', nation:'DE', armor:750, speed:70, gun:'130 mm Rh-130 L/52', cal:130, round:'130 mm APFSDS', mv:1650, kg:6.5, rof:10, weight:59, crew:3, L:7.7, W:3.6,
-   elev:[-9, 20], trav:40, erate:25, cfg:{clipAll:true, footprint:true, drop:.45, turret:{y:1.86, x:0, rx:3.0, rz:1.85}, gun:{r:.24, x:2.3}}},
+   elev:[-9, 20], trav:40, erate:25, cfg:{clipAll:true, cut:1.68, cuts:[[-99, 2.05], [-2.15, 1.68]], foot:[[-3.35, -1.2], [1.6, -1.2], [2.4, -.75], [2.4, .75], [1.6, 1.2], [-3.35, 1.2]], turret:{y:1.68, x:-.2, rx:3.0, rz:1.85}, gun:{r:.36, x:2.3}}},
   {name:'MERKAVA MK4', role:'Israeli main battle tank', era:'modern', model:'merkava', nation:'IL', armor:800, speed:64, gun:'120 mm MG253', cal:120, round:'M338', mv:1700, kg:4.6, rof:10, weight:65, crew:4, L:7.6, W:3.72,
-   elev:[-7, 20], trav:36, erate:25, cfg:{autoYaw:true, turret:{auto:true, y:1.85, x:-.9, rx:2.7, rz:1.9}, gun:{r:.22}}},
+   elev:[-7, 20], trav:36, erate:25, cfg:{autoYaw:true, clipAll:true, cut:1.62, foot:[[-3.85, -1.3], [-1.0, -1.62], [.6, -1.45], [1.95, -.15], [1.95, .15], [.6, 1.45], [-1.0, 1.62], [-3.85, 1.3]], turret:{y:1.62, x:-.8, rx:2.7, rz:1.9}, gun:{r:.22}}},
   {name:'M1A2 ABRAMS', role:'SEPv3 · US main battle tank', era:'modern', model:'abrams', nation:'US', armor:900, speed:67, gun:'120 mm M256', cal:120, round:'M829A4', mv:1555, kg:4.6, rof:10, weight:66.8, crew:4, L:7.93, W:3.66,
-   elev:[-9, 20], trav:42, erate:25, cfg:{clipAll:true, footprint:true, drop:.45, turret:{y:1.72, x:-.4, rx:3.1, rz:1.85}, gun:{r:.32, x:2.1}}},
+   elev:[-9, 20], trav:42, erate:25, cfg:{clipAll:true, cut:1.72, foot:[[-3.35, -1.65], [1.3, -1.7], [3.0, -.35], [3.0, .35], [1.3, 1.7], [-3.35, 1.65]], turret:{y:1.72, x:-.3, rx:3.1, rz:1.85}, gun:{r:.32, x:2.1}}},
   {name:'T-90M', role:'Russian main battle tank', era:'modern', model:'t90m', nation:'SU', armor:800, speed:60, gun:'125 mm 2A46M-4', cal:125, round:'3BM60', mv:1660, kg:4.8, rof:8, weight:46.5, crew:3, L:6.86, W:3.78,
    elev:[-6, 14], trav:24, erate:20, cfg:{turret:{y:1.55, x:-.1, rx:1.9, rz:1.7}, gun:{r:.22}}},
 ];
@@ -2375,8 +2375,10 @@ function prepTank(root, spec) {
   const G = C.gun || {}, piv = new THREE.Vector3(G.x != null ? G.x : T.x + T.rx * .8, G.y != null ? G.y : tip.y, 0), gr = C.gun && C.gun.r || .2;
   const dirG = new THREE.Vector3(tip.x - piv.x, tip.y - piv.y, 0).normalize();
   const nameOf = m => { let s = ''; for (let o = m; o; o = o.parent) s += '/' + o.name; return s; };
-  let foot = null; const cutY = C.footprint ? T.y - (C.drop || .5) : T.y;
-  if (C.footprint) {   // the turret roof's outline from above (convex hull of everything well above the ring, barrel excluded)
+  // C.foot + C.cut: a hand-drawn turret outline seen from above ([x, z] counter-clockwise, metres) and the height of the
+  // turret ring; everything above the cut inside the outline turns with the turret (for models with hull and turret merged)
+  let foot = C.foot ? C.foot.map(q => q.slice()) : null; const cutY = C.cut != null ? C.cut : C.footprint ? T.y - (C.drop || .5) : T.y;
+  if (C.footprint && !C.foot) {   // the turret roof's outline from above (convex hull of everything well above the ring, barrel excluded)
     const pts = [];
     for (const {g} of baked) { const p = g.attributes.position; for (let i = 0; i < p.count; i += 2) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
       if (y > T.y + (C.roofAbove || .3) && ((x - T.x) / (T.rx * 1.15)) ** 2 + (z / (T.rz * 1.15)) ** 2 < 1 && !(x > piv.x && Math.abs(z - tip.z) < .45)) pts.push([x, z]); } }
@@ -2397,7 +2399,7 @@ function prepTank(root, spec) {
     for (let t = 0; t < nt; t++) { const a = find(t * 3); par[find(t * 3 + 1)] = a; par[find(t * 3 + 2)] = a; }
     const comp = new Map(); for (let t = 0; t < nt; t++) { const r0 = find(t * 3); let c = comp.get(r0); if (!c) comp.set(r0, c = {n: 0, x: 0, y: 0, z: 0, ylo: 1e9});
       for (let q = 0; q < 3; q++) { const y = p.getY(t * 3 + q); c.x += p.getX(t * 3 + q); c.y += y; c.z += p.getZ(t * 3 + q); if (y < c.ylo) c.ylo = y; } c.n++; }
-    for (const c of comp.values()) { c.x /= c.n * 3; c.y /= c.n * 3; c.z /= c.n * 3; c.big = C.clipAll || c.n > nt * .45; c.tur = !C.casemate && c.ylo > T.y - (T.tol || .25) && ((c.x - T.x) / T.rx) ** 2 + (c.z / T.rz) ** 2 < 1; }
+    for (const c of comp.values()) { c.x /= c.n * 3; c.y /= c.n * 3; c.z /= c.n * 3; c.big = C.clipAll || c.n > nt * .45; c.tur = !C.casemate && (C.foot ? c.ylo > cutY - .05 && inPoly(c.x, c.z) : c.ylo > T.y - (T.tol || .25) && ((c.x - T.x) / T.rx) ** 2 + (c.z / T.rz) ** 2 < 1); }
     // triangles of one big merged piece that straddle the ring inside the turret's footprint are cut along the ring plane
     const atts = Object.entries(g.attributes), outs = [0, 1, 2].map(() => atts.map(() => []));
     const vert = i => atts.map(([, at]) => Array.from(at.array.subarray(i * at.itemSize, (i + 1) * at.itemSize)));
@@ -2406,11 +2408,14 @@ function prepTank(root, spec) {
     const yA = atts.findIndex(([nm]) => nm === 'position');
     const clip = (poly, keepAbove) => { const out = []; for (let k = 0; k < poly.length; k++) { const P0 = poly[k], P1 = poly[(k + 1) % poly.length], d0 = P0[yA][1] - cutY, d1 = P1[yA][1] - cutY, in0 = keepAbove ? d0 >= 0 : d0 < 0, in1 = keepAbove ? d1 >= 0 : d1 < 0;
       if (in0) out.push(P0); if (in0 !== in1) out.push(mix(P0, P1, d0 / (d0 - d1))); } return out; };
+    const clipF = (poly, dist) => { const out = []; for (let k = 0; k < poly.length; k++) { const P0 = poly[k], P1 = poly[(k + 1) % poly.length], d0 = dist(P0), d1 = dist(P1); if (d0 >= 0) out.push(P0); if ((d0 >= 0) !== (d1 >= 0)) out.push(mix(P0, P1, d0 / (d0 - d1))); } return out; };   // keep where dist >= 0
     for (let i = 0; i < p.count / 3; i++) {
       const V = [vert(i * 3), vert(i * 3 + 1), vert(i * 3 + 2)];
       if (named != null && named >= 0) {   // names.within: a mesh named as turret that also carries hull plates keeps only what's over the turret ring
         let to = named;
-        if (to === 1 && C.names.within) { const cx = (V[0][yA][0] + V[1][yA][0] + V[2][yA][0]) / 3, cz = (V[0][yA][2] + V[1][yA][2] + V[2][yA][2]) / 3; if (((cx - T.x) / T.rx) ** 2 + (cz / T.rz) ** 2 > 1) to = 0; }
+        if (to === 2 && C.names.within && (V[0][yA][1] + V[1][yA][1] + V[2][yA][1]) / 3 < T.y - (T.tol || .25)) to = 0;   // a low "gun" piece is the hull machine gun
+        if (to === 1 && C.names.within) { const cx = (V[0][yA][0] + V[1][yA][0] + V[2][yA][0]) / 3, cy = (V[0][yA][1] + V[1][yA][1] + V[2][yA][1]) / 3, cz = (V[0][yA][2] + V[1][yA][2] + V[2][yA][2]) / 3; if (((cx - T.x) / T.rx) ** 2 + (cz / T.rz) ** 2 > 1 || cy < T.y - (T.tol || .25)) to = 0; }
+        if (to === 0 && C.names.grab) { const cx = (V[0][yA][0] + V[1][yA][0] + V[2][yA][0]) / 3, cy = Math.min(V[0][yA][1], V[1][yA][1], V[2][yA][1]), cz = (V[0][yA][2] + V[1][yA][2] + V[2][yA][2]) / 3, g = C.names.grab, ed = (a, b) => Math.hypot(V[a][yA][0] - V[b][yA][0], V[a][yA][1] - V[b][yA][1], V[a][yA][2] - V[b][yA][2]); if (cy > T.y + .05 && Math.max(ed(0, 1), ed(1, 2), ed(2, 0)) < .5 && ((cx - T.x) / (T.rx * g)) ** 2 + (cz / (T.rz * g)) ** 2 < 1) to = 1; }   // names.grab: hull-mesh pieces wholly above the ring, over the turret, go with it
         V.forEach(q => put(to, q)); continue;
       }
       A.fromBufferAttribute(p, i * 3); B.fromBufferAttribute(p, i * 3 + 1); D.fromBufferAttribute(p, i * 3 + 2);
@@ -2418,6 +2423,18 @@ function prepTank(root, spec) {
       const along = (cx - piv.x) * dirG.x + (cy - piv.y) * dirG.y, off = Math.hypot(cx - piv.x - dirG.x * along, cy - piv.y - dirG.y * along, cz - tip.z);
       if (along > -(C.gun && C.gun.back || .3) && off < gr) { V.forEach(q => put(2, q)); continue; }
       const c = comp.get(find(i * 3)), inFoot = !C.casemate && (foot ? inPoly(cx, cz) : ((cx - T.x) / T.rx) ** 2 + (cz / T.rz) ** 2 < 1);
+      if (c.big && C.foot) {   // hand-drawn outline: cut at the ring height, then along each edge of the outline, so only what's over the turret turns
+        const fan = (poly, cl) => { for (let k = 1; k + 1 < poly.length; k++) { put(cl, poly[0]); put(cl, poly[k]); put(cl, poly[k + 1]); } };
+        const cutAt = x => { let y = cutY; if (C.cuts) for (const [x0, cy] of C.cuts) if (x >= x0) y = cy; return y; }, above = P0 => P0[yA][1] - cutAt(P0[yA][0]);   // C.cuts: [[from x, ring height], ...] for a hull deck that steps
+        fan(clipF(V, P0 => -above(P0)), 0);
+        let up = clipF(V, above);
+        for (let e = 0; e < foot.length && up.length >= 3; e++) {
+          const a = foot[e], b = foot[(e + 1) % foot.length], side = P0 => (b[0] - a[0]) * (P0[yA][2] - a[1]) - (b[1] - a[1]) * (P0[yA][0] - a[0]);
+          fan(clipF(up, P0 => -side(P0)), 0); up = clipF(up, side);
+        }
+        if (up.length >= 3) fan(up, 1);
+        continue;
+      }
       if (c.big && inFoot && Math.min(A.y, B.y, D.y) < cutY && Math.max(A.y, B.y, D.y) > cutY) {
         for (const [keep, cl] of [[true, 1], [false, 0]]) { const poly = clip(V, keep); for (let k = 1; k + 1 < poly.length; k++) { put(cl, poly[0]); put(cl, poly[k]); put(cl, poly[k + 1]); } }
         continue;
@@ -2476,6 +2493,11 @@ function makeModelTank(sp, cos) {
   gun.position.copy(tpl.gp); turret.add(gun);
   // markings on the turret (or casemate) sides, and an antenna with the store flag
   const tb = tpl.turretBox;
+  if (tb && !sp.cfg.casemate) {   // the turret ring: the model's hull has no roof under its turret, so a turned turret would show a hole
+    const r = Math.min(-tb.min.x, tb.max.x, -tb.min.z, tb.max.z) * .95;
+    if (r > .3) { const ring = new THREE.Mesh(new THREE.CircleGeometry(r, 28), new THREE.MeshStandardMaterial({color: 0x2a2b26, roughness: .9})); mats.push(ring.material);
+      ring.rotation.x = -Math.PI / 2; ring.position.set(tpl.mount.x, tpl.mount.y - .03, 0); ring.receiveShadow = true; hull.add(ring); }
+  }
   const emTex = cos.emblem === 'star' ? insigniaTex(sp.nation) : emblemTex(cos.emblem);
   const emMat = new THREE.MeshStandardMaterial({map: emTex, transparent: true, alphaTest: .4, roughness: .8, polygonOffset: true, polygonOffsetFactor: -2});
   if (tb) for (const s of [-1, 1]) { const em = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), emMat), sz = Math.min(.75, (tb.max.y - tb.min.y) * .6);
