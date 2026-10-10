@@ -2988,7 +2988,7 @@ function needModels(specIdx, go) {
   const all = specIdx.map(specOf), specs = all.filter(sp => !sp.foot), foot = all.some(sp => sp.foot);
   if (specs.every(tplReady) && (!foot || infTpl) && bldTpl) { go(); return; }
   $('loading').hidden = false; $('loadingMsg').textContent = 'Bringing the tanks up…';
-  Promise.all([loadTankModels(specs), foot ? loadInfantry().catch(() => null) : null, loadBuildings().catch(() => null)]).then(() => { $('loading').hidden = true; go(); },   // Ashton falls back to the built-in soldier if his models fail
+  Promise.all([loadTankModels(specs), foot ? loadInfantry().catch(() => null) : null, loadBuildings().catch(() => null), loadRiders().catch(() => null)]).then(() => { $('loading').hidden = true; go(); },   // Ashton falls back to the built-in soldier if his models fail
     e => { $('loadingMsg').textContent = 'A tank model could not be loaded (' + (e && e.message || 'network') + '). Check your connection and try again.'; setTimeout(() => { $('loading').hidden = true; }, 4000); });
 }
 function startOffline() {
@@ -4237,6 +4237,7 @@ function limb(a, b, r0, r1, mat, seg = 12) {   // a tapered segment between two 
   c.castShadow = j.castShadow = true; g.add(c, j); return g;
 }
 function makeRider(nation, rd) {
+  if (riderTpl) return makeRiderModel(nation, rd);   // the real body once it has loaded
   const L = rd.look, g = new THREE.Group(), V = (x, y, z) => new THREE.Vector3(x, y, z);
   const mat = (c, r = .85, extra = {}) => new THREE.MeshStandardMaterial(Object.assign({color: c, roughness: r}, extra));
   const suitCol = L.suit === 'nation' ? ({US: 0xc8302a, SU: 0x2f5aa0, UK: 0x2d4a7a, DE: 0x1f1f22}[nation] || 0xc8302a) : L.suit;
@@ -4314,6 +4315,133 @@ function makeRider(nation, rd) {
   g.userData = {arm: armR, armL, head, torso, calves, phase: Math.random() * 10, wave: 0, flinch: 0, cheer: 0};
   return g;
 }
+// ================================================================ riders on a real body (Quaternius Universal Base Characters,
+// CC0): the female body comes in a plain two-piece; each rider gets her own swimsuit colours and pattern, skin tone, hair,
+// hat and accessories, a slightly curvier pin-up figure, and is posed and animated through her skeleton.
+let riderTpl = null, riderWait = null;
+function loadRiders() {
+  if (riderTpl) return Promise.resolve(riderTpl);
+  if (!gltfLoader || !THREE.SkeletonUtils) return Promise.reject(new Error('loader missing'));
+  const get = n => new Promise((ok, bad) => gltfLoader.load('assets/riders/' + n + '.glb', g => ok(g.scene), undefined, bad));
+  return riderWait = riderWait || Promise.all(['base_female', 'hair_long', 'hair_buns', 'hair_simpleparted'].map(get)).then(([body, long, buns, parted]) => {
+    for (const s of [body, long, buns, parted]) fixModelMats(s);
+    const hair = {};
+    for (const [k, s] of [['long', long], ['buns', buns], ['parted', parted]]) {   // the hair, as a plain mesh in the Head bone's frame
+      let sk = null; s.traverse(o => { if (o.isSkinnedMesh && !sk) sk = o; }); if (!sk) continue;
+      const hi = sk.skeleton.bones.findIndex(b => b.name === 'Head'); if (hi < 0) continue;
+      hair[k] = {geo: sk.geometry, mat: sk.material, m: new THREE.Matrix4().multiplyMatrices(sk.skeleton.boneInverses[hi], sk.bindMatrix)};
+    }
+    return riderTpl = {body, hair};
+  });
+}
+const RIDER_HAIR = {rolls: 'buns', bob: 'parted', braid: 'long', long: 'long'};
+const SWIM_PATTERN = {dots: 1, stripes: 2, trim: 3};
+function riderBodyMat(src, rd, suitCol) {
+  const L = rd.look, m = src.clone();
+  const skin = new THREE.Color(L.skin), base = new THREE.Color(0xa86e4c);   // the pack's skin texture is a deep tan: scale it to her tone
+  const U = {skinTint: {value: new THREE.Vector3(skin.r / base.r, skin.g / base.g, skin.b / base.b)}, suitA: {value: new THREE.Color(suitCol)},
+    suitB: {value: new THREE.Color(L.suit2 || 0xffffff)}, patt: {value: SWIM_PATTERN[L.pattern] || 0}, bustK: {value: .022}, hipK: {value: .07}};
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, U);
+    // a pin-up figure: a little more bust and hip, in the bind pose (metres, the body faces +z), before skinning
+    sh.vertexShader = 'uniform float bustK, hipK;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      { vec3 p0 = transformed;
+        for (int s = 0; s < 2; s++) { vec2 c = vec2(s == 0 ? -0.085 : 0.085, 1.325); vec2 d = p0.xy - c;
+          transformed.z += bustK * exp(-dot(d, d) / 0.0032) * smoothstep(0.03, 0.1, p0.z); }
+        transformed.x *= 1.0 + hipK * exp(-pow((p0.y - 0.9) / 0.1, 2.0)) * (1.0 - smoothstep(0.25, 0.35, abs(p0.x))); }`);
+    // the two-piece is the grey part of the texture: give it her colours and pattern; tint the skin to her tone
+    sh.fragmentShader = 'uniform vec3 skinTint, suitA, suitB; uniform float patt;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+      { vec3 c = diffuseColor.rgb; float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), sat = (mx - mn) / max(mx, 0.001);
+        float suit = 1.0 - smoothstep(0.1, 0.2, sat), lum = dot(c, vec3(0.299, 0.587, 0.114));
+        vec3 col = suitA;
+        #ifdef USE_UV
+          if (patt > 0.5 && patt < 1.5) { vec2 q = fract(vUv * 90.0) - 0.5; col = mix(suitA, suitB, step(length(q), 0.22)); }
+          else if (patt > 1.5 && patt < 2.5) col = mix(suitA, suitB, step(0.5, fract(vUv.y * 70.0)));
+          else if (patt > 2.5) col = mix(suitA, suitB, 0.0);
+        #endif
+        diffuseColor.rgb = mix(c * skinTint, col * clamp(0.6 + (lum - 0.3) * 1.2, 0.45, 1.05), suit); }`);
+  };
+  return m;
+}
+function riderHairMat(src, L) {
+  const m = src.clone(), hc = new THREE.Color(L.hair);
+  m.onBeforeCompile = sh => { sh.uniforms.hairCol = {value: hc};
+    sh.fragmentShader = 'uniform vec3 hairCol;\n' + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb = hairCol * (0.35 + dot(diffuseColor.rgb, vec3(0.333)) * 1.8);'); };
+  return m;
+}
+// hats and accessories, built in a frame centred on her head (x = the way she faces, y up), as before
+function riderHeadwear(head, nation, rd) {
+  const L = rd.look, mat = (c, r = .85, extra = {}) => new THREE.MeshStandardMaterial(Object.assign({color: c, roughness: r}, extra));
+  const sph = (r, m, ws = 16, hs = 12) => new THREE.Mesh(new THREE.SphereGeometry(r, ws, hs), m), dark = mat(0x2c261f, .9);
+  const hAdd = (mesh, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz); mesh.scale.set(sx, sy, sz); mesh.castShadow = true; head.add(mesh); return mesh; };
+  const hatCol = L.hatCol || {US: 0x4e5530, SU: 0x5a5a3a, UK: 0x4c4a35, DE: 0x4a4f48}[nation] || 0x4e5530;
+  if (L.hat === 'helmet') hAdd(new THREE.Mesh(new THREE.SphereGeometry(.122, 16, 8, 0, TAU, 0, Math.PI / 2), mat(hatCol, .7, {metalness: .2})), -.005, .04, 0);
+  else if (L.hat === 'scarf') { const sc = L.pattern === 'dots' ? new THREE.MeshStandardMaterial({map: suitTex(rd, 0xd0332b), roughness: .6}) : mat(0xd0332b); hAdd(sph(.108, sc), -.01, .05, 0, 0, 0, 0, 1, .6, 1.02); hAdd(sph(.03, sc), -.01, .12, 0, 0, 0, 0, 1, .7, 1.6); }
+  else if (L.hat === 'garrison' || L.hat === 'pilotka') { hAdd(box(.2, .055, .085, mat(L.hat === 'pilotka' ? 0x5a5a3a : 0x4e5530)), -.01, .12, -.03, .25); if (L.hat === 'pilotka') hAdd(sph(.014, mat(0xc8302a)), .09, .12, -.03); }
+  else if (L.hat === 'beret') hAdd(sph(.115, mat(hatCol)), -.02, .1, -.02, 0, 0, .3, 1, .32, 1);
+  else if (L.hat === 'sailor') { hAdd(cyl(.1, .095, .06, mat(0xf2f2f0, .6), 16), -.01, .12, 0); hAdd(cyl(.096, .096, .014, mat(0x1d2a4a), 16), -.01, .095, 0); }
+  if (L.acc === 'goggles') { hAdd(box(.03, .04, .17, dark), .07, .1, 0); for (const s of [-1, 1]) hAdd(cyl(.02, .02, .012, mat(0x6a8a99, .2, {metalness: .5}), 10), .085, .1, s * .042, 0, 0, Math.PI / 2); }
+  if (L.acc === 'sunglasses' || L.acc === 'both') for (const s of [-1, 1]) hAdd(sph(.022, mat(0x0d0d0d, .15), 10, 8), .095, .01, s * .033, 0, 0, 0, .35, .8, 1.1);
+  if (L.acc === 'flower' || L.acc === 'both') { hAdd(sph(.03, mat(0xe8304a, .6)), .0, .07, .095); hAdd(sph(.01, mat(0xf2d24a)), .02, .07, .105); }
+}
+function makeRiderModel(nation, rd) {
+  const L = rd.look, g = new THREE.Group();
+  const body = THREE.SkeletonUtils.clone(riderTpl.body), inner = new THREE.Group(); inner.add(body); g.add(inner);
+  inner.rotation.y = Math.PI / 2; inner.position.y = -.83;   // she faces the rider frame's +x, sitting on the deck
+  const suitCol = L.suit === 'nation' ? ({US: 0xc8302a, SU: 0x2f5aa0, UK: 0x2d4a7a, DE: 0x1f1f22}[nation] || 0xc8302a) : L.suit;
+  const bones = {}; let skinMesh = null;
+  body.traverse(o => { if (o.isBone) { bones[o.name] = o; o.userData.rest = o.quaternion.clone(); }
+    if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; if (o.name === 'Superhero_Female') { o.material = riderBodyMat(o.material, rd, suitCol); skinMesh = o; } else o.material = o.material.clone(); } });
+  g.updateMatrixWorld(true);
+  const head = bones.Head;
+  if (head) {
+    const hk = RIDER_HAIR[L.style] || 'long', hr = riderTpl.hair[hk];
+    if (hr) { const hm = new THREE.Mesh(hr.geo, riderHairMat(hr.mat, L)); hm.matrixAutoUpdate = false; hm.matrix.copy(hr.m); hm.castShadow = true; head.add(hm); }
+    // headwear frame: centred on her head, x forward, y up, sized for this head
+    const hg = new THREE.Group(), hw = head.getWorldQuaternion(new THREE.Quaternion()).invert(), gw = g.getWorldQuaternion(new THREE.Quaternion());
+    const centre = head.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, .1, 0).applyQuaternion(gw));
+    hg.position.copy(head.worldToLocal(centre)); hg.quaternion.copy(hw.multiply(gw)); hg.scale.setScalar(1.2 / head.getWorldScale(new THREE.Vector3()).x);
+    head.add(hg); riderHeadwear(hg, nation, rd);
+  }
+  g.userData = {model: true, bones, phase: Math.random() * 10, wave: 0, flinch: 0, cheer: 0, kiss: 0, point: 0, salute: 0, hairT: rnd(4, 9), hairK: 0, mats: []};
+  return g;
+}
+function rotWorld(bone, axis, ang) {   // turn a bone about a world-space axis
+  const q = new THREE.Quaternion().setFromAxisAngle(axis, ang), w = bone.getWorldQuaternion(new THREE.Quaternion()), p = bone.parent.getWorldQuaternion(new THREE.Quaternion()).invert();
+  bone.quaternion.copy(p.multiply(q.multiply(w))); bone.updateMatrixWorld(true);
+}
+// the riders' animations: breathing, looking about, swinging her legs and now and then fixing her hair; on a kill a wave, a
+// blown kiss, pointing at the wreck or a salute; a two-armed cheer for a win; a flinch that covers her head when you're hit
+function animateRiderModel(r, dt) {
+  const u = r.userData, B = u.bones; if (!B.pelvis) return;
+  const T = worldTime + u.phase;
+  for (const k of ['wave', 'flinch', 'cheer', 'kiss', 'point', 'salute']) u[k] = Math.max(0, u[k] - dt);
+  if ((u.hairT -= dt) < 0) { u.hairT = rnd(7, 14); u.hairK = 1.6; } u.hairK = Math.max(0, u.hairK - dt);
+  for (const k in B) B[k].quaternion.copy(B[k].userData.rest);
+  r.updateMatrixWorld(true);
+  const W = (x, y, z) => r.localToWorld(new THREE.Vector3(x, y, z)), D = (x, y, z) => W(x, y, z).sub(W(0, 0, 0)).normalize();
+  const fl = u.flinch > 0 ? Math.sin(Math.min(1, u.flinch / .7) * Math.PI) : 0, ch = u.cheer > 0 ? Math.abs(Math.sin(T * 9)) : 0;
+  // torso: breathing, a lean back on her braced arm, rocking back on a flinch, bouncing in a cheer
+  if (B.spine_01) rotWorld(B.spine_01, D(0, 0, 1), .12 + fl * .35 - ch * .05 + Math.sin(T * 2.1) * .015);
+  if (B.Head) { rotWorld(B.Head, D(0, 1, 0), Math.sin(T * .45) * .5 + Math.sin(T * 1.7) * .06 + (u.point > 0 ? -.2 : 0)); rotWorld(B.Head, D(0, 0, 1), -.05 + Math.sin(T * .7) * .07 - fl * .3 + u.hairK * .15 * Math.sin(u.hairK * 3)); }
+  // legs over the edge, swinging
+  for (const [sd, s, ph] of [['l', -1, 0], ['r', 1, 2.4]]) {
+    const th = B['thigh_' + sd], ca = B['calf_' + sd], ft = B['foot_' + sd]; if (!th || !ca || !ft) continue;
+    const hp = r.worldToLocal(th.getWorldPosition(new THREE.Vector3())), sw = Math.sin(T * 1.5 + ph) * .1 * (1 - fl), kick = ch * .08;
+    reach2(th, ca, ft, W(hp.x + .44 + sw * .4 + kick, hp.y - .42 + Math.max(0, sw) * .15, hp.z + s * .03), D(1, 1, 0));
+  }
+  // arms: left braced on the deck behind her; the right resting on her thigh, or doing whatever the moment calls for
+  const arm = (sd, T2, pole) => { const a = B['upperarm_' + sd], b = B['lowerarm_' + sd], c = B['hand_' + sd]; if (a && b && c) reach2(a, b, c, W(...T2), D(...pole)); };
+  if (u.cheer > 0) { arm('l', [.05, 1.0 + ch * .08, -.32], [0, 0, -1]); arm('r', [.05, 1.0 + ch * .08, .32], [0, 0, 1]); return; }
+  if (fl > 0) { arm('l', [.12, .72, -.1], [1, 0, -1]); arm('r', [.12, .72, .1], [1, 0, 1]); return; }
+  arm('l', [-.28, .02, -.26], [-1, 0, -.4]);
+  if (u.wave > 0) arm('r', [.15, .92, .34 + Math.sin(T * 12) * .1], [0, -1, 1]);
+  else if (u.kiss > 0) { const k = u.kiss > 1 ? 0 : 1 - u.kiss; arm('r', [.12 + k * .45, .68 + k * .12, .05 + k * .1], [0, -1, 1]); }
+  else if (u.point > 0) arm('r', [.62, .62, .28], [0, -1, .5]);
+  else if (u.salute > 0) arm('r', [.12, .78, .12], [0, 0, 1]);
+  else if (u.hairK > 0) arm('r', [-.02, .74, .14], [0, -1, 1]);
+  else arm('r', [.22, .16, .16], [0, -1, .6]);
+}
 function seatRider(t) {   // on the rear deck, facing out over the left track
   if (t && t.spec.foot) return;
   if (!t || t.mesh.rider) return;
@@ -4324,6 +4452,7 @@ function seatRider(t) {   // on the rear deck, facing out over the left track
 // rider animation: idle breathing, glancing around and swinging her legs; a wave and a bounce for a kill, a flinch when
 // you're hit, and a two-armed cheer when you win
 function animateRider(r, dt) {
+  if (r.userData && r.userData.model) { animateRiderModel(r, dt); return; }
   const u = r.userData; if (!u || !u.torso) return;
   const T = worldTime + u.phase;
   u.wave = Math.max(0, u.wave - dt); u.flinch = Math.max(0, u.flinch - dt); u.cheer = Math.max(0, u.cheer - dt);
@@ -4344,6 +4473,7 @@ function animateRider(r, dt) {
 function riderReact(kind) {
   const r = player && player.mesh && player.mesh.rider; if (!r) return;
   const u = r.userData;
+  if (u.model) { if (kind === 'kill') u[pick(['wave', 'kiss', 'point', 'salute'])] = 1.9; else if (kind === 'win') u.cheer = 4; else if (kind === 'hit' || kind === 'low') u.flinch = .7; else if (kind === 'start') u.salute = 1.6; return; }
   if (kind === 'kill') u.wave = 1.8; else if (kind === 'win') u.cheer = 4; else if (kind === 'hit' || kind === 'low') u.flinch = .6;
 }
 function stepRider(dt) {
@@ -5449,6 +5579,7 @@ function frame(now) {
 }
 resize();
 menuWorld(); renderMenu(); showTab('cpu');
+loadRiders().then(() => { if (mode === 'menu' && menuTank) menuTankSwap(); }).catch(() => {});   // the showroom rider switches to the real body once it has loaded
 loadTankModels(eraTanks(setup.era).map(i => TANKS[i])).catch(() => {}).then(() => loadTankModels(TANKS.filter(t => t.era !== setup.era))).catch(() => {});
 requestAnimationFrame(frame);
 // an invite link (?room=CODE) goes straight to joining
