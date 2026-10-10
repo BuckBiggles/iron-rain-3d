@@ -180,6 +180,25 @@ td{padding:7px 8px;text-align:right;font-family:var(--f-data);border-bottom:1px 
 td:first-child{font-family:var(--f-display);font-size:18px}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 .btnrow .btn,.btnrow .deploy{flex:1 1 160px;text-align:center}
+/* online lobby: compact, so the whole room fits on one screen with START / READY always in view */
+#lobby{gap:10px}
+#lobby .room{padding:6px 12px}
+#lobby .room b{font-size:28px}
+#lobby .seat{padding:4px 10px}
+#lobby .seat .nm{font-size:16px}
+#lobby .tgrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+#lobby .tcard{padding:5px 7px 6px}
+#lobby .tcard canvas{height:18px;margin-bottom:2px}
+#lobby .tcard .n{font-size:14px}
+#lobby .tcard .r{display:none}
+#lobby .mgrid{grid-template-columns:repeat(7,minmax(0,1fr))}
+#lobby .mcard{aspect-ratio:4/3}
+#lobby .mcard .n{font-size:11px;padding:8px 4px 3px}
+#lobby h2{margin-bottom:6px}
+#lobby .btnrow{position:sticky;bottom:-24px;margin:0 -26px -24px;padding:10px 26px 14px;flex-wrap:nowrap;
+  background:linear-gradient(180deg,rgba(13,15,10,.9),rgba(13,15,10,.98));border-top:1px solid var(--line);z-index:2}
+#lobby .btnrow .deploy{font-size:24px;padding:10px}
+#lobby .btnrow .btn{flex:0 0 auto}
 #nogl{position:fixed;inset:0;display:grid;place-items:center;padding:16px;font-size:20px;text-align:center}
 @media (max-width:900px){#menu{grid-template-columns:1fr;overflow:auto}.brand{align-self:start}}
 @media (prefers-reduced-motion:reduce){.deploy:active{transform:none}}
@@ -238,7 +257,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
       <div class="pane" id="lobby" hidden>
         <div class="room"><div><span>ROOM CODE</span><br><b id="roomCode">·····</b></div><button class="btn" id="copyLink">COPY INVITE LINK</button></div>
         <div class="seats" id="seatList"></div>
-        <section><h2>YOUR TANK</h2><div class="tgrid" id="lobbyTanks"></div><div class="stats" id="lobbyStats"></div></section>
+        <section><h2>YOUR TANK · STATS ON THE LEFT</h2><div class="tgrid" id="lobbyTanks"></div></section>
         <section id="hostOpts">
           <h2>BATTLEFIELD</h2><div class="mgrid" id="lobbyMaps"></div>
           <h2 style="margin-top:12px">CPU SKILL · EMPTY SEATS</h2><div class="row seg" id="lobbyLvl"></div>
@@ -297,7 +316,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-10.3';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-10.4';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -608,6 +627,7 @@ sun.shadow.bias = -.0005;
 scene.add(sun, sun.target);
 const sunDir = new THREE.Vector3();
 const flash = new THREE.PointLight(0xffa860, 0, 140, 2); scene.add(flash);
+const muzzleLight = new THREE.PointLight(0xffc070, 0, 45, 2); scene.add(muzzleLight); let muzzleT = 0;   // the gun flash lighting the tank and ground
 
 const skyMat = new THREE.ShaderMaterial({
   uniforms: {top: {value: new THREE.Color()}, hor: {value: new THREE.Color()}, sunCol: {value: new THREE.Color()}, sunDir: {value: new THREE.Vector3(0, 1, 0)}},
@@ -1965,11 +1985,16 @@ function stepFlights(dt) {
 }
 
 // ================================================================ sound (WebAudio, all synthesized)
-let AC = null, master = null, noiseBuf = null, engine = null, whine = null;
+let AC = null, master = null, duck = null, noiseBuf = null, engine = null, whine = null;
 function audioInit() {
   if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
   try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
-  master = AC.createGain(); master.gain.value = settings.vol; master.connect(AC.destination);
+  master = AC.createGain(); master.gain.value = settings.vol;
+  // master -> duck (a low-pass that muffles everything for a moment after your own gun fires, like ringing ears)
+  //        -> compressor (so the big layered blasts hit hard without clipping)
+  duck = AC.createBiquadFilter(); duck.type = 'lowpass'; duck.frequency.value = 20000; duck.Q.value = .5;
+  const comp = AC.createDynamicsCompressor(); comp.threshold.value = -14; comp.knee.value = 8; comp.ratio.value = 5; comp.attack.value = .002; comp.release.value = .25;
+  master.connect(duck); duck.connect(comp); comp.connect(AC.destination);
   noiseBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
   const d = noiseBuf.getChannelData(0); let b = 0; for (let i = 0; i < d.length; i++) { b = b * .6 + (Math.random() * 2 - 1) * .4; d[i] = b; }
   const eg = AC.createGain(); eg.gain.value = 0; const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
@@ -1992,8 +2017,20 @@ function tone(t0, dur, f0, f1, vol, type = 'sine') {
   o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + dur + .05);
 }
 const sfx = {
-  fire(dist = 0) { if (!AC) return; const v = clamp(1 - dist / 1100, .08, 1), t = AC.currentTime + dist / 340;
-    nz(t, .25, 4000, 600, .5 * v, 'highpass'); nz(t, 1.1, 900, 60, .9 * v); tone(t, .5, 90, 32, .7 * v); },
+  fire(dist = 0, own) { if (!AC) return; const v = clamp(1 - dist / 1100, .08, 1), t = AC.currentTime + dist / 340;
+    nz(t, .07, 9000, 2500, 1.1 * v, 'highpass');                     // supersonic crack
+    nz(t, .4, 2600, 300, .9 * v, 'bandpass', .7);                     // the blast
+    nz(t, 1.8, 1300, 45, 1.2 * v);                                    // rolling body
+    tone(t, .8, 75, 22, 1.2 * v); tone(t, .3, 150, 45, .7 * v, 'triangle');   // the thump in your chest
+    nz(t + .4, 1.3, 700, 60, .32 * v); nz(t + .95, 1.5, 450, 50, .16 * v);   // echoes coming back off the hills
+    if (own) {
+      const c = AC.currentTime;
+      duck.frequency.cancelScheduledValues(c); duck.frequency.setValueAtTime(20000, c); duck.frequency.setValueAtTime(20000, c + .06);
+      duck.frequency.exponentialRampToValueAtTime(650, c + .14); duck.frequency.exponentialRampToValueAtTime(20000, c + 1.5);   // ears ring, hearing comes back
+      tone(c + .05, 1.4, 4300, 4200, .012);                           // a faint whine
+      tone(c + .6, .1, 620, 260, .22, 'square'); nz(c + .6, .14, 3200, 900, .3, 'bandpass', 4);   // breech opens
+      tone(c + 1.0, .3, 2350, 2250, .06, 'triangle'); tone(c + 1.12, .25, 2600, 2500, .045, 'triangle'); tone(c + 1.2, .2, 2450, 2400, .03, 'triangle');   // the spent case rings on the floor
+    } },
   boom(dist, r) { if (!AC) return; const v = clamp(1 - dist / 1300, .05, 1) * Math.min(1.2, .45 + r / 22), t = AC.currentTime + Math.min(dist / 340, 3);
     nz(t, 1.6 + r / 25, 1400 - Math.min(dist, 900), 40, .9 * v); tone(t, .9, 70, 24, .9 * v); if (dist < 200) nz(t, .3, 5000, 1500, .25 * v, 'highpass'); },
   whistle(dur) { if (!AC) return; tone(AC.currentTime, dur, 2100, 520, .07); },
@@ -2026,7 +2063,7 @@ let mode = 'menu', paused = false;
 let net = null, mySeat = 0, evq = [];
 let tanks = [], player = null, shells = [], pending = [], state = 'idle', stateT = 0, shellId = 1;
 let banner = null, feed = [], pops = [], spot = null, impacts = [], reels = [], overT = 0, winner = -1, result = null, roundPay = null, lastShot = null;
-let camShake = 0, camKick = 0, dmgFlash = 0, zoom = 0, zoomHeld = false, camHold = null, followShell = null;
+let camShake = 0, camKick = 0, shotPunch = 0, dmgFlash = 0, zoom = 0, zoomHeld = false, camHold = null, followShell = null;
 let lastCombo = '', battleSeed = 1, worldTime = 0, battleLvl = 1;
 let chatOpen = false, chatBuf = '';
 let menuTank = null, menuShells = [], previewCos = null;
@@ -2241,9 +2278,19 @@ function fireFx(t) {
   for (let i = 0; i < 10; i++) puffFire(m.x + m.dx * i * .5, m.y + m.dy * i * .5, m.z + m.dz * i * .5, {vx: m.dx * rnd(8, 30), vy: m.dy * rnd(8, 30), vz: m.dz * rnd(8, 30), drag: 6, life: rnd(.12, .25), s0: 2.4 - i * .15, s1: 3});
   for (let i = 0; i < 12; i++) puffSmoke(m.x, m.y, m.z, {vx: m.dx * rnd(3, 14) + rnd(-2, 2), vy: m.dy * rnd(3, 14) + rnd(0, 2), vz: m.dz * rnd(3, 14) + rnd(-2, 2), drag: 1.6, life: rnd(2, 3.5), s0: 1.5, s1: rnd(5, 8), g: .55, a: .5});
   for (let i = 0; i < 10; i++) { const a = rnd(0, TAU); puffSmoke(t.x + Math.cos(a) * 3, t.y + .5, t.z + Math.sin(a) * 3, {vx: Math.cos(a) * 8, vy: 1, vz: Math.sin(a) * 8, drag: 2, life: 1.8, s0: 2, s1: 6, g: .5, a: .3}); }
+  // muzzle blast: a hot core, a ring of flame thrown sideways by the muzzle brake, and dust kicked off the ground in front
+  puffFire(m.x + m.dx * 1.5, m.y + m.dy * 1.5, m.z + m.dz * 1.5, {life: .09, s0: 7, s1: 9, c0: [1, .97, .85], c1: FIRE_MID, a: 1});
+  for (let i = 0; i < 14; i++) { const a = i / 14 * TAU, sx = -m.dz, sz = m.dx, c = Math.cos(a), s = Math.sin(a), v = rnd(14, 24);
+    puffFire(m.x, m.y, m.z, {vx: (sx * c) * v + m.dx * 6, vy: s * v * .6 + m.dy * 6, vz: (sz * c) * v + m.dz * 6, drag: 9, life: rnd(.1, .2), s0: 1.6, s1: 2.6}); }
+  for (let i = 0; i < 14; i++) { const d = rnd(3, 16), x = t.x + m.dx * d + rnd(-3, 3), z = t.z + m.dz * d + rnd(-3, 3), dc = dirtColor().map(v => v * 1.9);
+    puffSmoke(x, groundAt(x, z) + .4, z, {vx: m.dx * rnd(4, 12) + rnd(-3, 3), vy: rnd(1, 4), vz: m.dz * rnd(4, 12) + rnd(-3, 3), drag: 1.8, life: rnd(1.5, 3), s0: 2, s1: rnd(6, 10), c0: dc, c1: dc, a: .45}); }
+  muzzleLight.position.set(m.x + m.dx * 2, m.y + m.dy * 2, m.z + m.dz * 2); muzzleLight.intensity = 5; muzzleT = .12;
+  // the whole tank rocks back on its suspension, away from where the gun points
+  const rel = t.yaw - t.hullYaw; t.pitch += Math.cos(rel) * .045; t.roll -= Math.sin(rel) * .035;
   t.recoil = 1;
-  sfx.fire(Math.hypot(t.x - camera.position.x, t.z - camera.position.z));
-  if (t === player) { camKick = 1; camShake = Math.max(camShake, .35); }
+  const own = t === player;
+  sfx.fire(Math.hypot(t.x - camera.position.x, t.z - camera.position.z), own);
+  if (own) { camKick = 1; shotPunch = 1; camShake = Math.max(camShake, .7); }
 }
 
 function stepShells(dt) {
@@ -2515,7 +2562,7 @@ function syncTank(t, dt) {
     m.turret.position.copy(d.p);
   } else if (!t.deb) {
     m.turret.position.copy(t.base); m.turret.rotation.set(0, t.yaw, 0);
-    m.gun.rotation.z = t.elev * D2R; m.gun.position.x = m.gp.x - t.recoil * .5;
+    m.gun.rotation.z = t.elev * D2R; m.gun.position.x = m.gp.x - Math.pow(t.recoil, 2.2) * .7;   // slams back, then runs out again
   }
   if (m.flag) m.flag.rotation.y = Math.PI + Math.sin(worldTime * 2.6 + t.i) * .35 + (t.hullYaw - t.yaw) * 0;
 }
@@ -3012,6 +3059,7 @@ function playerInput(dt) {
 let snapAcc = 0;
 function step(dt) {
   worldTime += dt;
+  if (muzzleT > 0) { muzzleT -= dt; muzzleLight.intensity *= Math.exp(-dt * 25); if (muzzleT <= 0) muzzleLight.intensity = 0; }
   if (mode === 'menu') { menuUpdate(dt); return; }
   if (mode !== 'game') return;
   if (paused && !net) return;
@@ -3044,7 +3092,7 @@ function step(dt) {
   if (banner && (banner.t += dt) > banner.dur) banner = null;
   if (spot && (spot.t += dt) > 4.5) spot = null;
   if (zeroFlash > 0) zeroFlash -= dt;
-  camShake = Math.max(0, camShake - dt * 1.8); camKick = Math.max(0, camKick - dt * 4); dmgFlash = Math.max(0, dmgFlash - dt * 1.2);
+  camShake = Math.max(0, camShake - dt * 1.8); camKick = Math.max(0, camKick - dt * 4); shotPunch = Math.max(0, shotPunch - dt * 1.5); dmgFlash = Math.max(0, dmgFlash - dt * 1.2);
   if (flashT > 0) { flashT -= dt; flash.intensity *= Math.exp(-dt * 12); if (flashT <= 0) flash.intensity = 0; }
   if (camHold && (camHold.t -= dt) <= 0) camHold = null;
   if (state === 'over') {
@@ -3463,7 +3511,12 @@ function updateCamera(dt) {
     camEye.x += (px - camEye.x) * ke; camEye.y += (py - camEye.y) * ke; camEye.z += (pz - camEye.z) * ke;
     camera.position.set(camEye.x, camEye.y, camEye.z);
     // free look: the mouse moves the line of sight; gunLay() keeps the gun on it, zeroed for zeroRange
-    camera.rotation.set((aimPitch - camKick * 1.2 * (zoom > .5 ? 0 : 1)) * D2R, t.yaw - Math.PI / 2, 0, 'YXZ');
+    // firing jolt: the view snaps up and back and settles in a quarter second. It's a fixed curve that returns exactly to
+    // where you were aiming (the gun itself never moves off your aim), so the sight jumps but never drifts.
+    const kk = camKick * camKick, kick = kk * (zoom > .5 ? .55 : 3.2), side = Math.sin(camKick * 9) * kk * (zoom > .5 ? .12 : .6);
+    if (zoom < .5) { camera.position.x -= fx * kk * .35; camera.position.z -= fz * kk * .35; camera.position.y += kk * .08; }
+    camera.rotation.set((aimPitch + kick) * D2R, t.yaw - Math.PI / 2 + side * D2R, side * .02, 'YXZ');
+    if (zoom < .5) fovTarget += shotPunch * shotPunch * 7;   // a punch of the field of view with the blast
   }
   if (camShake > 0 && zoom <= .5) {   // no shake at all in the x4 sight: magnified, it read as the view drifting in and out
     const a = camShake * camShake * (camera.fov / 70) * (zoom > .5 ? .35 : 1);
@@ -3555,6 +3608,7 @@ function drawHUD() {
   if (myReel()) drawReel(myReel());
   if (chatOpen) drawChat();
   if (net && net.role === 'client' && net.re) { hx.fillStyle = 'rgba(6,7,5,.7)'; hx.fillRect(0, Hh / 2 - 40, W, 80); txt('CONNECTION LOST · RECONNECTING…', W / 2, Hh / 2 + 6, 26, '#e6b44c', 'center', 'display'); txt('Esc to give up', W / 2, Hh / 2 + 28, 13, '#d6c99c', 'center', 'data'); }
+  if (shotPunch > .8 && zoom < .5 && !inShellCam) { hx.fillStyle = `rgba(255,205,140,${(shotPunch - .8) * 1.1})`; hx.fillRect(0, 0, W, Hh); }   // the blast lights up everything for an instant
   if (dmgFlash > 0) { const g = hx.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .3, W / 2, Hh / 2, Math.max(W, Hh) * .7); g.addColorStop(0, 'rgba(160,20,10,0)'); g.addColorStop(1, `rgba(160,20,10,${dmgFlash * .55})`); hx.fillStyle = g; hx.fillRect(0, 0, W, Hh); }
   if (!locked && !paused && state !== 'over' && t.alive && !chatOpen && zoom < .5) { hx.shadowColor = 'rgba(0,0,0,.8)'; hx.shadowBlur = 6; txt('CLICK to capture the mouse (Esc frees it)', W / 2, Hh - 184, 16, '#e6b44c', 'center', 'body', '600'); hx.shadowBlur = 0; }
 }
@@ -3632,6 +3686,13 @@ function drawOptic() {
   const g = hx.createRadialGradient(cx, cy, R * .7, cx, cy, R); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
   hx.fillStyle = g; hx.beginPath(); hx.arc(cx, cy, R, 0, TAU); hx.fill();
   hx.fillStyle = 'rgba(255,236,190,.035)'; hx.beginPath(); hx.arc(cx, cy, R, 0, TAU); hx.fill();   // faint warm coating
+  if (shotPunch > 0 && k >= .5) {   // after a shot: a flash, then muzzle smoke and dust fill the glass and clear as it settles
+    const p = shotPunch;
+    if (p > .88) { hx.fillStyle = `rgba(255,214,150,${(p - .88) * 5})`; hx.beginPath(); hx.arc(cx, cy, R, 0, TAU); hx.fill(); }
+    const haze = Math.min(1, p * 1.6) * Math.min(1, (1 - p) * 8), hg = hx.createRadialGradient(cx, cy - R * .2, R * .1, cx, cy, R);
+    hg.addColorStop(0, `rgba(120,108,90,${.55 * haze})`); hg.addColorStop(1, `rgba(70,62,50,${.85 * haze})`);
+    hx.fillStyle = hg; hx.beginPath(); hx.arc(cx, cy, R, 0, TAU); hx.fill();
+  }
   // reload: a thin arc around the glass, brass when the gun is loaded
   const lf = t.reloadMax > 0 ? 1 - t.reload / t.reloadMax : 1;
   hx.lineWidth = 3; hx.strokeStyle = t.reload > 0 ? 'rgba(224,87,58,.85)' : 'rgba(230,180,76,.8)';
@@ -4016,19 +4077,20 @@ function mapCard(i, on, click, disabled) {
   b.appendChild(img); b.insertAdjacentHTML('beforeend', `<span class="n">${m.name.replace('THE ', '')}</span>`);
   b.addEventListener('click', () => { audioInit(); click(); }); return b;
 }
-function renderPlate() {
-  const t = TANKS[setup.tank];
+function renderPlate(i = setup.tank) {
+  const t = TANKS[i];
   $('plateName').textContent = t.name; $('plateRole').textContent = t.role;
   $('plateStats').innerHTML = [[t.real.armor + '<small> mm</small>', 'ARMOR'], [t.real.speed + '<small> km/h</small>', 'TOP SPEED'], [t.ammo3.mv + '<small> m/s</small>', 'MUZZLE VEL.'], [t.real.rof + '<small>/min</small>', 'RATE OF FIRE'], [t.real.weight + '<small> t</small>', 'WEIGHT']]
     .map(([v, k]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
 }
 function tankGrid(el, statsEl) {
   el.innerHTML = '';
-  statsEl.innerHTML = statsHTML(setup.tank);
+  if (statsEl) statsEl.innerHTML = statsHTML(setup.tank);
   TANKS.forEach((t, i) => {
     const b = tankCard(i, setup.tank === i, () => { setup.tank = i; save('ironrain3d.setup', setup); renderMenu(); menuTankSwap(); pickChanged(); });
     b.title = t.role;
-    const show = () => { statsEl.innerHTML = statsHTML(i); }, back = () => { statsEl.innerHTML = statsHTML(setup.tank); };
+    // no stats box in the compact lobby: hovering a card shows that tank on the nameplate instead
+    const show = () => { if (statsEl) statsEl.innerHTML = statsHTML(i); else renderPlate(i); }, back = () => { if (statsEl) statsEl.innerHTML = statsHTML(setup.tank); else renderPlate(); };
     b.addEventListener('mouseenter', show); b.addEventListener('focus', show);
     b.addEventListener('mouseleave', back); b.addEventListener('blur', back);
     el.appendChild(b);
@@ -4073,7 +4135,7 @@ function renderOnline() {
     const st = open ? 'CPU IF EMPTY' : s.k === 'host' ? 'HOST' : s.r ? '<span style="color:var(--green)">READY</span>' : 'NOT READY';
     return `<div class="seat${open ? ' open' : ''}"><i class="sw" style="background:${SEAT_COLORS[i]}"></i><span class="nm">${nm}</span><span class="tk">${open ? '' : TANKS[s.s] ? TANKS[s.s].name : ''}</span><span class="st">${st}</span></div>`;
   }).join('');
-  tankGrid($('lobbyTanks'), $('lobbyStats'));
+  tankGrid($('lobbyTanks'), null); renderPlate();
   $('hostOpts').hidden = false;
   const lm = $('lobbyMaps'); lm.innerHTML = '';
   MAPS.forEach((m, i) => lm.appendChild(mapCard(i, lobby.map === i, () => { if (!host) return; lobby.map = i; setup.map = i; save('ironrain3d.setup', setup); menuWorld(); bcastLobby(); }, !host)));
