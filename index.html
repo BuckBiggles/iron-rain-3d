@@ -139,7 +139,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
   <div class="brand">
     <div class="eyebrow">GUNNER'S SEAT · FIRST PERSON</div>
     <h1>IRON RAIN<span>3D</span></h1>
-    <p>Real-time tank artillery from inside the turret. Drive, range the target, set your charge and lob it over the ridge before they reload.</p>
+    <p>Real-time tank artillery from inside the turret. Every shot is a full charge: drive, range the target and lob it over the ridge before they reload.</p>
     <div class="keys">
       <b>MOUSE / ARROWS</b><span>Aim. The gun follows your crosshair, zeroed for the range shown beside it</span>
       <b>WHEEL · R · X</b><span>Set the zero range · lase the target to set it · high lob over ridges</span>
@@ -230,7 +230,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-08.10';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-09.1';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2391,8 +2391,6 @@ function drawPanel() {
   txt('BRG', gx + 104, y + 22, 11, '#8f8869', 'left', 'data'); txt(String(Math.round(bearingOf(t.yaw)) % 360).padStart(3, '0') + '°', gx + 104, y + 46, 24, '#f2e6b8', 'left', 'data');
   const rg = aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null;
   txt('RANGE', gx + 256, y + 22, 11, '#8f8869', 'right', 'data'); txt(rg != null ? rg + ' m' : 'OUT', gx + 256, y + 46, 26, aimImpact && aimImpact.hit && aimImpact.hit !== t ? '#a8e07a' : '#e6b44c', 'right', 'data');
-  bar(gx + 14, y + 58, 242, 8, rg != null ? rg / 730 : 1, '#e6b44c');
-  for (let k = 1; k < 10; k++) { hx.fillStyle = 'rgba(14,16,11,.8)'; hx.fillRect(gx + 14 + 242 * k / 10, y + 58, 1, 8); }
 }
 // your hull integrity: a wide bar above the shell strip. Lost HP shows as a pale chunk that drains away; below 30% the
 // bar pulses, the screen edges glow red and a heartbeat plays, so you know to get out of the line of fire.
