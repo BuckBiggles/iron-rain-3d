@@ -4682,6 +4682,58 @@ function drawIronSights() {
   txt(t.reload > 0 ? 'RELOADING ' + t.reload.toFixed(1) + 's' : weaponOf(t).name + ' READY', cx + W * .2, Hh - 132, 16, t.reload > 0 ? '#f0a28f' : '#e6b44c', 'center', 'data');
   hx.shadowBlur = 0;
 }
+// WW2 gunsight, after the German TZF sights: a large aiming triangle (its tip is the aim point) with smaller triangles
+// every 4 mils either side for leading a moving target, and a range drum along the top that turns as you zero
+function drawWW2Reticle(t, cx, cy, R, mil) {
+  const ink = 'rgba(14,13,10,.93)';
+  hx.fillStyle = ink; hx.strokeStyle = ink;
+  const tri = (x, h, w) => { hx.beginPath(); hx.moveTo(x, cy); hx.lineTo(x - w / 2, cy + h); hx.lineTo(x + w / 2, cy + h); hx.closePath();
+    hx.strokeStyle = 'rgba(255,240,205,.45)'; hx.lineWidth = 1.5; hx.stroke(); hx.fill(); hx.strokeStyle = ink; };   // a faint light edge so it reads against dark ground
+  const u = Math.max(mil * 4, R * .028);   // the triangle pattern's unit: 4 mils, or big enough to see in a small window
+  tri(cx, 2 * u, u);   // the aiming triangle
+  for (let i = 1; i <= 6; i++) for (const s of [-1, 1]) { const x = cx + s * i * u * 1.6; if (Math.abs(x - cx) < R * .92) tri(x, u * .65, u * .4); }
+  hx.lineWidth = 1; hx.beginPath(); hx.moveTo(cx, cy + 2 * u); hx.lineTo(cx, cy + R * .95); hx.stroke();   // a fine post below
+  // the range drum: hectometre marks on an arc, turned so the zero sits under the fixed index at the top
+  const rMax = Math.min(1200, t.spec.range || ZERO_MAX), ar = R * .9, perHm = .085;   // radians per 100 m
+  hx.save(); hx.beginPath(); hx.arc(cx, cy, R, 0, TAU); hx.clip();
+  hx.strokeStyle = 'rgba(14,13,10,.85)'; hx.fillStyle = 'rgba(14,13,10,.9)'; hx.font = `bold 12px ${FONT.data}`; hx.textAlign = 'center';
+  hx.lineWidth = 7; hx.strokeStyle = 'rgba(214,201,156,.35)'; hx.beginPath(); hx.arc(cx, cy, ar, -Math.PI / 2 - .55, -Math.PI / 2 + .55); hx.stroke();
+  hx.strokeStyle = 'rgba(14,13,10,.85)'; hx.lineWidth = 1.2;
+  for (let m = 0; m <= rMax; m += 50) {
+    const a = -Math.PI / 2 + (m - zeroRange) / 100 * perHm; if (Math.abs(a + Math.PI / 2) > .55) continue;
+    const major = m % 100 === 0, r0 = ar - (major ? 9 : 5);
+    hx.beginPath(); hx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); hx.lineTo(cx + Math.cos(a) * (ar + 3), cy + Math.sin(a) * (ar + 3)); hx.stroke();
+    if (major && m) { const rr = ar - 20; hx.save(); hx.translate(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); hx.rotate(a + Math.PI / 2); hx.fillText(String(m / 100), 0, 4); hx.restore(); }
+  }
+  hx.fillStyle = 'rgba(200,40,30,.9)'; hx.beginPath(); hx.moveTo(cx, cy - ar + 4); hx.lineTo(cx - 6, cy - ar - 8); hx.lineTo(cx + 6, cy - ar - 8); hx.closePath(); hx.fill();   // the index
+  hx.restore();
+}
+// modern gunsight: an illuminated fire-control reticle (centre dot, broken circle, stadia) and a digital readout strip
+function drawModernReticle(t, cx, cy, R, mil) {
+  const led = 'rgba(255,60,40,.95)', ledDim = 'rgba(255,60,40,.55)', g = 'rgba(120,255,140,.95)';
+  hx.save(); hx.beginPath(); hx.arc(cx, cy, R, 0, TAU); hx.clip();
+  hx.fillStyle = 'rgba(20,40,30,.08)'; hx.fillRect(cx - R, cy - R, R * 2, R * 2);   // a faint coated tint
+  hx.shadowColor = 'rgba(255,60,40,.8)'; hx.shadowBlur = 5; hx.strokeStyle = led; hx.fillStyle = led; hx.lineWidth = 1.4;
+  hx.beginPath(); hx.arc(cx, cy, 1.8, 0, TAU); hx.fill();   // centre dot
+  const rc = 6 * mil; for (let q = 0; q < 4; q++) { const a = q * Math.PI / 2 + Math.PI / 4; hx.beginPath(); hx.arc(cx, cy, rc, a - .55, a + .55); hx.stroke(); }   // broken circle
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { hx.beginPath(); hx.moveTo(cx + dx * rc * 1.5, cy + dy * rc * 1.5); hx.lineTo(cx + dx * R * .55, cy + dy * R * .55); hx.stroke(); }
+  hx.strokeStyle = ledDim; for (let i = 2; i <= 10; i += 2) for (const s of [-1, 1]) { const x = cx + s * i * mil * 2; if (Math.abs(x - cx) > R * .55) continue; hx.beginPath(); hx.moveTo(x, cy - (i % 4 ? 4 : 8)); hx.lineTo(x, cy + (i % 4 ? 4 : 8)); hx.stroke(); }
+  hx.restore();
+  // corner brackets of the display
+  hx.strokeStyle = 'rgba(120,255,140,.55)'; hx.lineWidth = 2;
+  for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const x = cx + sx * R * .62, y = cy + sy * R * .62, l = R * .12;
+    hx.beginPath(); hx.moveTo(x, y - sy * -l); hx.lineTo(x, y); hx.lineTo(x - sx * l, y); hx.stroke(); }
+  // the readout strip: laser range, the zero, ammunition and the loader
+  const r = rangeCache.v, by = cy + R * .48, pad = n => String(Math.max(0, Math.round(n))).padStart(4, '0');
+  hx.fillStyle = 'rgba(0,0,0,.6)'; hx.fillRect(cx - R * .62, by - 16, R * 1.24, 30);
+  hx.shadowColor = 'rgba(120,255,140,.7)'; hx.shadowBlur = 4;
+  txt('RNG ' + (r ? pad(r.d) : '----'), cx - R * .58, by + 6, 16, r && r.tank ? '#ffd27a' : g, 'left', 'data');
+  txt((arcPref ? 'LOB ' : 'ZRO ') + pad(zeroRange), cx - R * .12, by + 6, 16, zeroOut ? '#ff8a6a' : g, 'left', 'data');
+  txt(t.reload > 0 ? 'LOAD ' + t.reload.toFixed(1) : 'READY', cx + R * .58, by + 6, 16, t.reload > 0 ? '#ff8a6a' : g, 'right', 'data');
+  txt(t.spec.ammo3 ? t.spec.ammo3.round : 'APFSDS', cx, cy - R * .7, 12, 'rgba(120,255,140,.8)', 'center', 'data');
+  txt('x' + scopeMag + ' · TAB    R LASE · PGUP/PGDN ZERO', cx, by + 34, 10, 'rgba(120,255,140,.6)', 'center', 'data');
+  hx.shadowBlur = 0;
+}
 function drawOptic() {
   const t = player, k = clamp(zoom, 0, 1), ease = k * k * (3 - 2 * k);
   const cx = W / 2, cy = Hh / 2, R = Math.min(W, Hh) * .45 * (.55 + .45 * ease);
@@ -4706,22 +4758,13 @@ function drawOptic() {
   hx.lineWidth = 3; hx.strokeStyle = t.reload > 0 ? 'rgba(224,87,58,.85)' : 'rgba(230,180,76,.8)';
   hx.beginPath(); hx.arc(cx, cy, R - 6, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(lf, 0, 1)); hx.stroke();
   if (k < .5) { hx.restore(); return; }
-  // reticle: heavy posts, thin centre lines, lit chevron and centre dot
   hx.globalAlpha = 1;
-  hx.strokeStyle = 'rgba(12,12,10,.95)'; hx.lineWidth = 3;
-  hx.beginPath(); hx.moveTo(cx - R, cy); hx.lineTo(cx - R * .35, cy); hx.moveTo(cx + R * .35, cy); hx.lineTo(cx + R, cy); hx.moveTo(cx, cy + R * .45); hx.lineTo(cx, cy + R); hx.stroke();
-  hx.lineWidth = 1.2; hx.beginPath(); hx.moveTo(cx - R * .35, cy); hx.lineTo(cx - 18, cy); hx.moveTo(cx + 18, cy); hx.lineTo(cx + R * .35, cy); hx.stroke();
-  const f = (Hh / 2) / Math.tan(camera.fov * D2R / 2);
-  for (let m = -10; m <= 10; m++) {   // a mark every degree along the horizontal line, longer every 5
-    if (!m) continue; const x = cx + Math.tan(m * D2R) * f; if (Math.abs(x - cx) > R * .95) continue;
-    hx.beginPath(); hx.moveTo(x, cy); hx.lineTo(x, cy - (m % 5 ? 5 : 10)); hx.stroke();
-  }
-  hx.shadowColor = 'rgba(255,150,40,.9)'; hx.shadowBlur = 6; hx.strokeStyle = 'rgba(255,170,70,.95)'; hx.lineWidth = 1.6;
-  hx.beginPath(); hx.moveTo(cx - 11, cy + 11); hx.lineTo(cx, cy); hx.lineTo(cx + 11, cy + 11); hx.stroke();
-  hx.fillStyle = 'rgba(255,190,90,1)'; hx.beginPath(); hx.arc(cx, cy, 1.6, 0, TAU); hx.fill();
+  if (worldTime - rangeCache.t > .1 || worldTime < rangeCache.t) rangeCache = {t: worldTime, v: rangefind()};
+  const mil = (Hh / 2) / Math.tan(camera.fov * D2R / 2) * .001;   // pixels per milliradian at this magnification
+  if (t.spec.era === 'modern') { drawModernReticle(t, cx, cy, R, mil); hx.restore(); return; }
+  drawWW2Reticle(t, cx, cy, R, mil);
   hx.restore();
   // readouts along the bottom of the glass
-  if (worldTime - rangeCache.t > .1 || worldTime < rangeCache.t) rangeCache = {t: worldTime, v: rangefind()};
   const r = rangeCache.v, by = cy + R * .56;
   hx.shadowColor = 'rgba(0,0,0,.95)'; hx.shadowBlur = 4;
   txt('RANGE', cx + R * .42, by - 20, 11, 'rgba(230,180,76,.85)', 'center', 'data');
@@ -4776,7 +4819,7 @@ function drawCompass() {
     hx.fill();
   }
   hx.restore();
-  drawCompassRose(cx, y + h + 48, 38, brg);
+  if (zoom < .5) drawCompassRose(cx, y + h + 48, 38, brg);   // not over the gunsight
 }
 // a round compass under the tape: the card turns as you turn, so your heading is always at the top (the lubber mark),
 // with N / E / S / W, a red north needle and the enemy tanks as coloured pips round the rim
