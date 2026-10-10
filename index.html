@@ -201,6 +201,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 #lobby .btnrow .btn{flex:0 0 auto}
 .ashBtn{font-family:var(--f-data);font-size:10px;letter-spacing:.12em;padding:2px 6px;margin-right:8px;background:none;border:1px solid rgba(255,179,71,.5);color:#ffb347}
 .ashBtn.on{background:#ffb347;color:#1a1709}
+#credits .credits{max-height:60vh;overflow:auto;font-size:15px;line-height:1.35}#credits h3{font-family:var(--f-data);font-weight:400;font-size:12px;letter-spacing:.2em;color:var(--brass);margin:14px 0 6px}#credits h4{font-family:var(--f-display);font-weight:400;font-size:18px;margin:10px 0 4px}#credits p{margin:2px 0;color:#d9cfa8}#credits .cr{color:var(--khaki)}#credits a{color:#e9dfb9}
 #nogl{position:fixed;inset:0;display:grid;place-items:center;padding:16px;font-size:20px;text-align:center}
 @media (max-width:900px){#menu{grid-template-columns:1fr;overflow:auto}.brand{align-self:start}}
 @media (prefers-reduced-motion:reduce){.deploy:active{transform:none}}
@@ -236,6 +237,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
     </nav>
 
     <div class="pane" id="tab-cpu">
+      <section><h2>ERA</h2><div class="row seg" id="eraRow"></div></section>
       <section><h2>TANK</h2><div class="tgrid" id="tankGrid"></div><div class="stats" id="tankStats"></div></section>
       <section><h2>BATTLEFIELD</h2><div class="mgrid" id="mapRow"></div><p class="desc" id="mapDesc"></p></section>
       <section class="pair">
@@ -263,7 +265,8 @@ td:first-child{font-family:var(--f-display);font-size:18px}
         <div class="seats" id="seatList"></div>
         <section><h2>YOUR TANK · STATS ON THE LEFT</h2><div class="tgrid" id="lobbyTanks"></div></section>
         <section id="hostOpts">
-          <h2>BATTLEFIELD</h2><div class="mgrid" id="lobbyMaps"></div>
+          <h2>ERA</h2><div class="row seg" id="lobbyEra"></div>
+          <h2 style="margin-top:12px">BATTLEFIELD</h2><div class="mgrid" id="lobbyMaps"></div>
           <h2 style="margin-top:12px">CPU SKILL · EMPTY SEATS</h2><div class="row seg" id="lobbyLvl"></div>
         </section>
         <p class="desc" id="lobbyMsg"></p>
@@ -272,7 +275,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
     </div>
 
     <div class="pane" id="tab-settings" hidden>
-      <section><h2>OPTIONS</h2><div class="sets" id="menuSettings"></div><p class="fine">In battle: [ and ] change mouse sensitivity, Esc opens these settings.</p></section>
+      <section><h2>OPTIONS</h2><div class="sets" id="menuSettings"></div><button class="btn" id="creditsBtn" style="margin-top:12px">CREDITS · MODELS AND TEXTURES</button><p class="fine">In battle: [ and ] change mouse sensitivity, Esc opens these settings.</p></section>
       <section><h2>CONTROLS</h2>
         <div class="keys">
           <b>MOUSE · ARROWS</b><span>Aim. The gun follows your crosshair, zeroed for the range shown beside it</span>
@@ -298,6 +301,45 @@ td:first-child{font-family:var(--f-display);font-size:18px}
   </div>
 </div>
 
+<div id="loading" class="screen modal" hidden><div class="card"><h2>LOADING</h2><div class="sub" id="loadingMsg">Bringing the tanks up…</div></div></div>
+
+<div id="credits" class="screen modal" hidden><div class="card wide"><h2>CREDITS</h2><div class="credits">
+<p>Iron Rain 3D uses these 3D models and textures. Thank you to their creators.</p>
+<h3>3D models (Creative Commons Attribution 4.0, CC BY 4.0)</h3>
+<p>All from Sketchfab, licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. The files in assets/ were simplified and their textures were resized and recompressed for the game.</p>
+<h4>Tanks, WW2</h4>
+<p class="cr">KV-2 · <a href="https://sketchfab.com/3d-models/kv2-lowpoly-b146e3a194bb47b698795ff096be21e7" target="_blank" rel="noopener">Kv2 lowpoly</a> · Comrade1280</p>
+<p class="cr">Panzer IV · <a href="https://sketchfab.com/3d-models/panzer-iv-medium-tank-toshueyi-14c74d148326448c8edb5fee81be3894" target="_blank" rel="noopener">Panzer IV Medium Tank - Toshueyi</a> · Joanthan To (Toshueyi)</p>
+<p class="cr">KV-1 · <a href="https://sketchfab.com/3d-models/kv-1-1-f23cf9b8822a4ad48f068a2c51c44848" target="_blank" rel="noopener">Kv-1 (КВ-1)</a> · Artem Goyko</p>
+<p class="cr">T-34/76 · <a href="https://sketchfab.com/3d-models/soviet-t34-76-medium-tank-e09417344da448a0bbaeb76ad5db2ff6" target="_blank" rel="noopener">Soviet T34-76 Medium Tank</a> · Oliver Triplett</p>
+<p class="cr">Tiger I · <a href="https://sketchfab.com/3d-models/a982b6e03db143a8aa299f59e30b0d1a" target="_blank" rel="noopener">German Armoured Division WWII Tiger Tank</a> · drcrazzie</p>
+<p class="cr">StuG IV · <a href="https://sketchfab.com/3d-models/stug-iv-6bbee57f422348abb2e480c932fb36bd" target="_blank" rel="noopener">StuG IV</a> · M1RON</p>
+<p class="cr">M4A2 Sherman · <a href="https://sketchfab.com/3d-models/m4a2-sherman-b1fe6a97c7fb454f9ba3e4570568f892" target="_blank" rel="noopener">M4A2 Sherman</a> · barking_dogo</p>
+<h4>Tanks, modern</h4>
+<p class="cr">Leopard 2A6 · <a href="https://sketchfab.com/3d-models/leopard-2-a6-7cb23d5322df4b409a880de635826067" target="_blank" rel="noopener">Leopard 2 A6</a> · buh</p>
+<p class="cr">Challenger 2 · <a href="https://sketchfab.com/3d-models/challenger-ii-f7869d0d85ff4a65b2e1333ab00b25cf" target="_blank" rel="noopener">Challenger II</a> · buh</p>
+<p class="cr">KF51 Panther · <a href="https://sketchfab.com/3d-models/kf51-panther-505555987f33412e9f510642dbad7acb" target="_blank" rel="noopener">KF51 Panther</a> · GRIP420</p>
+<p class="cr">Merkava Mk4 · <a href="https://sketchfab.com/3d-models/merkava-mk4-5720c5369ea24c71af475aff769ffa8b" target="_blank" rel="noopener">Merkava Mk4</a> · Arlassar</p>
+<p class="cr">M1A2 SEPv3 Abrams · <a href="https://sketchfab.com/3d-models/abrams-m1a2-sepv3-eb6f5560198740269507e9948376414c" target="_blank" rel="noopener">Abrams M1A2 SEPv3</a> · dannzjs</p>
+<p class="cr">T-90M · [T-90M (With interior) [FREE]](https://sketchfab.com/3d-models/t-90m-with-interior-free-f465e873d8d0468abd5d84b1ecc22f19) · Quasar</p>
+<h4>Ashton</h4>
+<p class="cr">Ashton · <a href="https://sketchfab.com/3d-models/american-soldier-rigged-5b1967e7f83547be8a1c3ae656ab1ad4" target="_blank" rel="noopener">AMERICAN SOLDIER RIGGED</a> · RedVeil studio</p>
+<p class="cr">RPG-7 · <a href="https://sketchfab.com/3d-models/rpg-7-free-model-99c0af8a1803490a86edc48cd3bfc700" target="_blank" rel="noopener">RPG 7 ( Free Model )</a> · javadbayat</p>
+<h4>Buildings</h4>
+<p class="cr">autumn.glb · <a href="https://sketchfab.com/3d-models/52772448c62348e0a4951b51758d5587" target="_blank" rel="noopener">Autumn House</a> · Zhenya</p>
+<p class="cr">forest.glb · <a href="https://sketchfab.com/3d-models/fd2b1fa1e7a1484bb59f987fdb9c5533" target="_blank" rel="noopener">Autumn forest wooden house</a> · Johan Pindeville</p>
+<p class="cr">farmpoor.glb · <a href="https://sketchfab.com/3d-models/60156c85ad9e43498e15f2fbd529a5da" target="_blank" rel="noopener">Low Farm Assembly Dirty House Poor</a> · YadroGames</p>
+<p class="cr">barn.glb · <a href="https://sketchfab.com/3d-models/4887c7e3de244a9db3eb5b4974418b1b" target="_blank" rel="noopener">Old wooden barn</a> · Elizabeth Watts</p>
+<p class="cr">medieval.glb · <a href="https://sketchfab.com/3d-models/3eb9e3b600264e2f99100fc43619497e" target="_blank" rel="noopener">Medieval house, Generic Textures, Game ready</a> · by__Rx</p>
+<p class="cr">village.glb · <a href="https://sketchfab.com/3d-models/065cb734d68446ec90e3b43da86a5530" target="_blank" rel="noopener">Old vilage house_LOD_0</a> · Nikolay Fedorov</p>
+<p class="cr">log.glb · <a href="https://sketchfab.com/3d-models/af38c38a25c14f979e094f6477d77316" target="_blank" rel="noopener">Asset medieval log building</a> · KIFIR</p>
+<p class="cr">farmwood.glb · <a href="https://sketchfab.com/3d-models/a9732b6c1c4249a08477de9fc53ee6ad" target="_blank" rel="noopener">House Farm wood</a> · Mehdi Shahsavan</p>
+<h3>Textures and sky (CC0, public domain)</h3>
+<p>From <a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a>, released under <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a>: Brown Mud Leaves 01, Forest Ground 01, Forest Leaves 02, Forest Leaves 03, Leaves Forest Ground, Rocks Ground 02, Dry Riverbed Rock, Coast Sand Rocks 02, Rocky Terrain 02, Aerial Rocks 04, and the Lilienstein HDRI (sky).</p>
+<h3>Code libraries</h3>
+<p><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> (MIT), <a href="https://peerjs.com" target="_blank" rel="noopener">PeerJS</a> (MIT), <a href="https://github.com/zeux/meshoptimizer" target="_blank" rel="noopener">meshoptimizer / gltfpack</a> (MIT).</p>
+</div><button class="btn primary" id="creditsClose">CLOSE</button></div></div>
+
 <div id="pause" class="screen modal" hidden>
   <div class="card">
     <h2 id="pauseTitle">PAUSED</h2>
@@ -318,10 +360,12 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/meshoptimizer@0.18.1/meshopt_decoder.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-10.7';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-10.8';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -345,124 +389,67 @@ const cleanName = s => String(s || '').toUpperCase().replace(/[^A-Z0-9 \-.]/g, '
 
 const settings = load('ironrain3d.settings', {vol: .7, sens: 1, zsens: 1, shellCam: false, invert: false, shadows: true, voice: true, thirdP: false});
 if (settings.v !== 2) { settings.v = 2; settings.shellCam = false; save('ironrain3d.settings', settings); }   // real-time now: the shell camera starts off
-const setup = load('ironrain3d.setup', {tank: 0, map: 0, foes: 2, lvl: 1, seats: 2});
+const setup = load('ironrain3d.setup', {tank: 0, map: 0, foes: 2, lvl: 1, seats: 2, era: 'ww2'});
 let myName = (() => { try { return cleanName(localStorage.getItem('ironrain3d.name') || localStorage.getItem('ironrain.name') || ''); } catch (e) { return ''; } })();
 
-// ================================================================ game data (roster, weapons, CPU levels carried over from Iron Rain)
-// hull / turret are the 2D side profiles from Iron Rain (x forward, y negative = up); here they are extruded into 3D.
+// ================================================================ game data: two eras of real tanks (models in assets/tanks, credits in CREDITS.md)
+// Every gameplay number comes from the real vehicle, scaled the same way for every tank of an era:
+//   armor  = effective frontal protection (mm) -> hull points;   speed = road speed (km/h) -> driving speed
+//   mv, kg = the main AP round's muzzle velocity and mass -> shell speed (range) and hit energy (damage)
+//   rof    = rounds per minute -> reload;  elev = the gun's real depression / elevation limits (deg)
+//   trav   = powered turret traverse (deg/s);  erate = gun elevation speed (deg/s);  arc = casemate guns: traverse each side
+// cfg tells prepTank how to cut the model: turret = the ring height y and the turret's footprint ellipse (x, rx, rz) in
+// metres in the tank frame, gun = the barrel line's radius; names = mesh-name rules where the model has named parts.
 const TANKS = [
-  {name:'SHERMAN', role:'M4 · US medium', hp:205, fuel:65, atk:100, w:2.6, wheels:6, wheelR:3.3, paint:0x5b6138,
-   hull:[[-19,-12.5],[19,-12.5],[22,-14],[14,-21.5],[-17,-21.5],[-20,-15]], dome:{rx:11, ry:8}, gun:{len:27, w:4.2, sleeve:true}, antennas:1},
-  {name:'T-34', role:'T-34/85 · Soviet medium', hp:200, fuel:80, atk:106, w:3.0, wheels:5, wheelR:4.4, paint:0x4b5a33,
-   hull:[[-19,-12.5],[19,-12.5],[23,-14],[13,-19],[-15,-19],[-21,-14.5]],
-   turret:[[-11,-19],[13,-19],[12,-24],[7,-27],[-9,-27],[-13,-23]], gun:{len:33, w:3.8, sleeve:true}, antennas:1},
-  {name:'TIGER I', role:'German heavy', hp:210, fuel:30, atk:108, w:3.5, wheels:8, wheelR:3.4, paint:0x9a8a5a,
-   hull:[[-20,-12.5],[20,-12.5],[22,-14],[21,-20.5],[-20,-20.5],[-21,-14]],
-   turret:[[-14,-20.5],[13,-20.5],[13.5,-27],[11,-29],[-12,-29],[-14,-27]], gun:{len:31, w:4.8, sleeve:true, brake:true}, antennas:1},
-  {name:'PANTHER', role:'German medium', hp:210, fuel:50, atk:105, w:3.3, wheels:8, wheelR:3.3, skirt:true, paint:0x8c7d50,
-   hull:[[-20,-12.5],[20,-12.5],[24,-14],[13,-20],[-17,-20],[-21,-15]],
-   turret:[[-12,-20],[11,-20],[9.5,-26.5],[-10,-27.5],[-13,-24]], gun:{len:35, w:3.8, sleeve:true, brake:true}, antennas:1},
-  {name:'CHURCHILL', role:'British infantry tank', hp:230, fuel:35, atk:94, w:3.25, wheels:9, wheelR:2.4, skirt:true, paint:0x5f6243,
-   hull:[[-21,-12.5],[21,-12.5],[22.5,-15],[21.5,-20],[-21,-20],[-22,-15]],
-   turret:[[-10,-20],[10,-20],[10,-27],[-10,-27]], gun:{len:25, w:4.4, sleeve:true}, antennas:2},
-  {name:'CROMWELL', role:'British cruiser', hp:198, fuel:90, atk:100, w:3.0, wheels:5, wheelR:4.4, paint:0x57613e,
-   hull:[[-19,-12.5],[19,-12.5],[21,-14],[20,-19],[-19,-19],[-21,-14]],
-   turret:[[-11,-19],[12,-19],[12,-25.5],[10.5,-27],[-10,-27],[-11,-25.5]], gun:{len:27, w:3.8, sleeve:true, brake:true}, antennas:2},
-  {name:'IS-2', role:'Soviet heavy', hp:200, fuel:40, atk:108, w:3.1, wheels:6, wheelR:3.8, paint:0x46542f,
-   hull:[[-20,-12.5],[20,-12.5],[24,-14],[14,-20],[-16,-20],[-22,-15]], dome:{rx:12.5, ry:8.5}, gun:{len:32, w:5.2, sleeve:true, brake:true}, antennas:1},
-  {name:'HELLCAT', role:'M18 · US tank destroyer', hp:186, fuel:100, atk:108, w:2.9, wheels:5, wheelR:3.9, paint:0x5e643c,
-   hull:[[-19,-12.5],[19,-12.5],[22,-14],[14,-19],[-18,-19],[-20,-14.5]],
-   turret:[[-11,-19],[11,-19],[13,-23.5],[-12,-24.5]], gun:{len:32, w:3.6, brake:true}, antennas:1, open:true},
-  {name:'STUG III', role:'German assault gun', hp:195, fuel:55, atk:104, w:2.95, wheels:6, wheelR:3.6, skirt:true, paint:0x6b6f70,
-   hull:[[-19,-12.5],[19,-12.5],[22,-14.5],[21,-18.5],[-19,-18.5],[-21,-14.5]],
-   turret:[[-12,-18.5],[16,-18.5],[14,-24],[-12,-24]], gun:{len:27, w:4.2, sleeve:true, brake:true}, antennas:0, tw:.86},
-  {name:'STUART', role:'M5 · US light', hp:200, fuel:100, atk:100, w:2.3, wheels:4, wheelR:3.9, paint:0x5d6539,
-   hull:[[-16,-12.5],[16,-12.5],[19,-14],[13,-21],[-15,-21],[-18,-15]],
-   turret:[[-8,-21],[8,-21],[8,-26.5],[-8,-26.5]], gun:{len:23, w:3}, antennas:2},
+  {name:'KV-2', role:'Soviet heavy assault tank', era:'ww2', model:'kv2', nation:'SU', armor:110, speed:34, gun:'152 mm M-10T', cal:152, round:'BR-540', mv:432, kg:40, rof:2, weight:52, crew:6, L:6.95, W:3.32,
+   elev:[-3, 18], trav:9, erate:4, cfg:{turret:{y:1.95, x:.2, rx:1.6, rz:1.3}, gun:{r:.28}}},
+  {name:'PANZER IV', role:'Ausf. H · German medium', era:'ww2', model:'pz4', nation:'DE', armor:80, speed:38, gun:'7.5 cm KwK 40 L/48', cal:75, round:'PzGr. 39', mv:790, kg:6.8, rof:8, weight:25, crew:5, L:5.92, W:2.88,
+   elev:[-8, 20], trav:14, erate:6, cfg:{pca:true, fwdFromGun:true, unshear:true, turret:{auto:true, y:1.75, x:.15, rx:1.45, rz:1.25}, gun:{r:.18}}},
+  {name:'KV-1', role:'1941 · Soviet heavy', era:'ww2', model:'kv1', nation:'SU', armor:90, speed:35, gun:'76.2 mm ZiS-5', cal:76, round:'BR-350A', mv:662, kg:6.3, rof:6, weight:45, crew:5, L:6.75, W:3.32,
+   elev:[-5, 25], trav:12, erate:6, cfg:{turret:{y:1.75, x:.35, rx:1.45, rz:1.35}, gun:{r:.2}}},
+  {name:'T-34', role:'T-34/76 1943 · Soviet medium', era:'ww2', model:'t34', nation:'SU', armor:90, speed:53, gun:'76.2 mm F-34', cal:76, round:'BR-350A', mv:662, kg:6.3, rof:6, weight:30.9, crew:4, L:6.68, W:3.0,
+   elev:[-5, 30], trav:25, erate:8, cfg:{turret:{y:1.55, x:.6, rx:1.35, rz:1.25}, gun:{r:.18}}},
+  {name:'TIGER I', role:'German heavy', era:'ww2', model:'tiger', nation:'DE', armor:100, speed:45, gun:'8.8 cm KwK 36', cal:88, round:'PzGr. 39', mv:773, kg:10.2, rof:6, weight:57, crew:5, L:6.32, W:3.56,
+   elev:[-8, 15], trav:8, erate:5, cfg:{turret:{y:1.85, x:-.05, rx:1.6, rz:1.55}, gun:{r:.22}, names:{turret: /Turret|Hatch/i, gun: /Cannon_Low|TigerGun/i}}},
+  {name:'STUG IV', role:'German assault gun · casemate', era:'ww2', model:'stug4', nation:'DE', armor:80, speed:38, gun:'7.5 cm StuK 40 L/48', cal:75, round:'PzGr. 39', mv:790, kg:6.8, rof:8, weight:23, crew:4, L:5.93, W:2.95,
+   elev:[-6, 20], trav:6, erate:5, arc:10, cfg:{casemate:true, turret:{y:9, x:0, rx:1, rz:1}, gun:{r:.2, back:.5}}},
+  {name:'SHERMAN', role:'M4A2 · US medium', era:'ww2', model:'sherman', nation:'US', armor:91, speed:48, gun:'75 mm M3', cal:75, round:'M61 APC', mv:619, kg:6.79, rof:8, weight:31.3, crew:5, L:5.92, W:2.62,
+   elev:[-10, 25], trav:24, erate:8, cfg:{flip:true, turret:{y:1.98, x:0, rx:1.3, rz:1.2}, gun:{r:.17}}},
+  {name:'LEOPARD 2A6', role:'German main battle tank', era:'modern', model:'leo2', nation:'DE', armor:800, speed:72, gun:'120 mm L/55', cal:120, round:'DM53', mv:1750, kg:4.6, rof:10, weight:62.3, crew:4, L:7.7, W:3.75,
+   elev:[-9, 20], trav:40, erate:25, cfg:{turret:{y:1.75, x:-.6, rx:2.4, rz:1.9}, gun:{r:.22}, names:{turret: /turret/i, gun: /gun/i, hullOnly: true}}},
+  {name:'CHALLENGER 2', role:'British main battle tank', era:'modern', model:'chall2', nation:'UK', armor:850, speed:59, gun:'120 mm L30A1', cal:120, round:'L27A1', mv:1700, kg:4.5, rof:8, weight:62.5, crew:4, L:8.3, W:3.5,
+   elev:[-10, 20], trav:36, erate:25, cfg:{turret:{auto:true, y:1.9, x:-.4, rx:2.6, rz:1.75}, gun:{r:.22}}},
+  {name:'KF51 PANTHER', role:'German next-gen MBT', era:'modern', model:'kf51', nation:'DE', armor:750, speed:70, gun:'130 mm Rh-130 L/52', cal:130, round:'130 mm APFSDS', mv:1650, kg:6.5, rof:10, weight:59, crew:3, L:7.7, W:3.6,
+   elev:[-9, 20], trav:40, erate:25, cfg:{clipAll:true, turret:{y:1.86, x:0, rx:3.0, rz:1.85}, gun:{r:.24, x:2.3}}},
+  {name:'MERKAVA MK4', role:'Israeli main battle tank', era:'modern', model:'merkava', nation:'IL', armor:800, speed:64, gun:'120 mm MG253', cal:120, round:'M338', mv:1700, kg:4.6, rof:10, weight:65, crew:4, L:7.6, W:3.72,
+   elev:[-7, 20], trav:36, erate:25, cfg:{autoYaw:true, turret:{auto:true, y:1.85, x:-.9, rx:2.7, rz:1.9}, gun:{r:.22}}},
+  {name:'M1A2 ABRAMS', role:'SEPv3 · US main battle tank', era:'modern', model:'abrams', nation:'US', armor:900, speed:67, gun:'120 mm M256', cal:120, round:'M829A4', mv:1555, kg:4.6, rof:10, weight:66.8, crew:4, L:7.93, W:3.66,
+   elev:[-9, 20], trav:42, erate:25, cfg:{clipAll:true, turret:{y:1.72, x:-.4, rx:3.1, rz:1.85}, gun:{r:.32, x:2.1}}},
+  {name:'T-90M', role:'Russian main battle tank', era:'modern', model:'t90m', nation:'SU', armor:800, speed:60, gun:'125 mm 2A46M-4', cal:125, round:'3BM60', mv:1660, kg:4.8, rof:8, weight:46.5, crew:3, L:6.86, W:3.78,
+   elev:[-6, 14], trav:24, erate:20, cfg:{turret:{y:1.55, x:-.1, rx:1.9, rz:1.7}, gun:{r:.22}}},
 ];
-// ---- the real vehicles. Game stats come from these, so the tanks compare the way they did in 1944-45:
-//   armor = effective frontal armor (mm, slope included) -> hull points
-//   speed = road speed (km/h) -> driving speed; gun calibre and velocity -> damage per hit
-//   rof   = rounds per minute -> reload time; L x W -> how big a target the tank is
-// `m` describes the 3D model in metres (x forward, y up): hull side profile, turret plan, running gear and fittings.
-const REAL = {
-  'SHERMAN':  {nation:'US', armor:91,  speed:42, gun:'75 mm M3',        cal:75,  vel:1.00, rof:8,  weight:30.3, crew:5,
-    m:{L:5.9, W:2.62, hullW:2.62, hull:[[-2.85,.62],[2.5,.62],[2.95,.95],[2.95,1.12],[1.45,1.9],[-2.55,1.9],[-2.92,1.5]], slope:0, lower:{w:1.7, y0:.35, y1:.95},
-       run:{type:'vvss', bogies:[-1.55,-.05,1.45], r:.26}, sprocket:[2.5,.62,.33], idler:[-2.55,.33,.31], trackW:.42, trackTop:.95,
-       turret:{x:.15, plan:{ell:[1.05,1.3,1.0], flat:.86}, h:.9, taper:.8}, mantlet:{type:'rotor', w:.95, h:.55, d:.28},
-       gun:{len:2.9, r:.048, brake:0}, cupola:[-.55,-.4], extras:['hullMG','lights','spareTracks','deflector','nose','roofMG']}},
-  'T-34':     {nation:'SU', armor:90,  speed:55, gun:'85 mm ZiS-S-53',  cal:85,  vel:1.02, rof:6,  weight:32,   crew:5,
-    m:{L:6.1, W:3.0, hullW:3.0, hull:[[-3.0,.5],[2.65,.5],[3.05,.82],[1.6,1.55],[-2.55,1.55],[-3.0,.95]], slope:40, slopeY:.95, lower:{w:2.0, y0:.32, y1:.95},
-       run:{type:'christie', n:5, r:.42, x0:-2.25, x1:2.25}, sprocket:[-2.75,.5,.38], idler:[2.75,.5,.36], trackW:.5, trackTop:.93,
-       turret:{x:.45, plan:{ell:[1.15,1.35,1.1], flat:.9}, h:.72, taper:.72}, mantlet:{type:'round', w:.8, h:.5, d:.3},
-       gun:{len:4.3, r:.055, brake:0}, cupola:[-.6,.35], extras:['fuelTanks','hullMG','lights','handrails','sideLinks']}},
-  'TIGER I':  {nation:'DE', armor:100, speed:45, gun:'8.8 cm KwK 36',   cal:88,  vel:1.05, rof:6,  weight:57,   crew:5,
-    m:{L:6.32, W:3.56, hullW:3.56, hull:[[-3.15,.48],[2.95,.48],[3.25,.95],[3.0,1.02],[3.0,1.85],[-3.1,1.85],[-3.16,.95]], slope:0, lower:{w:1.9, y0:.3, y1:1.0},
-       run:{type:'interleaved', n:8, r:.4, x0:-2.45, x1:2.35}, sprocket:[2.85,.62,.38], idler:[-2.9,.55,.33], trackW:.72, trackTop:1.0,
-       turret:{x:-.05, plan:{ell:[1.0,1.35,1.45], flat:.92}, h:.9, taper:.96}, mantlet:{type:'box', w:1.55, h:.72, d:.3},
-       gun:{len:4.9, r:.065, brake:2}, cupola:[-.75,.55], extras:['smoke','turretBin','exhausts','hullMG','lights','feifel','mantletDetail']}},
-  'PANTHER':  {nation:'DE', armor:140, speed:46, gun:'7.5 cm KwK 42',   cal:75,  vel:1.25, rof:6,  weight:44.8, crew:5,
-    m:{L:6.87, W:3.27, hullW:3.27, hull:[[-3.35,.55],[3.0,.55],[3.45,.78],[1.75,1.85],[-3.0,1.85],[-3.4,1.05]], slope:40, slopeY:1.0, lower:{w:1.95, y0:.32, y1:1.0},
-       run:{type:'interleaved', n:8, r:.43, x0:-2.6, x1:2.55}, sprocket:[3.0,.6,.4], idler:[-3.05,.55,.36], trackW:.66, trackTop:1.02,
-       turret:{x:-.35, plan:{poly:[[1.05,.62],[1.05,-.62],[-1.45,-.95],[-1.45,.95]], r:.15}, h:.82, taper:.72, rake:.2}, mantlet:{type:'pig', w:.95, h:.62, d:.4},
-       gun:{len:5.25, r:.045, brake:2}, cupola:[-1.0,.5], extras:['skirts','exhausts','hullMG','rearBoxes']}},
-  'CHURCHILL':{nation:'UK', armor:152, speed:24, gun:'75 mm QF',        cal:75,  vel:.95,  rof:9,  weight:40.7, crew:5,
-    m:{L:7.44, W:3.25, hullW:1.95, hull:[[-3.6,.45],[3.35,.45],[3.5,1.15],[3.35,1.55],[-3.6,1.55]], slope:0, lower:null,
-       run:{type:'small', n:11, r:.2, x0:-2.8, x1:2.8}, sprocket:[-3.5,.6,.55], idler:[3.5,1.05,.6], trackW:.55, trackTop:1.72, churchill:true,
-       turret:{x:.55, plan:{poly:[[.95,.8],[.95,-.8],[-.9,-.85],[-.9,.85]], r:.25}, h:.85, taper:.9}, mantlet:{type:'box', w:.8, h:.5, d:.25},
-       gun:{len:2.6, r:.05, brake:0}, cupola:[-.5,.4], extras:['hullMG','louvres']}},
-  'CROMWELL': {nation:'UK', armor:76,  speed:64, gun:'75 mm QF',        cal:75,  vel:.95,  rof:10, weight:27.9, crew:5,
-    m:{L:6.35, W:2.91, hullW:2.3, hull:[[-3.15,.5],[2.9,.5],[3.2,.85],[3.1,.95],[3.1,1.6],[-3.1,1.6],[-3.18,.98]], slope:0, lower:null,
-       run:{type:'christie', n:5, r:.41, x0:-2.2, x1:2.2}, sprocket:[-2.75,.55,.35], idler:[2.75,.55,.33], trackW:.36, trackTop:.92,
-       turret:{x:.15, plan:{poly:[[.85,.85],[.85,-.85],[-.95,-.85],[-.95,.85]], r:.06}, h:.82, taper:.97}, mantlet:{type:'box', w:1.0, h:.48, d:.22},
-       gun:{len:2.7, r:.045, brake:0}, cupola:[-.55,.4], extras:['fenders','bins','hullMG','lights','turretBox']}},
-  'IS-2':     {nation:'SU', armor:200, speed:37, gun:'122 mm D-25T',    cal:122, vel:.95,  rof:2.5,weight:46,   crew:4,
-    m:{L:6.77, W:3.07, hullW:3.07, hull:[[-3.35,.5],[2.95,.5],[3.38,.85],[2.0,1.55],[-2.95,1.55],[-3.38,.95]], slope:20, slopeY:1.0, lower:{w:2.0, y0:.32, y1:1.0},
-       run:{type:'torsion', n:6, r:.33, x0:-2.3, x1:2.25, rollers:3}, sprocket:[-2.95,.55,.36], idler:[2.95,.55,.33], trackW:.65, trackTop:1.0,
-       turret:{x:.25, plan:{ell:[1.2,1.45,1.2], flat:.9}, h:.85, taper:.7}, mantlet:{type:'box', w:1.3, h:.55, d:.35},
-       gun:{len:4.8, r:.07, brake:2}, cupola:[-.75,-.45], extras:['fuelTanks','lights','handrails','sideLinks']}},
-  'HELLCAT':  {nation:'US', armor:30,  speed:80, gun:'76 mm M1',        cal:76,  vel:1.08, rof:12, weight:17.7, crew:5,
-    m:{L:5.28, W:2.87, hullW:2.87, hull:[[-2.65,.55],[2.3,.55],[2.66,.78],[1.3,1.45],[-2.45,1.5],[-2.66,1.05]], slope:22, slopeY:.95, lower:{w:1.9, y0:.32, y1:.95},
-       run:{type:'torsion', n:5, r:.33, x0:-1.75, x1:1.75, rollers:4}, sprocket:[2.25,.62,.32], idler:[-2.25,.42,.3], trackW:.36, trackTop:.92,
-       turret:{x:-.15, plan:{poly:[[1.25,0],[.55,.98],[-1.1,.98],[-1.1,-.98],[.55,-.98]], r:.08}, h:.7, taper:.85, open:.9}, mantlet:{type:'box', w:.7, h:.4, d:.2},
-       gun:{len:4.0, r:.045, brake:1}, cupola:null, extras:['mgRing','lights','deckBoxes']}},
-  'STUG III': {nation:'DE', armor:80,  speed:40, gun:'7.5 cm StuK 40',  cal:75,  vel:1.08, rof:8,  weight:23.9, crew:4,
-    m:{L:5.4, W:2.95, hullW:2.95, hull:[[-2.7,.48],[2.45,.48],[2.75,.82],[2.62,1.1],[-2.7,1.1]], slope:0, lower:{w:1.9, y0:.3, y1:.9},
-       run:{type:'torsion', n:6, r:.27, x0:-1.95, x1:1.6, rollers:3}, sprocket:[2.35,.6,.34], idler:[-2.45,.5,.3], trackW:.4, trackTop:.86,
-       turret:{x:.15, plan:{poly:[[1.3,.95],[1.3,-.95],[-1.25,-1.15],[-1.25,1.15]], r:.05}, h:.62, taper:.82, rake:.45}, mantlet:{type:'pig', w:.75, h:.5, d:.38},
-       gun:{len:3.4, r:.045, brake:2}, cupola:[-.75,.5], extras:['skirts','exhausts','mgShield']}},
-  'STUART':   {nation:'US', armor:55,  speed:58, gun:'37 mm M6',        cal:37,  vel:.95,  rof:20, weight:15.4, crew:4,
-    m:{L:4.84, W:2.29, hullW:2.29, hull:[[-2.4,.55],[2.1,.55],[2.42,.78],[1.35,1.55],[-2.2,1.55],[-2.44,1.1]], slope:20, slopeY:1.0, lower:{w:1.5, y0:.32, y1:1.0},
-       run:{type:'vvss', bogies:[-.9,.75], r:.23}, sprocket:[2.05,.58,.28], idler:[-2.05,.31,.3], trackW:.3, trackTop:.86,
-       turret:{x:-.1, plan:{poly:[[.7,.6],[.7,-.6],[-.75,-.65],[-.75,.65]], r:.2}, h:.7, taper:.88}, mantlet:{type:'box', w:.7, h:.4, d:.2},
-       gun:{len:1.9, r:.028, brake:0}, cupola:null, extras:['hullMG','lights','roofMG']}},
-};
-// the main armour-piercing round each gun actually fired: muzzle velocity sets how fast (so how far and how flat) the shell
-// flies, and its energy (mass and velocity) sets how hard it hits
-const AMMO = {
-  'SHERMAN':   {round: 'M61 APC',      mv: 619, kg: 6.79},
-  'T-34':      {round: 'BR-365',       mv: 792, kg: 9.2},
-  'TIGER I':   {round: 'PzGr. 39',     mv: 773, kg: 10.2},
-  'PANTHER':   {round: 'PzGr. 39/42',  mv: 935, kg: 6.8},
-  'CHURCHILL': {round: 'M61 APC',      mv: 620, kg: 6.79},
-  'CROMWELL':  {round: 'M61 APC',      mv: 620, kg: 6.79},
-  'IS-2':      {round: 'BR-471',       mv: 795, kg: 25},
-  'HELLCAT':   {round: 'M62 APC',      mv: 792, kg: 7.0},
-  'STUG III':  {round: 'PzGr. 39',     mv: 790, kg: 6.8},
-  'STUART':    {round: 'M51 APC',      mv: 884, kg: .87},
-};
-const E_REF = .5 * 6.79 * 619 * 619;   // the Sherman's round is the 100% reference
-// game stats from the real numbers (the same scaling for every tank)
+const ERAS = [['ww2', 'WW2 · 1941–45'], ['modern', 'MODERN']];
+const E_REF = {ww2: .5 * 6.79 * 619 * 619, modern: .5 * 4.6 * 1555 * 1555};   // 100% hit energy: the Sherman's M61 / the Abrams' M829A4
+// game stats from the real numbers, the same scaling for every tank of an era (modern armour is RHA-equivalent, so it's
+// scaled down to play like WW2 plate, and modern shells are much faster, so 1650 m/s is the full-charge speed)
 for (const t of TANKS) {
-  const r = REAL[t.name], a = AMMO[t.name]; t.real = r; t.nation = r.nation; t.m3 = r.m; t.ammo3 = a;
-  t.hp = Math.round(120 + Math.sqrt(r.armor) * 11);                        // 30 mm -> 180 HP ... 200 mm -> 276 HP
-  t.atk = Math.round(100 * Math.pow(.5 * a.kg * a.mv * a.mv / E_REF, .35)); // damage: shell energy, compressed (37 mm 46% ... 122 mm 191%)
-  t.vk = a.mv / 800;                                                       // shell speed: 800 m/s real = the game's standard full charge
-  t.range = Math.round((135 * t.vk) ** 2 / 25);                           // longest throw on flat ground at 45 deg (VMAX, G below)
-  t.rel = clamp((60 / r.rof) / 8, .5, 2.2);                                // reload multiplier from the rate of fire
-  t.speed = r.speed / 3.6 * .5;                                            // m/s in game: half the real road speed
-  t.w = r.m.W;
+  const modern = t.era === 'modern', ae = modern ? t.armor * .11 : t.armor;
+  t.real = {nation: t.nation, armor: t.armor, speed: t.speed, gun: t.gun, cal: t.cal, rof: t.rof, weight: t.weight, crew: t.crew};
+  t.ammo3 = {round: t.round, mv: t.mv, kg: t.kg};
+  t.m3 = {L: t.L, W: t.W, hullW: t.W * .86, hull: [[0, 1.6]]};   // the deck height is filled in when the model loads
+  t.hp = Math.round(120 + Math.sqrt(ae) * 11);
+  t.atk = Math.round(100 * Math.pow(.5 * t.kg * t.mv * t.mv / E_REF[t.era], .35));
+  t.vk = t.mv / (modern ? 1650 : 800);
+  const v = 135 * t.vk, e = Math.min(45, t.elev[1]) * D2R;
+  t.range = Math.round(v * v * Math.sin(2 * e) / 25);                     // longest throw on flat ground at the gun's top elevation
+  t.rel = clamp((60 / t.rof) / 8, .5, 2.2);
+  t.speed = t.speed / 3.6 * .5;
+  t.w = t.W;
 }
+const eraTanks = era => TANKS.map((t, i) => [t, i]).filter(([t]) => t.era === era).map(([, i]) => i);
+if (!ERAS.some(e => e[0] === setup.era)) setup.era = 'ww2';
+if (!TANKS[setup.tank] || TANKS[setup.tank].era !== setup.era) setup.tank = eraTanks(setup.era)[0];
+
 const WEAPONS = [
   {key:'missile', name:'MISSILE',  short:'MISSILE',  r:10, dmg:45, n:1, ammo:Infinity, col:'#ffd966'},
   {key:'bigbomb', name:'BIG BOMB', short:'BIG BOMB', r:18, dmg:75, n:1, ammo:3, col:'#ff8a5c'},
@@ -2223,7 +2210,207 @@ function makeTankMesh(sp, cos) {
   return {hull, turret, gun, flag, mount, gp: new THREE.Vector3(gpx, gpy, 0), L: m.L, W: m.W, gunLen: gl + ml.d * .5, top: mount.y + T.h + (m.cupola ? .25 : 0),
     eye: new THREE.Vector3(-tb.back * .45, T.h + 1.1, -m.hullW * .22), mats: [body, emMat, ...Object.values(mats)]};
 }
-function disposeTank(m) { for (const g of [m.hull, m.turret]) { scene.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } m.mats.forEach(x => x.dispose()); }
+function disposeTank(m) { for (const g of [m.hull, m.turret]) { scene.remove(g); if (!m.model) g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } m.mats.forEach(x => x.dispose()); }
+
+// ================================================================ real tank models (glTF, meshopt-compressed; see CREDITS.md)
+// Each model is loaded once, turned into the game's frame (x forward, y up, z across), scaled to the real hull length and
+// cut into hull, turret and gun so the turret can traverse and the gun elevate. Each tank in a battle clones that template.
+const gltfLoader = THREE.GLTFLoader ? new THREE.GLTFLoader() : null;
+if (gltfLoader && window.MeshoptDecoder) gltfLoader.setMeshoptDecoder(window.MeshoptDecoder);
+const modelTpl = {}, modelWait = {};
+function eig3(A) {   // eigenvectors of a symmetric 3x3 (Jacobi), sorted by eigenvalue, largest first
+  const a = A.map(r => r.slice()), v = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  for (let it = 0; it < 40; it++) {
+    let p = 0, q = 1; for (const [i, j] of [[0, 2], [1, 2]]) if (Math.abs(a[i][j]) > Math.abs(a[p][q])) { p = i; q = j; }
+    if (Math.abs(a[p][q]) < 1e-12) break;
+    const th = .5 * Math.atan2(2 * a[p][q], a[q][q] - a[p][p]), c = Math.cos(th), s = Math.sin(th);
+    for (let k = 0; k < 3; k++) { const x = a[k][p], y = a[k][q]; a[k][p] = c * x - s * y; a[k][q] = s * x + c * y; }
+    for (let k = 0; k < 3; k++) { const x = a[p][k], y = a[q][k]; a[p][k] = c * x - s * y; a[q][k] = s * x + c * y; }
+    for (let k = 0; k < 3; k++) { const x = v[k][p], y = v[k][q]; v[k][p] = c * x - s * y; v[k][q] = s * x + c * y; }
+  }
+  return [0, 1, 2].map(i => ({val: a[i][i], vec: new THREE.Vector3(v[0][i], v[1][i], v[2][i])})).sort((x, y) => y.val - x.val);
+}
+const pct = (arr, f) => { const s = Float32Array.from(arr).sort(); return s[Math.min(s.length - 1, Math.max(0, Math.floor(f * (s.length - 1))))]; };
+function prepTank(root, spec) {
+  const C = spec.cfg; root.updateMatrixWorld(true);
+  const meshes = []; root.traverse(o => { if (o.isMesh && o.geometry && o.geometry.attributes.position) meshes.push(o); });
+  // every vertex in model space
+  const P = []; const v = new THREE.Vector3();
+  for (const m of meshes) { const p = m.geometry.attributes.position, st = Math.max(1, Math.floor(p.count / 6000)); for (let i = 0; i < p.count; i += st) { v.fromBufferAttribute(p, i).applyMatrix4(m.matrixWorld); P.push(v.x, v.y, v.z); } }
+  const n = P.length / 3, mean = new THREE.Vector3(); for (let i = 0; i < n; i++) { mean.x += P[i * 3] / n; mean.y += P[i * 3 + 1] / n; mean.z += P[i * 3 + 2] / n; }
+  // orientation: up and the long axis. Models tilted in 3D get a principal-axis fit; the rest are y-up already.
+  let U = new THREE.Vector3(0, 1, 0), F;
+  if (C.pca) {
+    const cov = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (let i = 0; i < n; i++) { const d = [P[i * 3] - mean.x, P[i * 3 + 1] - mean.y, P[i * 3 + 2] - mean.z]; for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) cov[a][b] += d[a] * d[b] / n; }
+    const e = eig3(cov); let ui = 0; e.forEach((x, i) => { if (Math.abs(x.vec.y) > Math.abs(e[ui].vec.y)) ui = i; });
+    U = e[ui].vec.clone(); if (U.y < 0) U.negate();
+    F = e.filter((x, i) => i !== ui)[0].vec.clone();
+  } else {
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (let i = 0; i < n; i++) { x0 = Math.min(x0, P[i * 3]); x1 = Math.max(x1, P[i * 3]); z0 = Math.min(z0, P[i * 3 + 2]); z1 = Math.max(z1, P[i * 3 + 2]); }
+    F = x1 - x0 > z1 - z0 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+  }
+  F.addScaledVector(U, -F.dot(U)).normalize();
+  if (C.fwdFromGun) {   // the barrel is the straightest thing on a tank: forward is from the turret's middle to the muzzle
+    const hs = []; for (let i = 0; i < n; i++) { v.set(P[i * 3] - mean.x, P[i * 3 + 1] - mean.y, P[i * 3 + 2] - mean.z); hs.push(v.dot(U)); }
+    const hb = pct(hs, .7); let cx = 0, cz = 0, cn = 0; const S0 = new THREE.Vector3().crossVectors(F, U);
+    for (let i = 0; i < n; i++) if (hs[i] > hb) { v.set(P[i * 3] - mean.x, P[i * 3 + 1] - mean.y, P[i * 3 + 2] - mean.z); cx += v.dot(F); cz += v.dot(S0); cn++; }
+    cx /= cn; cz /= cn; let far = 0, best = null;
+    for (let i = 0; i < n; i++) if (hs[i] > pct(hs, .55)) { v.set(P[i * 3] - mean.x, P[i * 3 + 1] - mean.y, P[i * 3 + 2] - mean.z); const a = v.dot(F) - cx, b = v.dot(S0) - cz, d = Math.hypot(a, b); if (d > far) { far = d; best = [a, b]; } }
+    if (best) { F = F.clone().multiplyScalar(best[0]).addScaledVector(S0, best[1]).normalize(); C.flip = false; C.noAlign = true; }
+  }
+  // which end is the front: the gun overhangs it. Compare how far the upper part reaches past the running gear at each end.
+  const hu = [], fu = []; for (let i = 0; i < n; i++) { v.set(P[i * 3] - mean.x, P[i * 3 + 1] - mean.y, P[i * 3 + 2] - mean.z); hu.push(v.dot(U)); fu.push(v.dot(F)); }
+  const h0 = pct(hu, .005), h1 = pct(hu, .97), lowF = [], upF = [];
+  for (let i = 0; i < n; i++) { const t = (hu[i] - h0) / (h1 - h0); if (t < .3) lowF.push(fu[i]); else if (t > .45) upF.push(fu[i]); }
+  const over = Math.max(...upF) - pct(lowF, .995), back = pct(lowF, .005) - Math.min(...upF);
+  if (!C.fwdFromGun && (back > over) !== !!C.flip) F.negate();
+  // line the long axis up with the hull's sides: the heading that makes the running gear narrowest
+  { const lows = []; for (let i = 0; i < n; i++) if ((hu[i] - h0) / (h1 - h0) < .3) lows.push(i);
+    const S0 = new THREE.Vector3().crossVectors(F, U), width = th => { const c = Math.cos(th), sn = Math.sin(th), w = []; for (const i of lows) { v.set(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]); w.push(v.dot(S0) * c - v.dot(F) * sn); } return pct(w, .99) - pct(w, .01); };
+    let best = 0, bw = width(0), span = C.pca ? 25 : 4; for (let a = -span; a <= span; a += .5) { const w = width(a * D2R); if (w < bw - 1e-6) { bw = w; best = a * D2R; } }
+    if (best && !C.noAlign) F.applyAxisAngle(U, best); }
+  const S = new THREE.Vector3().crossVectors(F, U);   // the game frame: x = F, y = U, z = F x U
+  const R = new THREE.Matrix4().makeBasis(F, U, S).transpose();   // model -> game frame (rotation only)
+  if (C.unshear) {   // a model whose node transform is skewed: its hull is a parallelogram from above. Fit the slant of the front and back plates and shear it square.
+    const pts = []; for (let i = 0; i < n; i++) { v.set(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]).applyMatrix4(R); pts.push([v.x, v.y, v.z]); }
+    const yy = pts.map(q => q[1]), ya = pct(yy, .01), yb = pct(yy, .97), low = pts.filter(q => (q[1] - ya) / (yb - ya) < .3), zz = low.map(q => q[2]), za = pct(zz, .1), zb = pct(zz, .9);
+    const fit = sgn => { const xs = [], zs = []; for (let b = 0; b < 10; b++) { const z0 = za + (zb - za) * b / 10, z1 = za + (zb - za) * (b + 1) / 10, inb = low.filter(q => q[2] >= z0 && q[2] < z1).map(q => q[0] * sgn); if (inb.length > 5) { xs.push(pct(inb, .98) * sgn); zs.push((z0 + z1) / 2); } }
+      const mz = zs.reduce((a, b) => a + b, 0) / zs.length, mx = xs.reduce((a, b) => a + b, 0) / xs.length; let num = 0, den = 0; zs.forEach((z, i) => { num += (z - mz) * (xs[i] - mx); den += (z - mz) ** 2; }); return den ? num / den : 0; };
+    const sh = (fit(1) + fit(-1)) / 2;
+    R.premultiply(new THREE.Matrix4().set(1, 0, -sh, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1));
+  }
+  // scale to the real hull length (measured on the running gear, so the barrel doesn't count) and stand it on the ground
+  const xs = [], ys = [], zs = []; for (let i = 0; i < n; i++) { v.set(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]).applyMatrix4(R); xs.push(v.x); ys.push(v.y); zs.push(v.z); }
+  const y0 = pct(ys, .002), y1 = pct(ys, .97), lx = []; for (let i = 0; i < n; i++) if ((ys[i] - y0) / (y1 - y0) < .35) lx.push(xs[i]);
+  const lx0 = pct(lx, .002), lx1 = pct(lx, .998), k = spec.L / (lx1 - lx0) * (C.k || 1);
+  const M = new THREE.Matrix4().makeScale(k, k, k).multiply(new THREE.Matrix4().makeTranslation(-(lx0 + lx1) / 2, -y0, -(pct(zs, .01) + pct(zs, .99)) / 2)).multiply(R);
+  // bake every mesh into the tank frame and sort its triangles into hull, turret and gun
+  const T = C.turret || {}, parts = {hull: [], turret: [], gun: []};
+  const tri = [], A = new THREE.Vector3(), B = new THREE.Vector3(), D = new THREE.Vector3();
+  const baked = meshes.map(m => {   // plain (de-interleaved, non-indexed) copies in the tank frame; tangents are dropped (shading falls back to derivatives)
+    const src = m.geometry, g = new THREE.BufferGeometry();
+    for (const [name, at] of Object.entries(src.attributes)) {
+      if (name === 'tangent') continue;
+      const arr = new Float32Array(at.count * at.itemSize);
+      for (let i = 0; i < at.count; i++) for (let c = 0; c < at.itemSize; c++) arr[i * at.itemSize + c] = c === 0 ? at.getX(i) : c === 1 ? at.getY(i) : c === 2 ? at.getZ(i) : at.getW(i);
+      g.setAttribute(name, new THREE.BufferAttribute(arr, at.itemSize));
+    }
+    if (src.index) g.setIndex(src.index.clone());
+    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(M, m.matrixWorld));
+    return {m, g: g.index ? g.toNonIndexed() : g};
+  });
+  // the barrel: from its tip (the farthest-forward point high up) back along the gun line
+  if (T.auto) {
+    const hs = []; for (const {g} of baked) { const p = g.attributes.position, nn = g.attributes.normal; if (!nn) continue;
+      for (let t = 0; t < p.count / 3; t++) { if (nn.getY(t * 3) < .9) continue; const cx = (p.getX(t * 3) + p.getX(t * 3 + 1) + p.getX(t * 3 + 2)) / 3, cy = (p.getY(t * 3) + p.getY(t * 3 + 1) + p.getY(t * 3 + 2)) / 3, cz = (p.getZ(t * 3) + p.getZ(t * 3 + 1) + p.getZ(t * 3 + 2)) / 3;
+        const e = ((cx - T.x) / T.rx) ** 2 + (cz / T.rz) ** 2; if (e > 1.1 && e < 2.2 && Math.abs(cz) < spec.W * .4 && cy > .8) hs.push(cy); } }
+    if (hs.length > 20) T.y = pct(hs, .5) + .08;
+  }
+  let tyaw = 0;
+  if (C.autoYaw) { let far = 0; for (const {g} of baked) { const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i), dx = p.getX(i) - T.x, dz = p.getZ(i), d = Math.hypot(dx, dz); if (y > T.y + .1 && d > far) { far = d; tyaw = Math.atan2(dz, dx); } } } }
+  const rot = (x, z) => { const c = Math.cos(-tyaw), sn = Math.sin(-tyaw), dx = x - T.x; return [T.x + dx * c - z * sn, dx * sn + z * c]; };
+  if (tyaw) for (const {g} of baked) { const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i); if (y > T.y) { const [x, z] = rot(p.getX(i), p.getZ(i)); const ox = p.getX(i) - T.x, oz = p.getZ(i), along = ox * Math.cos(tyaw) + oz * Math.sin(tyaw), side = -ox * Math.sin(tyaw) + oz * Math.cos(tyaw);
+        if (((x - T.x) / T.rx) ** 2 + (z / T.rz) ** 2 < 1 || (along > 0 && Math.abs(side) < .35)) { p.setX(i, x); p.setZ(i, z); } } } }
+  const hTop = (y1 - y0) * k, tipMin = C.casemate ? hTop * .3 : Math.min(T.y, hTop * .45);
+  let tip = null; for (const {g} of baked) { const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i); if (y > tipMin && Math.abs(p.getZ(i)) < 1 && (!tip || p.getX(i) > tip.x)) tip = {x: p.getX(i), y, z: p.getZ(i)}; } }
+  const G = C.gun || {}, piv = new THREE.Vector3(G.x != null ? G.x : T.x + T.rx * .8, G.y != null ? G.y : tip.y, 0), gr = C.gun && C.gun.r || .2;
+  const dirG = new THREE.Vector3(tip.x - piv.x, tip.y - piv.y, 0).normalize();
+  const nameOf = m => { let s = ''; for (let o = m; o; o = o.parent) s += '/' + o.name; return s; };
+  for (const {m, g} of baked) {
+    const nm = nameOf(m), p = g.attributes.position, cls = new Uint8Array(p.count / 3);
+    const named = C.names && (C.names.gun && C.names.gun.test(nm) ? 2 : C.names.turret && C.names.turret.test(nm) ? 1 : C.names.hullOnly ? 0 : -1);
+    const nt = p.count / 3, par = new Int32Array(p.count), keys = new Map();
+    const find = a => { while (par[a] !== a) { par[a] = par[par[a]]; a = par[a]; } return a; };
+    for (let i = 0; i < p.count; i++) { par[i] = i; const kk = Math.round(p.getX(i) * 400) + ',' + Math.round(p.getY(i) * 400) + ',' + Math.round(p.getZ(i) * 400); const o = keys.get(kk); if (o != null) par[find(i)] = find(o); else keys.set(kk, i); }
+    for (let t = 0; t < nt; t++) { const a = find(t * 3); par[find(t * 3 + 1)] = a; par[find(t * 3 + 2)] = a; }
+    const comp = new Map(); for (let t = 0; t < nt; t++) { const r0 = find(t * 3); let c = comp.get(r0); if (!c) comp.set(r0, c = {n: 0, x: 0, y: 0, z: 0, ylo: 1e9});
+      for (let q = 0; q < 3; q++) { const y = p.getY(t * 3 + q); c.x += p.getX(t * 3 + q); c.y += y; c.z += p.getZ(t * 3 + q); if (y < c.ylo) c.ylo = y; } c.n++; }
+    for (const c of comp.values()) { c.x /= c.n * 3; c.y /= c.n * 3; c.z /= c.n * 3; c.big = C.clipAll || c.n > nt * .45; c.tur = !C.casemate && c.ylo > T.y - (T.tol || .25) && ((c.x - T.x) / T.rx) ** 2 + (c.z / T.rz) ** 2 < 1; }
+    // triangles of one big merged piece that straddle the ring inside the turret's footprint are cut along the ring plane
+    const atts = Object.entries(g.attributes), outs = [0, 1, 2].map(() => atts.map(() => []));
+    const vert = i => atts.map(([, at]) => Array.from(at.array.subarray(i * at.itemSize, (i + 1) * at.itemSize)));
+    const put = (c, V) => V.forEach((arr, a) => { for (const x of arr) outs[c][a].push(x); });
+    const mix = (P0, P1, t) => P0.map((arr, a) => arr.map((x, q) => x + (P1[a][q] - x) * t));
+    const yA = atts.findIndex(([nm]) => nm === 'position');
+    const clip = (poly, keepAbove) => { const out = []; for (let k = 0; k < poly.length; k++) { const P0 = poly[k], P1 = poly[(k + 1) % poly.length], d0 = P0[yA][1] - T.y, d1 = P1[yA][1] - T.y, in0 = keepAbove ? d0 >= 0 : d0 < 0, in1 = keepAbove ? d1 >= 0 : d1 < 0;
+      if (in0) out.push(P0); if (in0 !== in1) out.push(mix(P0, P1, d0 / (d0 - d1))); } return out; };
+    for (let i = 0; i < p.count / 3; i++) {
+      const V = [vert(i * 3), vert(i * 3 + 1), vert(i * 3 + 2)];
+      if (named != null && named >= 0) { V.forEach(q => put(named, q)); continue; }
+      A.fromBufferAttribute(p, i * 3); B.fromBufferAttribute(p, i * 3 + 1); D.fromBufferAttribute(p, i * 3 + 2);
+      const cx = (A.x + B.x + D.x) / 3, cy = (A.y + B.y + D.y) / 3, cz = (A.z + B.z + D.z) / 3;
+      const along = (cx - piv.x) * dirG.x + (cy - piv.y) * dirG.y, off = Math.hypot(cx - piv.x - dirG.x * along, cy - piv.y - dirG.y * along, cz - tip.z);
+      if (along > -(C.gun && C.gun.back || .3) && off < gr) { V.forEach(q => put(2, q)); continue; }
+      const c = comp.get(find(i * 3)), inFoot = !C.casemate && ((cx - T.x) / T.rx) ** 2 + (cz / T.rz) ** 2 < 1;
+      if (c.big && inFoot && Math.min(A.y, B.y, D.y) < T.y && Math.max(A.y, B.y, D.y) > T.y) {
+        for (const [keep, cl] of [[true, 1], [false, 0]]) { const poly = clip(V, keep); for (let k = 1; k + 1 < poly.length; k++) { put(cl, poly[0]); put(cl, poly[k]); put(cl, poly[k + 1]); } }
+        continue;
+      }
+      V.forEach(q => put(c.big ? (inFoot && cy > T.y ? 1 : 0) : c.tur ? 1 : 0, q));
+    }
+    for (let c = 0; c < 3; c++) {
+      if (!outs[c][yA].length) continue;
+      const out = new THREE.BufferGeometry();
+      atts.forEach(([nm, at], a) => out.setAttribute(nm, new THREE.BufferAttribute(new Float32Array(outs[c][a]), at.itemSize)));
+      parts[['hull', 'turret', 'gun'][c]].push({geo: out, mat: m.material});
+    }
+  }
+  // pivots: the turret turns about the ring centre, the gun elevates about its trunnion; level the barrel to 0 degrees
+  const mount = new THREE.Vector3(C.casemate ? piv.x - .2 : T.x, C.casemate ? piv.y - .3 : T.y, 0);
+  const gunAng = Math.atan2(tip.y - piv.y, tip.x - piv.x);
+  for (const q of parts.turret) q.geo.translate(-mount.x, -mount.y, -mount.z);
+  for (const q of parts.gun) { q.geo.translate(-piv.x, -piv.y, -piv.z); q.geo.rotateZ(-gunAng); }
+  const box = new THREE.Box3(); for (const q of [...parts.hull, ...parts.turret.map(x => ({geo: x.geo.clone().translate(mount.x, mount.y, 0)}))]) { q.geo.computeBoundingBox(); box.union(q.geo.boundingBox); }
+  const tb = new THREE.Box3(); for (const q of parts.turret) { q.geo.computeBoundingBox(); tb.union(q.geo.boundingBox); }
+  // the rear deck, where the rider sits
+  let deck = 0; for (const q of parts.hull) { const p = q.geo.attributes.position; for (let i = 0; i < p.count; i++) if (Math.abs(p.getX(i) + spec.L * .28) < .6 && Math.abs(p.getZ(i)) < spec.W * .35) deck = Math.max(deck, p.getY(i)); }
+  const hw = (box.max.z - box.min.z);
+  return {parts, mount, gp: new THREE.Vector3(piv.x - mount.x, piv.y - mount.y, 0), gunLen: Math.hypot(tip.x - piv.x, tip.y - piv.y),
+    top: Math.min(box.max.y, (tb.isEmpty() ? piv.y : mount.y + tb.max.y) + .1), L: spec.L, W: Math.min(hw, spec.W + .3), deck: deck || mount.y,
+    turretBox: tb.isEmpty() ? null : tb, eye: tb.isEmpty() ? new THREE.Vector3(-.4, 1.0, -.5) : new THREE.Vector3(tb.min.x * .3, tb.max.y + .55, tb.min.z * .45), tip};
+}
+function loadTankModel(spec) {
+  if (!spec || spec.foot || !spec.model) return Promise.resolve(null);
+  if (modelTpl[spec.model]) return Promise.resolve(modelTpl[spec.model]);
+  return modelWait[spec.model] = modelWait[spec.model] || new Promise((ok, bad) => {
+    if (!gltfLoader) { bad(new Error('GLTFLoader missing')); return; }
+    gltfLoader.load('assets/tanks/' + spec.model + '.glb', g => {
+      try { const tpl = prepTank(g.scene, spec); modelTpl[spec.model] = tpl; spec.m3.hull = [[0, tpl.deck]]; spec.m3.hullW = tpl.W * .86; silCache[TANKS.indexOf(spec)] = null; ok(tpl);
+        clearTimeout(loadTankModel.t); loadTankModel.t = setTimeout(() => { if (mode === 'menu') { tankGrid($('tankGrid'), $('tankStats')); if (net && lobby) renderOnline(); } }, 150); }
+      catch (e) { bad(e); }
+    }, undefined, bad);
+  });
+}
+const loadTankModels = specs => Promise.all([...new Set(specs)].map(loadTankModel));
+const tplReady = spec => !spec || spec.foot || !!modelTpl[spec.model];
+// a tank built from its template: shared geometry, its own materials (they darken when it burns, and take the camo tint)
+function makeModelTank(sp, cos) {
+  cos = cleanCos(cos);
+  const tpl = modelTpl[sp.model], hull = new THREE.Group(), turret = new THREE.Group(), gun = new THREE.Group(), mats = [], matMap = new Map();
+  const tint = cos.camo !== 'std' ? new THREE.Color(cosItem('camo', cos.camo).base).lerp(new THREE.Color(0xffffff), .25).multiplyScalar(1.35) : null;
+  const matOf = src => { if (matMap.has(src)) return matMap.get(src); const m = src.clone(); if (tint && m.color) m.color.multiply(tint); if (m.emissive) m.emissive.setHex(0); matMap.set(src, m); mats.push(m); return m; };
+  const build = (list, grp) => { for (const q of list) { const me = new THREE.Mesh(q.geo, matOf(q.mat)); me.castShadow = me.receiveShadow = true; grp.add(me); } };
+  build(tpl.parts.hull, hull); build(tpl.parts.turret, turret); build(tpl.parts.gun, gun);
+  gun.position.copy(tpl.gp); turret.add(gun);
+  // markings on the turret (or casemate) sides, and an antenna with the store flag
+  const tb = tpl.turretBox;
+  const emTex = cos.emblem === 'star' ? insigniaTex(sp.nation) : emblemTex(cos.emblem);
+  const emMat = new THREE.MeshStandardMaterial({map: emTex, transparent: true, alphaTest: .4, roughness: .8, polygonOffset: true, polygonOffsetFactor: -2});
+  if (tb) for (const s of [-1, 1]) { const em = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), emMat), sz = Math.min(.75, (tb.max.y - tb.min.y) * .6);
+    em.scale.set(sz, sz, 1); em.position.set((tb.min.x + tb.max.x) * .5 - .1, (tb.min.y + tb.max.y) * .5, s * (s > 0 ? tb.max.z : -tb.min.z) + s * .01); em.rotation.y = s > 0 ? 0 : Math.PI; turret.add(em); }
+  let flag = null;
+  const an = cyl(.015, .025, 2.6, mats[0] || emMat, 4), ax = -tpl.L * .38, az = -tpl.W * .33;
+  an.material = new THREE.MeshStandardMaterial({color: 0x24251f}); mats.push(an.material); an.position.set(ax, tpl.deck + 1.3, az); hull.add(an);
+  if (cos.flag !== 'none') {
+    const fg = new THREE.PlaneGeometry(1.4, .88, 6, 1); fg.translate(-.7, -.44, 0);
+    flag = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({map: flagTex(cos.flag), transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .9}));
+    flag.position.set(ax, tpl.deck + 2.5, az); hull.add(flag); mats.push(flag.material);
+  }
+  scene.add(hull, turret);
+  return {hull, turret, gun, flag, mount: tpl.mount.clone(), gp: tpl.gp.clone(), L: tpl.L, W: tpl.W, gunLen: tpl.gunLen, top: tpl.top, eye: tpl.eye.clone(), mats: [emMat, ...mats], model: true};
+}
+
 
 // ================================================================ planes (cosmetic flyovers)
 const planeMat = new THREE.MeshLambertMaterial({color: 0x3e4438});
@@ -2374,7 +2561,7 @@ function spawnPoints(n, rand) {
 // He runs (WASD strafes, the body turns with the mouse) and carries an RPG (unlimited, 7.5 s reload, 50 damage) and three
 // C4 charges (150 damage): thrown, they stick to whatever they land on, ground or tank, and go off after a short fuse.
 // spec index -1 means Ashton everywhere a seat names its tank.
-const ASHTON = {name: 'ASHTON', role: 'On foot · RPG and C4', foot: true, nation: 'US', hp: 100, atk: 100, vk: 1, range: 350, rel: 1, speed: 5.5, w: .7};
+const ASHTON = {name: 'ASHTON', role: 'On foot · RPG and C4', foot: true, nation: 'US', hp: 100, atk: 100, vk: 1, range: 350, rel: 1, speed: 5.5, w: .7, elev: [-45, 60], trav: 400, erate: 200};
 const FOOT_W = [
   {key: 'rpg', name: 'RPG', short: 'RPG', r: 5, dmg: 50, n: 1, ammo: Infinity, col: '#ffcf6a', gk: .12, sp: 120},
   {key: 'c4', name: 'C4', short: 'C4', r: 9, dmg: 150, n: 1, ammo: 3, col: '#d8d0a0', kind: 'c4', gk: 1, sp: 15},
@@ -2490,13 +2677,13 @@ function c4Event(e) {
 function clearC4() { for (const c of c4s) scene.remove(c.mesh); c4s = []; }
 
 function makeTank(i, cfg, x, z, hullYaw) {
-  const spec = specOf(cfg.spec), m = spec.foot ? makeSoldierMesh(cfg.cos) : makeTankMesh(spec, cfg.cos);
+  const spec = specOf(cfg.spec), m = spec.foot ? makeSoldierMesh(cfg.cos) : makeModelTank(spec, cfg.cos);
   const t = {i, specIdx: cfg.spec, spec, ai: !!cfg.ai, remote: !!cfg.remote, dropped: false, color: SEAT_COLORS[i], name: cfg.name, cos: cleanCos(cfg.cos), x, z, y: groundAt(x, z), vy: 0, falling: false, fallFrom: 0,
     hullYaw, yaw: hullYaw, elev: 10, power: POWER, pitch: 0, roll: 0, mesh: m, alive: true, hp: spec.hp, maxHp: spec.hp,
     ammo: (spec.foot ? FOOT_W : WEAPONS).map(w => w.ammo), weapon: 0, stock: [], armed: 0, reload: 2, reloadMax: 2, lastHitBy: null, moving: 0,
     ai2: {planAt: rnd(.5, 2), moveAt: rnd(2, 6), goal: null},
     recoil: 0, base: new THREE.Vector3(), stats: {shots: 0, hits: 0, dmg: 0, kills: 0, taken: 0}, mem: {target: null, tries: 0}, plan: null, deb: null, burnT: 0, smokeAcc: 0,
-    drv: {th: 0, st: 0}, tgt: null};
+    drv: {th: 0, st: 0}, tgt: null, prevHull: hullYaw};
   syncTank(t, 1);
   return t;
 }
@@ -2524,12 +2711,12 @@ function createBattle(cfg) {
   nameTanks();
   for (const t of tanks) {
     const near = tanks.filter(o => o !== t).sort((a, b) => Math.hypot(a.x - t.x, a.z - t.z) - Math.hypot(b.x - t.x, b.z - t.z))[0];
-    if (near) t.yaw = Math.atan2(-(near.z - t.z), near.x - t.x);
-    t.elev = 35;
+    if (near) t.yaw = t.hullYaw = t.prevHull = Math.atan2(-(near.z - t.z), near.x - t.x);
+    t.elev = clamp(5, ...elevLim(t));
   }
   mySeat = net ? (net.role === 'host' ? 0 : net.seat) : 0;
   aimPitch = 0; arcPref = 0;
-  player = tanks[mySeat]; tanks.forEach(seatRider); loadClips(myRider().id).catch(() => {}); riderMsg = null; riderLowSaid = false; fly.on = false;
+  player = tanks[mySeat]; viewYaw = player.yaw; tanks.forEach(seatRider); loadClips(myRider().id).catch(() => {}); riderMsg = null; riderLowSaid = false; fly.on = false;
   mode = 'game'; paused = false; worldTime = 0; nextFlight = rnd(10, 20);
   hideScreens();
 }
@@ -2538,16 +2725,27 @@ function hideScreens() {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 
+// load the models a battle needs (a moment on first use, then cached) before building it
+function needModels(specIdx, go) {
+  const specs = specIdx.map(specOf).filter(sp => !sp.foot);
+  if (specs.every(tplReady)) { go(); return; }
+  $('loading').hidden = false; $('loadingMsg').textContent = 'Bringing the tanks up…';
+  loadTankModels(specs).then(() => { $('loading').hidden = true; go(); },
+    e => { $('loadingMsg').textContent = 'A tank model could not be loaded (' + (e && e.message || 'network') + '). Check your connection and try again.'; setTimeout(() => { $('loading').hidden = true; }, 4000); });
+}
 function startOffline() {
   audioInit();
+  if (TANKS[setup.tank].era !== setup.era) setup.tank = eraTanks(setup.era)[0];
   const ash = setup.ashton && setup.foes === 3;
   const seats = [{spec: ash ? -1 : setup.tank, name: myName || (ash ? 'ASHTON' : TANKS[setup.tank].name), cos: profile.equip, ai: false}];
-  const pool = shuffled([...TANKS.keys()]);
-  for (let i = 0; i < setup.foes; i++) seats.push({spec: pool[i], name: TANKS[pool[i]].name, cos: {...COS_DEFAULT, rider: pick(COSMETICS.rider).id}, ai: true});
-  createBattle({map: setup.map, seed: (Math.random() * 1e9) | 0, lvl: setup.lvl, seats});
-  emit({t: 'feed', s: 'BATTLE ON ' + mapDef.name + ' · ' + setup.foes + ' CPU (' + CPU_LEVELS[setup.lvl].name + ')', c: '#d6c99c'});
-  startFight();
-  requestLock();
+  const pool = shuffled(eraTanks(setup.era));   // CPU tanks from the same era
+  for (let i = 0; i < setup.foes; i++) seats.push({spec: pool[i % pool.length], name: TANKS[pool[i % pool.length]].name, cos: {...COS_DEFAULT, rider: pick(COSMETICS.rider).id}, ai: true});
+  needModels(seats.map(q => q.spec), () => {
+    createBattle({map: setup.map, seed: (Math.random() * 1e9) | 0, lvl: setup.lvl, seats});
+    emit({t: 'feed', s: 'BATTLE ON ' + mapDef.name + ' · ' + setup.foes + ' CPU (' + CPU_LEVELS[setup.lvl].name + ')', c: '#d6c99c'});
+    startFight();
+    requestLock();
+  });
 }
 
 // ================================================================ battle flow (host / offline): real-time, no turns
@@ -2877,14 +3075,14 @@ function aiPlan(t) {
   if (sol.err > 18 && L.drill && t.ammo[3] > 0 && t.weapon !== 'S') { const s2 = solve(t, tg, WEAPONS[3]); if (s2.err < sol.err - 6) { sol = s2; t.weapon = 3; } }
   const m = Math.pow(.7, t.mem.tries);
   t.mem.tries++;
-  t.plan = {yaw: sol.yaw + gauss() * L.err * .45 * m * D2R, elev: clamp(sol.elev + gauss() * L.err * .11 * m, ELEV_MIN, ELEV_MAX), power: POWER, think: rnd(.7, 1.3)};
+  t.plan = {yaw: sol.yaw + gauss() * L.err * .45 * m * D2R, elev: clamp(sol.elev + gauss() * L.err * .11 * m, ...elevLim(t)), power: POWER, think: rnd(.7, 1.3)};
 }
 // full charge every shot, so aiming is elevation only: binary-search the low arc (range grows with elevation up to 45°)
 // and the high lob (range shrinks above 45°), and keep whichever lands nearer the target
 function solve(t, tg, w) {
   const yaw = Math.atan2(-(tg.z - t.z), tg.x - t.x), D = Math.hypot(tg.x - t.x, tg.z - t.z), [fx, fz] = fwd(yaw);
   let best = {yaw, elev: 20, power: POWER, err: 1e9};
-  const arcs = w.kind === 'drill' ? [[ELEV_MIN, 30, 1]] : [[ELEV_MIN, 45, 1], [45, ELEV_MAX, -1]];
+  const [e0, e1] = elevLim(t), arcs = w.kind === 'drill' ? [[e0, Math.min(30, e1), 1]] : e1 > 45 ? [[e0, 45, 1], [45, e1, -1]] : [[e0, e1, 1]];
   for (const [a0, a1, dir] of arcs) {
     let lo = a0, hi = a1;
     for (let it = 0; it < 14; it++) {
@@ -2911,9 +3109,7 @@ function aiThink(t, dt) {
   const p = t.plan;
   if (p) {
     p.think -= dt;
-    const dy = wrapA(p.yaw - t.yaw), sy = 75 * D2R * dt;
-    t.yaw += clamp(dy, -sy, sy);
-    t.elev += clamp(p.elev - t.elev, -30 * dt, 30 * dt);
+    slewGun(t, p.yaw, p.elev, dt);   // the real turret and elevation speeds
     t.power += clamp(p.power - t.power, -55 * dt, 55 * dt);
     if (p.think <= 0 && t.reload <= 0 && Math.abs(wrapA(p.yaw - t.yaw)) < .002 && Math.abs(p.elev - t.elev) < .05 && Math.abs(p.power - t.power) < .3 && !t.drv.th) {
       t.yaw = p.yaw; t.elev = p.elev; t.power = p.power; fire(t); a.moveAt = Math.min(a.moveAt, rnd(.5, 3));
@@ -2930,6 +3126,9 @@ function aiThink(t, dt) {
     t.drv = {th: Math.abs(turn) < .5 ? (back ? -1 : 1) : 0, st: clamp(turn * 2, -1, 1)};
     if (Math.hypot(dx, dz) < 2.5 || worldTime > a.goal.until) { a.goal = null; t.drv = {th: 0, st: 0}; t.plan = null; }
   } else t.drv = {th: 0, st: 0};
+  if (!p) slewGun(t, null, null, dt);
+  // a casemate gun can only swing a few degrees: pivot the whole vehicle onto the target
+  if (p && t.spec.arc && !a.goal) { const off = wrapA(p.yaw - t.hullYaw); if (Math.abs(off) > t.spec.arc * D2R * .8) t.drv = {th: 0, st: Math.sign(off)}; }
 }
 
 // ================================================================ tanks per frame
@@ -3163,7 +3362,7 @@ function hostRoom(np) {
   if (!netReady()) { netMsg = 'Online play needs the PeerJS library. Check your internet connection.'; renderOnline(); return; }
   audioInit();
   net = {role: 'host', code: genCode(), conns: [], status: 'opening', peer: null, pids: [myPid, null, null, null], dropped: [false, false, false, false]};
-  lobby = {np, map: setup.map, lvl: setup.lvl, ashton: -1, seats: [{k: 'host', ...myPick()}, ...[1, 2, 3].slice(0, np - 1).map(() => ({k: 'open'}))]};
+  lobby = {np, map: setup.map, lvl: setup.lvl, era: setup.era, ashton: -1, seats: [{k: 'host', ...myPick()}, ...[1, 2, 3].slice(0, np - 1).map(() => ({k: 'open'}))]};
   netMsg = '';
   let peer;
   try { peer = new Peer(PEER_PREFIX + net.code); } catch (e) { leaveRoom('Could not start networking.'); return; }
@@ -3233,7 +3432,8 @@ function hostData(conn, d) {
   const t = tanks[c.seat]; if (!t || t.ai || !t.alive) return;
   if (d.t === 'in' || d.t === 'fire') {
     if (Number.isFinite(+d.y)) t.yaw = wrapA(+d.y);
-    if (Number.isFinite(+d.e)) t.elev = clamp(+d.e, ELEV_MIN, ELEV_MAX);
+    if (Number.isFinite(+d.e)) t.elev = clamp(+d.e, ...elevLim(t));
+    if (t.spec.arc) t.yaw = t.hullYaw + clamp(wrapA(t.yaw - t.hullYaw), -t.spec.arc * D2R, t.spec.arc * D2R);
     if (d.w === -1 && t.stock.length) { t.weapon = 'S'; t.armed = clamp(d.a | 0, 0, t.stock.length - 1); }
     else if (d.w >= 0 && d.w < 4 && t.ammo[d.w | 0] > 0) t.weapon = d.w | 0;
     if (d.t === 'fire') fire(t);   // fire() itself refuses while reloading
@@ -3250,16 +3450,19 @@ const ashtonSeat = () => ashtonOK() && lobby.ashton >= 0 && lobby.ashton < lobby
 function hostStart() {
   if (!net || net.role !== 'host' || net.status !== 'ready' || !allReady()) return;
   audioInit();
-  const pool = shuffled([...TANKS.keys()]);
+  const era = lobby.era || 'ww2', pool = shuffled(eraTanks(era)), inEra = i => TANKS[i] && TANKS[i].era === era ? i : eraTanks(era)[0];
   const seats = lobby.seats.map((s, i) => s.k === 'open'
-    ? {spec: pool[i], name: TANKS[pool[i]].name, cos: {...COS_DEFAULT, rider: pick(COSMETICS.rider).id}, ai: true}
-    : {spec: i === ashtonSeat() ? -1 : s.s, name: s.n || 'PLAYER ' + (i + 1), cos: s.c, ai: false, remote: i !== 0});
+    ? {spec: pool[i % pool.length], name: TANKS[pool[i % pool.length]].name, cos: {...COS_DEFAULT, rider: pick(COSMETICS.rider).id}, ai: true}
+    : {spec: i === ashtonSeat() ? -1 : inEra(s.s), name: s.n || 'PLAYER ' + (i + 1), cos: s.c, ai: false, remote: i !== 0});
   net.dropped = [false, false, false, false];
-  createBattle({map: lobby.map, seed: (Math.random() * 1e9) | 0, lvl: lobby.lvl, seats});
-  emit({t: 'feed', s: 'ONLINE BATTLE ON ' + mapDef.name, c: '#d6c99c'});
-  bcast(roundMsg());
-  startFight();
-  requestLock();
+  needModels(seats.map(q => q.spec), () => {
+    if (!net || net.role !== 'host') return;
+    createBattle({map: lobby.map, seed: (Math.random() * 1e9) | 0, lvl: lobby.lvl, seats});
+    emit({t: 'feed', s: 'ONLINE BATTLE ON ' + mapDef.name, c: '#d6c99c'});
+    bcast(roundMsg());
+    startFight();
+    requestLock();
+  });
 }
 // everything a client needs to draw the battle: sent at the start, and to anyone rejoining part-way through
 function roundMsg() {
@@ -3336,13 +3539,15 @@ function clientData(m) {
     case 'welcome': net.seat = m.seat; mySeat = m.seat; net.status = 'ready'; net.re = null; net.lost = false; setRoomInUrl(net.code); netMsg = ''; sendHost({t: 'pick', ...myPick()}); renderOnline(); break;
     case 'full': leaveRoom(m.why || 'Could not join.'); break;
     case 'bye': leaveRoom('The host closed the room.'); break;
-    case 'lobby': lobby = m.lb; if (mode === 'game') toMenu(true); showTab('online'); renderOnline(); break;
+    case 'lobby': lobby = m.lb; if (mode === 'game') toMenu(true);
+      if (lobby.era && TANKS[setup.tank].era !== lobby.era) { setup.tank = eraTanks(lobby.era)[0]; save('ironrain3d.setup', setup); menuTankSwap(); sendHost({t: 'pick', ...myPick()}); }
+      showTab('online'); renderOnline(); break;
     case 'round': startClientRound(m); break;
     case 's': applySnap(m); break;
   }
 }
-function startClientRound(m) {
-  audioInit();
+function startClientRound(m) { audioInit(); needModels(m.seats.map(q => q.spec), () => { if (net) startClientRoundNow(m); }); }
+function startClientRoundNow(m) {
   const seats = m.seats.map((s, i) => ({spec: s.spec, name: s.name, cos: s.cos, ai: !!s.ai, remote: i !== net.seat}));
   if (menuTank) { disposeTank(menuTank.mesh); menuTank = null; }
   clearBattle();
@@ -3431,7 +3636,7 @@ addEventListener('mousemove', e => {
   if (fly.on) { fly.yaw = wrapA(fly.yaw - e.movementX * .0021 * settings.sens); fly.pitch = clamp(fly.pitch - e.movementY * .07 * settings.sens * (settings.invert ? -1 : 1), -85, 85); return; }
   const t = player; if (!t || !t.alive || state === 'over') return;
   const zf = zoom > .5 ? .22 * settings.zsens * scopeFov() / 16 : 1, s = settings.sens;
-  t.yaw = wrapA(t.yaw - e.movementX * .0021 * s * zf);
+  viewYaw = wrapA(viewYaw - e.movementX * .0021 * s * zf);
   aimPitch = clamp(aimPitch - e.movementY * .07 * s * zf * (settings.invert ? -1 : 1), -35, 70);   // the mouse moves your view; the gun lays itself to hit what you look at
 });
 glc.addEventListener('wheel', e => {
@@ -3495,8 +3700,8 @@ function playerInput(dt) {
   const t = player; if (!t || !t.alive || state === 'over' || paused || fly.on) { engineLevel = 0; traverseRate = 0; if (t && fly.on && auth()) t.drv = {th: 0, st: 0}; return; }
   const fine = keys.shift ? .25 : 1, zf = zoom > .5 ? .3 * scopeFov() / 16 : 1;
   const y0 = t.yaw;
-  if (keys.arrowleft) t.yaw += 40 * D2R * dt * fine * zf;
-  if (keys.arrowright) t.yaw -= 40 * D2R * dt * fine * zf;
+  if (keys.arrowleft) viewYaw = wrapA(viewYaw + 40 * D2R * dt * fine * zf);
+  if (keys.arrowright) viewYaw = wrapA(viewYaw - 40 * D2R * dt * fine * zf);
   if (keys.arrowup) aimPitch = clamp(aimPitch + 12 * dt * fine * zf, -35, 70);
   if (keys.arrowdown) aimPitch = clamp(aimPitch - 12 * dt * fine * zf, -35, 70);
   const thr = chatOpen ? 0 : (keys.w ? 1 : 0) - (keys.s ? 1 : 0), str = chatOpen ? 0 : (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
@@ -3615,16 +3820,35 @@ function gunElevFor(t, pitchDeg, R, lob) {   // gun elevation (deg) that drops a
   if (disc < 0) return null;   // out of reach
   return Math.atan((v * v + (lob ? 1 : -1) * Math.sqrt(disc)) / (G * dx)) / D2R;
 }
+// every tank's gun: the turret is carried round by the hull, then traverses toward the wanted bearing at the real turret
+// speed (a casemate gun only inside its arc), and the gun elevates at its real rate between its real limits
+const elevLim = t => t.spec.elev || [ELEV_MIN, ELEV_MAX];
+function slewGun(t, wantYaw, wantElev, dt) {
+  const sp = t.spec;
+  t.yaw += wrapA(t.hullYaw - (t.prevHull ?? t.hullYaw)); t.prevHull = t.hullYaw;
+  const st = (sp.trav || 60) * D2R * dt;
+  if (wantYaw != null) t.yaw += clamp(wrapA(wantYaw - t.yaw), -st, st);
+  if (sp.arc) t.yaw = t.hullYaw + clamp(wrapA(t.yaw - t.hullYaw), -sp.arc * D2R, sp.arc * D2R);
+  t.yaw = wrapA(t.yaw);
+  const [e0, e1] = elevLim(t);
+  if (wantElev != null) t.elev += clamp(clamp(wantElev, e0, e1) - t.elev, -(sp.erate || 30) * dt, (sp.erate || 30) * dt);
+  t.elev = clamp(t.elev, e0, e1);
+}
+// the gun can't follow the view: true when the wanted bearing is outside a casemate's arc
+const pastArc = t => !!(t.spec.arc && Math.abs(wrapA(viewYaw - t.hullYaw)) > t.spec.arc * D2R + .01);
+let viewYaw = 0;
 function gunLay(dt) {
   const t = player;
-  if (!t || !t.alive || mode !== 'game' || state !== 'battle') return;
+  if (!t || !t.alive || mode !== 'game' || state !== 'battle') { if (t) t.prevHull = t.hullYaw; return; }
   // in the normal view the gun simply points where you look; only the gunsight applies the zero (superelevation)
   let want = aimPitch;
   // third person: the camera sits above and behind, so aim the gun at whatever is under the crosshair rather than parallel to the view
   if (thirdView() && zoom <= .5 && tpAim) { const pv = t.base.y + t.mesh.gp.y, hd = Math.max(1, Math.hypot(tpAim.x - t.base.x, tpAim.z - t.base.z) - t.mesh.gp.x); want = Math.atan2(tpAim.y - pv, hd) / D2R; }
   if (zoom > .5 && !t.spec.foot) { const e = gunElevFor(t, aimPitch, zeroRange, arcPref); zeroOut = e == null; want = e == null ? 45 : e; } else zeroOut = false;
-  want = clamp(want, ELEV_MIN, ELEV_MAX);
-  t.elev += clamp(want - t.elev, -120 * dt, 120 * dt);   // fast enough to feel locked to the mouse
+  let wy = viewYaw;
+  if (thirdView() && zoom <= .5 && tpAim) wy = Math.atan2(-(tpAim.z - t.base.z), tpAim.x - t.base.x);
+  slewGun(t, wy, want, dt);
+  if (zoom > .5) viewYaw = t.yaw + clamp(wrapA(viewYaw - t.yaw), -1.5 * D2R, 1.5 * D2R);   // the gunsight is fixed to the gun: it turns only as fast as the turret
 }
 function setZero(r, why) {
   zeroRange = clamp(Math.round(r / 5) * 5, ZERO_MIN, player ? Math.min(1200, player.spec.range) : ZERO_MAX); zeroFlash = 1.4;
@@ -3995,7 +4219,7 @@ function updateCamera(dt) {
     // where you were aiming (the gun itself never moves off your aim), so the sight jumps but never drifts.
     const kk = camKick * camKick, kick = kk * (zoom > .5 ? .55 : 3.2), side = Math.sin(camKick * 9) * kk * (zoom > .5 ? .12 : .6);
     if (zoom < .5) { camera.position.x -= fx * kk * .35; camera.position.z -= fz * kk * .35; camera.position.y += kk * .08; }
-    camera.rotation.set((aimPitch + kick) * D2R, t.yaw - Math.PI / 2 + side * D2R, side * .02, 'YXZ');
+    camera.rotation.set((aimPitch + kick) * D2R, (zoom > .5 ? t.yaw : viewYaw) - Math.PI / 2 + side * D2R, side * .02, 'YXZ');
     if (zoom < .5) fovTarget += shotPunch * shotPunch * 7;   // a punch of the field of view with the blast
     if (tp) tpAim = castAim();
   }
@@ -4025,6 +4249,8 @@ function menuWorld() {
   menuTankSwap();
 }
 function menuTankSwap() {
+  const sp = TANKS[setup.tank];
+  if (!tplReady(sp)) { loadTankModel(sp).then(() => { if (mode === 'menu' && TANKS[setup.tank] === sp) menuTankSwap(); }, () => {}); return; }
   const pts = spawnPoints(1, mulberry(99 + setup.map));
   if (menuTank) disposeTank(menuTank.mesh);
   menuTank = makeTank(0, {spec: setup.tank, name: '', cos: previewCos || profile.equip}, pts[0].x, pts[0].z, .4);
@@ -4564,36 +4790,33 @@ const TSTAT = [
   ['RELOAD',    t => t.rel,                               t => t.real.rof + '/min · ' + (RELOAD.missile * t.rel).toFixed(1) + ' s', false],
   ['SIZE',      t => t.m3.L * t.m3.W,                     t => t.m3.L.toFixed(1) + ' × ' + t.m3.W.toFixed(1) + ' m',           false],
 ];
-const TRANGE = TSTAT.map(([, f]) => { const v = TANKS.map(f); return [Math.min(...v), Math.max(...v)]; });
+const TRANGE = era => TSTAT.map(([, f]) => { const v = TANKS.filter(t => t.era === era).map(f); return [Math.min(...v), Math.max(...v)]; });
 function statsHTML(i) {
   const t = TANKS[i];
   return `<span class="sh">${t.name}</span><span class="sr">${t.role} · ${t.real.weight} t · crew ${t.real.crew}</span>` + TSTAT.map(([k, f, fmt, high], j) => {
-    const v = f(t), [lo, hi] = TRANGE[j], n = hi > lo ? (v - lo) / (hi - lo) : .5, good = high ? n : 1 - n;
+    const v = f(t), [lo, hi] = TRANGE(t.era)[j], n = hi > lo ? (v - lo) / (hi - lo) : .5, good = high ? n : 1 - n;
     return `<span>${k}</span><span class="bar"><i style="width:${Math.round(15 + good * 85)}%"></i></span><span class="v">${fmt(t)}</span>`;
-  }).join('') + `<span class="fine sn">Real 1944–45 figures; game stats scale from them. Longer bars are better; bigger tanks are easier to hit.</span>`;
+  }).join('') + `<span>AIM</span><span class="bar"><i style="width:${Math.round(15 + clamp(t.trav / 42, 0, 1) * 85)}%"></i></span><span class="v">${t.elev[0]}°/+${t.elev[1]}° · ${t.arc ? '±' + t.arc + '° casemate' : t.trav + '°/s turret'}</span>`
+    + `<span class="fine sn">Real figures (modern ones are public estimates); game stats scale from them within each era. Longer bars are better; bigger tanks are easier to hit.</span>`;
 }
 // side-profile silhouettes from Iron Rain's 2D hull/turret shapes, for the tank cards
 const silCache = {};
+let silR = null;
 function tankSilhouette(i) {
   if (silCache[i]) return silCache[i];
-  const t = TANKS[i];
-  return silCache[i] = canvasOf(240, 68, (g, w, h) => {
-    const pts = [...t.hull, ...(t.turret || [])], xs = pts.map(p => p[0]);
-    const x0 = Math.min(...xs) - 2, x1 = Math.max(...xs) + t.gun.len - 4, s = Math.min((w - 8) / (x1 - x0), (h - 6) / 32);
-    const X = x => 4 + (x - x0) * s, Y = y => h - 3 + y * s;
-    g.fillStyle = '#d6c99c';
-    const poly = p => { g.beginPath(); p.forEach(([x, y], k) => k ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y))); g.closePath(); g.fill(); };
-    const hxs = t.hull.map(p => p[0]), hl = Math.min(...hxs), hr = Math.max(...hxs), top = Math.min(...t.hull.map(p => p[1]));
-    g.beginPath(); g.roundRect ? g.roundRect(X(hl + 1), Y(-12.5), (hr - hl - 2) * s, 12.5 * s, 5 * s) : g.rect(X(hl + 1), Y(-12.5), (hr - hl - 2) * s, 12.5 * s); g.fill();
-    poly(t.hull);
-    let gx, gy;
-    if (t.dome) { g.beginPath(); g.ellipse(X(-1), Y(top), t.dome.rx * s, t.dome.ry * s, 0, Math.PI, TAU); g.fill(); gx = -1 + t.dome.rx * .8; gy = top - t.dome.ry * .45; }
-    else { poly(t.turret); const tx = t.turret.map(p => p[0]), ty = t.turret.map(p => p[1]); gx = Math.max(...tx) - 1; gy = (Math.min(...ty) + Math.max(...ty)) / 2; }
-    g.fillRect(X(gx), Y(gy) - t.gun.w * s * .45, t.gun.len * s, t.gun.w * s * .9);
-    g.globalCompositeOperation = 'destination-out';
-    const n = t.wheels, r = t.wheelR * .55;
-    for (let k = 0; k < n; k++) { const x = hl + 4 + (hr - hl - 8) * (n > 1 ? k / (n - 1) : .5); g.beginPath(); g.arc(X(x), Y(-t.wheelR - .8), r * s, 0, TAU); g.fill(); }
-  });
+  const t = TANKS[i], tpl = modelTpl[t.model];
+  if (!tpl) return canvasOf(240, 68, g => { g.fillStyle = 'rgba(214,201,156,.35)'; g.beginPath(); g.roundRect ? g.roundRect(40, 30, 150, 28, 8) : g.rect(40, 30, 150, 28); g.fill(); g.fillRect(90, 18, 60, 14); g.fillRect(150, 22, 70, 5); });
+  try {
+    if (!silR) { silR = new THREE.WebGLRenderer({alpha: true, preserveDrawingBuffer: true, antialias: true}); silR.setSize(480, 136); silR.setClearColor(0, 0); }
+    const sc = new THREE.Scene(), mat = new THREE.MeshBasicMaterial({color: 0xd6c99c});
+    for (const q of tpl.parts.hull) sc.add(new THREE.Mesh(q.geo, mat));
+    const tg = new THREE.Group(); tg.position.copy(tpl.mount); sc.add(tg); for (const q of tpl.parts.turret) tg.add(new THREE.Mesh(q.geo, mat));
+    const gg = new THREE.Group(); gg.position.copy(tpl.gp); tg.add(gg); for (const q of tpl.parts.gun) gg.add(new THREE.Mesh(q.geo, mat));
+    const b = new THREE.Box3().setFromObject(sc), w = b.max.x - b.min.x + .4, h = w * 136 / 480, cx = (b.min.x + b.max.x) / 2;
+    const cam = new THREE.OrthographicCamera(-w / 2, w / 2, h - .2, -.2, .1, 100); cam.position.set(cx, 0, 30); cam.lookAt(cx, 0, 0);
+    silR.render(sc, cam);
+    return silCache[i] = canvasOf(240, 68, g => g.drawImage(silR.domElement, 0, 0, 240, 68));
+  } catch (e) { return canvasOf(240, 68, () => {}); }
 }
 // tiny shaded relief maps of each battlefield, from the same terrain function and seed as the menu backdrop
 const mapThumbCache = {};
@@ -4637,10 +4860,12 @@ function renderPlate(i = setup.tank) {
   $('plateStats').innerHTML = [[t.real.armor + '<small> mm</small>', 'ARMOR'], [t.real.speed + '<small> km/h</small>', 'TOP SPEED'], [t.ammo3.mv + '<small> m/s</small>', 'MUZZLE VEL.'], [t.real.rof + '<small>/min</small>', 'RATE OF FIRE'], [t.real.weight + '<small> t</small>', 'WEIGHT']]
     .map(([v, k]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
 }
+const curEra = () => net && lobby && lobby.era ? lobby.era : setup.era;
 function tankGrid(el, statsEl) {
   el.innerHTML = '';
   if (statsEl) statsEl.innerHTML = statsHTML(setup.tank);
   TANKS.forEach((t, i) => {
+    if (t.era !== curEra()) return;
     const b = tankCard(i, setup.tank === i, () => { setup.tank = i; save('ironrain3d.setup', setup); renderMenu(); menuTankSwap(); pickChanged(); });
     b.title = t.role;
     // no stats box in the compact lobby: hovering a card shows that tank on the nameplate instead
@@ -4650,8 +4875,14 @@ function tankGrid(el, statsEl) {
     el.appendChild(b);
   });
 }
+function setEra(era) {
+  setup.era = era; if (TANKS[setup.tank].era !== era) setup.tank = eraTanks(era)[0];
+  save('ironrain3d.setup', setup); loadTankModels(eraTanks(era).map(i => TANKS[i])).catch(() => {}); menuTankSwap(); pickChanged();
+}
+function eraRow(el, cur, click, disabled) { el.innerHTML = ''; ERAS.forEach(([k, lab]) => { const b = optBtn(lab, '', cur === k, () => click(k)); b.disabled = !!disabled; el.appendChild(b); }); }
 function renderMenu() {
   renderMoney();
+  eraRow($('eraRow'), setup.era, k => { setEra(k); renderMenu(); });
   tankGrid($('tankGrid'), $('tankStats')); renderPlate();
   const mr = $('mapRow'); mr.innerHTML = '';
   MAPS.forEach((m, i) => mr.appendChild(mapCard(i, setup.map === i, () => { setup.map = i; save('ironrain3d.setup', setup); renderMenu(); menuWorld(); })));
@@ -4664,6 +4895,8 @@ function renderMenu() {
   [[false, 'TANK'], [true, 'ASHTON · ON FOOT']].forEach(([v, lab]) => { const b = optBtn(lab, '', ashOn === v, () => { setup.ashton = v; if (v) setup.foes = 3; save('ironrain3d.setup', setup); renderMenu(); }); ar.appendChild(b); });
   if (activeTab === 'online') renderOnline();
 }
+$('creditsBtn').addEventListener('click', () => { $('credits').hidden = false; });
+$('creditsClose').addEventListener('click', () => { $('credits').hidden = true; });
 $('deploy').addEventListener('click', () => { if (net) { netMsg = 'Leave the online room first.'; showTab('online'); return; } startOffline(); });
 
 // online
@@ -4700,6 +4933,7 @@ function renderOnline() {
   $('hostOpts').hidden = false;
   const lm = $('lobbyMaps'); lm.innerHTML = '';
   MAPS.forEach((m, i) => lm.appendChild(mapCard(i, lobby.map === i, () => { if (!host) return; lobby.map = i; setup.map = i; save('ironrain3d.setup', setup); menuWorld(); bcastLobby(); }, !host)));
+  eraRow($('lobbyEra'), lobby.era || 'ww2', k => { if (!host) return; lobby.era = k; setEra(k); bcastLobby(); }, !host);
   const ll = $('lobbyLvl'); ll.innerHTML = '';
   CPU_LEVELS.forEach((l, i) => { const b = optBtn(l.name, '', lobby.lvl === i, () => { if (!host) return; lobby.lvl = i; bcastLobby(); }, l.color); b.disabled = !host; ll.appendChild(b); });
   $('startBtn').hidden = !host;
@@ -4911,6 +5145,7 @@ function frame(now) {
 }
 resize();
 menuWorld(); renderMenu(); showTab('cpu');
+loadTankModels(eraTanks(setup.era).map(i => TANKS[i])).catch(() => {}).then(() => loadTankModels(TANKS.filter(t => t.era !== setup.era))).catch(() => {});
 requestAnimationFrame(frame);
 // an invite link (?room=CODE) goes straight to joining
 (() => { try { const code = new URL(location.href).searchParams.get('room'); if (code) { $('codeIn').value = code.toUpperCase(); showTab('online'); joinRoom(code); } } catch (e) {} })();
