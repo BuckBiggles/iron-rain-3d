@@ -239,7 +239,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
           <h2 style="margin-top:12px">CPU SKILL · EMPTY SEATS</h2><div class="row seg" id="lobbyLvl"></div>
         </section>
         <p class="desc" id="lobbyMsg"></p>
-        <div class="btnrow"><button class="deploy" id="startBtn">START BATTLE</button><button class="btn warn" id="leaveBtn">LEAVE ROOM</button></div>
+        <div class="btnrow"><button class="deploy" id="startBtn">START BATTLE</button><button class="deploy" id="readyBtn" hidden>READY</button><button class="btn warn" id="leaveBtn">LEAVE ROOM</button></div>
       </div>
     </div>
 
@@ -251,10 +251,11 @@ td:first-child{font-family:var(--f-display);font-size:18px}
           <b>CLICK · SPACE</b><span>Fire, then wait out the reload</span>
           <b>W A S D</b><span>Drive</span>
           <b>RIGHT MOUSE · Z</b><span>Gunsight with rangefinder · TAB switches x4 / x8</span>
-          <b>PGUP · PGDN · WHEEL</b><span>Zero the sight (Shift for 5 m steps)</span>
+          <b>PGUP · PGDN · WHEEL</b><span>Zero the gunsight (wheel only while scoped; Shift for 5 m steps)</span>
           <b>R · X</b><span>Lase the target and zero to it · high lob over ridges</span>
           <b>1 – 4 · Q</b><span>Pick a shell · arm a supply-drop special</span>
           <b>V · C</b><span>Ride with your shell · always follow your shells</span>
+          <b>F</b><span>Spectator: leave the tank and fly around (WASD, E/Space up, Q down, Shift fast)</span>
           <b>T · ESC · [ ]</b><span>Chat (online) · menu · mouse sensitivity</span>
         </div>
       </section>
@@ -291,7 +292,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-09.5';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-09.7';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -360,22 +361,22 @@ const REAL = {
     m:{L:5.9, W:2.62, hullW:2.62, hull:[[-2.85,.62],[2.5,.62],[2.95,.95],[2.95,1.12],[1.45,1.9],[-2.55,1.9],[-2.92,1.5]], slope:0, lower:{w:1.7, y0:.35, y1:.95},
        run:{type:'vvss', bogies:[-1.55,-.05,1.45], r:.26}, sprocket:[2.5,.62,.33], idler:[-2.55,.33,.31], trackW:.42, trackTop:.95,
        turret:{x:.15, plan:{ell:[1.05,1.3,1.0], flat:.86}, h:.9, taper:.8}, mantlet:{type:'rotor', w:.95, h:.55, d:.28},
-       gun:{len:2.9, r:.048, brake:0}, cupola:[-.55,-.4], extras:['hullMG','lights','spareTracks','deflector']}},
+       gun:{len:2.9, r:.048, brake:0}, cupola:[-.55,-.4], extras:['hullMG','lights','spareTracks','deflector','nose','roofMG']}},
   'T-34':     {nation:'SU', armor:90,  speed:55, gun:'85 mm ZiS-S-53',  cal:85,  vel:1.02, rof:6,  weight:32,   crew:5,
     m:{L:6.1, W:3.0, hullW:3.0, hull:[[-3.0,.5],[2.65,.5],[3.05,.82],[1.6,1.55],[-2.55,1.55],[-3.0,.95]], slope:40, slopeY:.95, lower:{w:2.0, y0:.32, y1:.95},
        run:{type:'christie', n:5, r:.42, x0:-2.25, x1:2.25}, sprocket:[-2.75,.5,.38], idler:[2.75,.5,.36], trackW:.5, trackTop:.93,
        turret:{x:.45, plan:{ell:[1.15,1.35,1.1], flat:.9}, h:.72, taper:.72}, mantlet:{type:'round', w:.8, h:.5, d:.3},
-       gun:{len:4.3, r:.055, brake:0}, cupola:[-.6,.35], extras:['fuelTanks','hullMG','lights']}},
+       gun:{len:4.3, r:.055, brake:0}, cupola:[-.6,.35], extras:['fuelTanks','hullMG','lights','handrails','sideLinks']}},
   'TIGER I':  {nation:'DE', armor:100, speed:45, gun:'8.8 cm KwK 36',   cal:88,  vel:1.05, rof:6,  weight:57,   crew:5,
     m:{L:6.32, W:3.56, hullW:3.56, hull:[[-3.15,.48],[2.95,.48],[3.25,.95],[3.0,1.02],[3.0,1.85],[-3.1,1.85],[-3.16,.95]], slope:0, lower:{w:1.9, y0:.3, y1:1.0},
        run:{type:'interleaved', n:8, r:.4, x0:-2.45, x1:2.35}, sprocket:[2.85,.62,.38], idler:[-2.9,.55,.33], trackW:.72, trackTop:1.0,
        turret:{x:-.05, plan:{ell:[1.0,1.35,1.45], flat:.92}, h:.9, taper:.96}, mantlet:{type:'box', w:1.55, h:.72, d:.3},
-       gun:{len:4.9, r:.065, brake:2}, cupola:[-.75,.55], extras:['smoke','turretBin','exhausts','hullMG','lights']}},
+       gun:{len:4.9, r:.065, brake:2}, cupola:[-.75,.55], extras:['smoke','turretBin','exhausts','hullMG','lights','feifel','mantletDetail']}},
   'PANTHER':  {nation:'DE', armor:140, speed:46, gun:'7.5 cm KwK 42',   cal:75,  vel:1.25, rof:6,  weight:44.8, crew:5,
     m:{L:6.87, W:3.27, hullW:3.27, hull:[[-3.35,.55],[3.0,.55],[3.45,.78],[1.75,1.85],[-3.0,1.85],[-3.4,1.05]], slope:40, slopeY:1.0, lower:{w:1.95, y0:.32, y1:1.0},
        run:{type:'interleaved', n:8, r:.43, x0:-2.6, x1:2.55}, sprocket:[3.0,.6,.4], idler:[-3.05,.55,.36], trackW:.66, trackTop:1.02,
        turret:{x:-.35, plan:{poly:[[1.05,.62],[1.05,-.62],[-1.45,-.95],[-1.45,.95]], r:.15}, h:.82, taper:.72, rake:.2}, mantlet:{type:'pig', w:.95, h:.62, d:.4},
-       gun:{len:5.25, r:.045, brake:2}, cupola:[-1.0,.5], extras:['skirts','exhausts','hullMG']}},
+       gun:{len:5.25, r:.045, brake:2}, cupola:[-1.0,.5], extras:['skirts','exhausts','hullMG','rearBoxes']}},
   'CHURCHILL':{nation:'UK', armor:152, speed:24, gun:'75 mm QF',        cal:75,  vel:.95,  rof:9,  weight:40.7, crew:5,
     m:{L:7.44, W:3.25, hullW:1.95, hull:[[-3.6,.45],[3.35,.45],[3.5,1.15],[3.35,1.55],[-3.6,1.55]], slope:0, lower:null,
        run:{type:'small', n:11, r:.2, x0:-2.8, x1:2.8}, sprocket:[-3.5,.6,.55], idler:[3.5,1.05,.6], trackW:.55, trackTop:1.72, churchill:true,
@@ -385,35 +386,52 @@ const REAL = {
     m:{L:6.35, W:2.91, hullW:2.3, hull:[[-3.15,.5],[2.9,.5],[3.2,.85],[3.1,.95],[3.1,1.6],[-3.1,1.6],[-3.18,.98]], slope:0, lower:null,
        run:{type:'christie', n:5, r:.41, x0:-2.2, x1:2.2}, sprocket:[-2.75,.55,.35], idler:[2.75,.55,.33], trackW:.36, trackTop:.92,
        turret:{x:.15, plan:{poly:[[.85,.85],[.85,-.85],[-.95,-.85],[-.95,.85]], r:.06}, h:.82, taper:.97}, mantlet:{type:'box', w:1.0, h:.48, d:.22},
-       gun:{len:2.7, r:.045, brake:0}, cupola:[-.55,.4], extras:['fenders','bins','hullMG','lights']}},
+       gun:{len:2.7, r:.045, brake:0}, cupola:[-.55,.4], extras:['fenders','bins','hullMG','lights','turretBox']}},
   'IS-2':     {nation:'SU', armor:200, speed:37, gun:'122 mm D-25T',    cal:122, vel:.95,  rof:2.5,weight:46,   crew:4,
     m:{L:6.77, W:3.07, hullW:3.07, hull:[[-3.35,.5],[2.95,.5],[3.38,.85],[2.0,1.55],[-2.95,1.55],[-3.38,.95]], slope:20, slopeY:1.0, lower:{w:2.0, y0:.32, y1:1.0},
        run:{type:'torsion', n:6, r:.33, x0:-2.3, x1:2.25, rollers:3}, sprocket:[-2.95,.55,.36], idler:[2.95,.55,.33], trackW:.65, trackTop:1.0,
        turret:{x:.25, plan:{ell:[1.2,1.45,1.2], flat:.9}, h:.85, taper:.7}, mantlet:{type:'box', w:1.3, h:.55, d:.35},
-       gun:{len:4.8, r:.07, brake:2}, cupola:[-.75,-.45], extras:['fuelTanks','lights']}},
+       gun:{len:4.8, r:.07, brake:2}, cupola:[-.75,-.45], extras:['fuelTanks','lights','handrails','sideLinks']}},
   'HELLCAT':  {nation:'US', armor:30,  speed:80, gun:'76 mm M1',        cal:76,  vel:1.08, rof:12, weight:17.7, crew:5,
     m:{L:5.28, W:2.87, hullW:2.87, hull:[[-2.65,.55],[2.3,.55],[2.66,.78],[1.3,1.45],[-2.45,1.5],[-2.66,1.05]], slope:22, slopeY:.95, lower:{w:1.9, y0:.32, y1:.95},
        run:{type:'torsion', n:5, r:.33, x0:-1.75, x1:1.75, rollers:4}, sprocket:[2.25,.62,.32], idler:[-2.25,.42,.3], trackW:.36, trackTop:.92,
        turret:{x:-.15, plan:{poly:[[1.25,0],[.55,.98],[-1.1,.98],[-1.1,-.98],[.55,-.98]], r:.08}, h:.7, taper:.85, open:.9}, mantlet:{type:'box', w:.7, h:.4, d:.2},
-       gun:{len:4.0, r:.045, brake:1}, cupola:null, extras:['mgRing','lights']}},
+       gun:{len:4.0, r:.045, brake:1}, cupola:null, extras:['mgRing','lights','deckBoxes']}},
   'STUG III': {nation:'DE', armor:80,  speed:40, gun:'7.5 cm StuK 40',  cal:75,  vel:1.08, rof:8,  weight:23.9, crew:4,
     m:{L:5.4, W:2.95, hullW:2.95, hull:[[-2.7,.48],[2.45,.48],[2.75,.82],[2.62,1.1],[-2.7,1.1]], slope:0, lower:{w:1.9, y0:.3, y1:.9},
        run:{type:'torsion', n:6, r:.27, x0:-1.95, x1:1.6, rollers:3}, sprocket:[2.35,.6,.34], idler:[-2.45,.5,.3], trackW:.4, trackTop:.86,
        turret:{x:.15, plan:{poly:[[1.3,.95],[1.3,-.95],[-1.25,-1.15],[-1.25,1.15]], r:.05}, h:.62, taper:.82, rake:.45}, mantlet:{type:'pig', w:.75, h:.5, d:.38},
-       gun:{len:3.4, r:.045, brake:2}, cupola:[-.75,.5], extras:['skirts','exhausts']}},
+       gun:{len:3.4, r:.045, brake:2}, cupola:[-.75,.5], extras:['skirts','exhausts','mgShield']}},
   'STUART':   {nation:'US', armor:55,  speed:58, gun:'37 mm M6',        cal:37,  vel:.95,  rof:20, weight:15.4, crew:4,
     m:{L:4.84, W:2.29, hullW:2.29, hull:[[-2.4,.55],[2.1,.55],[2.42,.78],[1.35,1.55],[-2.2,1.55],[-2.44,1.1]], slope:20, slopeY:1.0, lower:{w:1.5, y0:.32, y1:1.0},
        run:{type:'vvss', bogies:[-.9,.75], r:.23}, sprocket:[2.05,.58,.28], idler:[-2.05,.31,.3], trackW:.3, trackTop:.86,
        turret:{x:-.1, plan:{poly:[[.7,.6],[.7,-.6],[-.75,-.65],[-.75,.65]], r:.2}, h:.7, taper:.88}, mantlet:{type:'box', w:.7, h:.4, d:.2},
-       gun:{len:1.9, r:.028, brake:0}, cupola:null, extras:['hullMG','lights']}},
+       gun:{len:1.9, r:.028, brake:0}, cupola:null, extras:['hullMG','lights','roofMG']}},
 };
+// the main armour-piercing round each gun actually fired: muzzle velocity sets how fast (so how far and how flat) the shell
+// flies, and its energy (mass and velocity) sets how hard it hits
+const AMMO = {
+  'SHERMAN':   {round: 'M61 APC',      mv: 619, kg: 6.79},
+  'T-34':      {round: 'BR-365',       mv: 792, kg: 9.2},
+  'TIGER I':   {round: 'PzGr. 39',     mv: 773, kg: 10.2},
+  'PANTHER':   {round: 'PzGr. 39/42',  mv: 935, kg: 6.8},
+  'CHURCHILL': {round: 'M61 APC',      mv: 620, kg: 6.79},
+  'CROMWELL':  {round: 'M61 APC',      mv: 620, kg: 6.79},
+  'IS-2':      {round: 'BR-471',       mv: 795, kg: 25},
+  'HELLCAT':   {round: 'M62 APC',      mv: 792, kg: 7.0},
+  'STUG III':  {round: 'PzGr. 39',     mv: 790, kg: 6.8},
+  'STUART':    {round: 'M51 APC',      mv: 884, kg: .87},
+};
+const E_REF = .5 * 6.79 * 619 * 619;   // the Sherman's round is the 100% reference
 // game stats from the real numbers (the same scaling for every tank)
 for (const t of TANKS) {
-  const r = REAL[t.name]; t.real = r; t.nation = r.nation; t.m3 = r.m;
-  t.hp = Math.round(120 + Math.sqrt(r.armor) * 11);          // 30 mm -> 180 HP ... 200 mm -> 276 HP
-  t.atk = Math.round(100 * Math.sqrt(r.cal / 75) * r.vel);   // damage multiplier, % of a 75 mm gun
-  t.rel = clamp((60 / r.rof) / 8, .5, 2.2);                  // reload multiplier from the rate of fire
-  t.speed = r.speed / 3.6 * .5;                              // m/s in game: half the real road speed
+  const r = REAL[t.name], a = AMMO[t.name]; t.real = r; t.nation = r.nation; t.m3 = r.m; t.ammo3 = a;
+  t.hp = Math.round(120 + Math.sqrt(r.armor) * 11);                        // 30 mm -> 180 HP ... 200 mm -> 276 HP
+  t.atk = Math.round(100 * Math.pow(.5 * a.kg * a.mv * a.mv / E_REF, .35)); // damage: shell energy, compressed (37 mm 46% ... 122 mm 191%)
+  t.vk = a.mv / 800;                                                       // shell speed: 800 m/s real = the game's standard full charge
+  t.range = Math.round((135 * t.vk) ** 2 / 25);                           // longest throw on flat ground at 45 deg (VMAX, G below)
+  t.rel = clamp((60 / r.rof) / 8, .5, 2.2);                                // reload multiplier from the rate of fire
+  t.speed = r.speed / 3.6 * .5;                                            // m/s in game: half the real road speed
   t.w = r.m.W;
 }
 const WEAPONS = [
@@ -427,7 +445,7 @@ const SPECIALS = [
   {id:'mirv',     name:'MIRV',           r:9,  dmg:40,  n:1, col:'#f59e0b', kind:'mirv',    tag:'Splits into 5 at the top of its arc'},
   {id:'lucky',    name:'LUCKY 7',        r:7,  dmg:24,  n:7, col:'#f472b6', spreadElev:1.3, tag:'7 shells, tight group'},
   {id:'bounce',   name:'BOUNCER',        r:10, dmg:45,  n:1, col:'#22c55e', kind:'bounce', bounces:3, tag:'Bounces 3 times'},
-  {id:'dig',      name:'DIG BOMB',       r:24, dmg:0,   n:1, col:'#c08040', kind:'dig',     tag:'Blasts out a huge pit'},
+  {id:'dig',      name:'DIG BOMB',       r:24, dmg:35,  n:1, col:'#c08040', kind:'dig',     tag:'Blasts out a huge pit'},
   {id:'orbital',  name:'ORBITAL STRIKE', r:14, dmg:130, n:1, col:'#7fd6f5', kind:'orbital', tag:'Satellite laser where it lands'},
   {id:'teleport', name:'TELEPORT',       r:0,  dmg:0,   n:1, col:'#14b8a6', kind:'teleport', tag:'Warps you to where it lands'},
 ];
@@ -478,16 +496,43 @@ const COSMETICS = {
     {id:'fireworks', name:'FIREWORKS', price:350, sw:'#5fb8ff', tag:'A volley of coloured starbursts.'},
     {id:'blackhole', name:'BLACK HOLE', price:500, sw:'#2a1640', tag:'Everything nearby is sucked in.'},
     {id:'mushroom', name:'MUSHROOM CLOUD', price:750, sw:'#7a6a5a', tag:'A towering fire column and cloud.'}],
+  // tank riders: who sits on your rear deck and shouts at the enemy. Look, voice and signature lines differ.
+  rider: [
+    {id:'vera', name:'SGT. VERA', price:0, sw:'#c8302a', tag:'Tank helmet, goggles and a swimsuit in your nation\'s colours.',
+     look:{skin:0xe0b092, hair:0x6a3a22, style:'rolls', suit:'nation', hat:'helmet', acc:'goggles'}, voice:{pitch:1.25, rate:1.12}, lines:{}},
+    {id:'rosie', name:'RIVETER ROSIE', price:300, sw:'#d0332b', tag:'Polka dots, a red bandana and a rivet gun\'s worth of attitude.',
+     look:{skin:0xe8b898, hair:0x8a3b1c, style:'bob', suit:0xd0332b, pattern:'dots', hat:'scarf', acc:'none'}, voice:{pitch:1.15, rate:1.05},
+     lines:{kill:['We can do it! We just did!', 'Riveted!', 'Back to the assembly line with you!', 'Built it, broke it!'], start:['Sleeves up, let\'s get to work!']}},
+    {id:'betty', name:'BOMBSHELL BETTY', price:450, sw:'#f2efe6', tag:'Platinum curls, sunglasses and a garrison cap at a jaunty angle.',
+     look:{skin:0xf0c6a8, hair:0xf2dfa0, style:'rolls', suit:0xf2efe6, suit2:0xc8302a, pattern:'trim', hat:'garrison', acc:'sunglasses'}, voice:{pitch:1.4, rate:1.0},
+     lines:{kill:['Bombs away, darling!', 'Kiss that one goodbye!', 'Wasn\'t even trying, sugar.', 'Ooh, that one\'s going in my scrapbook!'], start:['Don\'t smudge my lipstick, boys.']}},
+    {id:'katya', name:'SNIPER KATYA', price:500, sw:'#2f5aa0', tag:'A long braid, a striped swimsuit and a pilotka with a red star.',
+     look:{skin:0xe6bca0, hair:0x2a1c14, style:'braid', suit:0xf2f2f2, suit2:0x2f5aa0, pattern:'stripes', hat:'pilotka', acc:'none'}, voice:{pitch:1.1, rate:1.15},
+     lines:{kill:['Do svidaniya, comrade!', 'For the motherland!', 'One shot. One tank.', 'Too slow, tovarishch!'], start:['I count. You shoot.']}},
+    {id:'lili', name:'LILI MARLENE', price:650, sw:'#151517', tag:'Long blonde waves, a black swimsuit and a beret, singing under the lantern.',
+     look:{skin:0xf0c8ae, hair:0xe3c27a, style:'long', suit:0x151517, hat:'beret', hatCol:0x7a1d22, acc:'none'}, voice:{pitch:1.2, rate:.95},
+     lines:{kill:['Auf Wiedersehen, Liebling!', 'Under the lantern... boom.', 'Wunderbar!', 'Gute Nacht!'], start:['Shall we dance, darling?']}},
+    {id:'scarlett', name:'SCARLETT', price:800, sw:'#1f7a4a', tag:'Auburn hair with a flower, an emerald swimsuit and a sailor cap.',
+     look:{skin:0xf2c4a6, hair:0x9a3b1f, style:'long', suit:0x1f7a4a, hat:'sailor', acc:'flower'}, voice:{pitch:1.3, rate:1.05},
+     lines:{kill:['Frankly, my dear... you\'re scrap.', 'Fiddle-dee-dee, another one!', 'Anchors aweigh!', 'Tomorrow is another day. Not for you.'], start:['Ahoy, boys. Let\'s make waves.']}},
+    {id:'dolores', name:'DOLORES "DYNAMITE"', price:1200, sw:'#d4a72c', tag:'Jet-black hair, a gold swimsuit, a hibiscus and dark glasses.',
+     look:{skin:0xc58c64, hair:0x141010, style:'long', suit:0xd4a72c, hat:'none', acc:'both'}, voice:{pitch:1.25, rate:1.12},
+     lines:{kill:['¡Adiós, amigo!', '¡Olé!', 'Dynamite, baby!', '¡Hasta nunca!'], start:['Light the fuse, cariño.']}},
+  ],
 };
-const COS_CATS = [['camo', 'CAMO'], ['emblem', 'EMBLEMS'], ['flag', 'FLAGS'], ['trail', 'TRAILS'], ['boom', 'DEATH FX']];
-const COS_DEFAULT = {camo:'std', emblem:'star', flag:'none', trail:'standard', boom:'standard'};
+const COS_CATS = [['rider', 'RIDERS'], ['camo', 'CAMO'], ['emblem', 'EMBLEMS'], ['flag', 'FLAGS'], ['trail', 'TRAILS'], ['boom', 'DEATH FX']];
+const COS_DEFAULT = {camo:'std', emblem:'star', flag:'none', trail:'standard', boom:'standard', rider:'vera'};
 const cosItem = (cat, id) => COSMETICS[cat].find(c => c.id === id) || COSMETICS[cat][0];
 function cleanCos(c) { const out = {}; for (const [cat] of COS_CATS) out[cat] = c && COSMETICS[cat].some(x => x.id === c[cat]) ? c[cat] : COS_DEFAULT[cat]; return out; }
 function loadProfile() {
-  try { const p = JSON.parse(localStorage.getItem('ironrain.profile') || 'null'); if (p && typeof p.money === 'number') return {money: Math.max(0, p.money | 0), owned: Array.isArray(p.owned) ? p.owned : [], equip: cleanCos(p.equip)}; } catch (e) {}
-  return {money: 0, owned: [], equip: {...COS_DEFAULT}};
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem('ironrain.profile') || 'null'); } catch (e) {}
+  const out = p && typeof p.money === 'number' ? {money: Math.max(0, p.money | 0), owned: Array.isArray(p.owned) ? p.owned : [], equip: cleanCos(p.equip)} : {money: 0, owned: [], equip: {...COS_DEFAULT}};
+  // 2D Iron Rain shares this profile but doesn't know about riders, so the equipped rider is also kept in a key of our own
+  try { const r = localStorage.getItem('ironrain3d.rider'); if (out.equip.rider === COS_DEFAULT.rider && r && COSMETICS.rider.some(x => x.id === r)) out.equip.rider = r; } catch (e) {}
+  return out;
 }
-function saveProfile(p) { try { localStorage.setItem('ironrain.profile', JSON.stringify(p)); } catch (e) {} }
+function saveProfile(p) { try { localStorage.setItem('ironrain.profile', JSON.stringify(p)); localStorage.setItem('ironrain3d.rider', p.equip.rider || COS_DEFAULT.rider); } catch (e) {} }
 const owns = (p, cat, id) => cosItem(cat, id).price === 0 || p.owned.includes(cat + ':' + id);
 let profile = loadProfile();
 
@@ -1049,7 +1094,7 @@ function bodyMaterial(sp, cos) {
 // ---- geometry helpers
 // a side profile extruded across the hull; upper sides can lean inward (sloped armour, as on the T-34 or Panther)
 function sideExtrude(pts, width, mat, slopeDeg = 0, slopeY = 0) {
-  const g = new THREE.ExtrudeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y))), {depth: width, bevelEnabled: false});
+  const g = new THREE.ExtrudeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y))), {depth: width, bevelEnabled: true, bevelThickness: .03, bevelSize: .025, bevelSegments: 1});
   g.translate(0, 0, -width / 2);
   if (slopeDeg) {
     const p = g.attributes.position, k = Math.tan(slopeDeg * D2R);
@@ -1073,7 +1118,7 @@ function roundPoly(c, r, n = 4) {
 function planPoints(plan) {
   if (plan.ell) {
     const [rf, rr, rz] = plan.ell, flat = plan.flat || 1, pts = [];
-    for (let i = 0; i < 28; i++) { const a = i / 28 * TAU, c = Math.cos(a); let x = c * (c > 0 ? rf : rr); if (x > rf * flat) x = rf * flat; pts.push([x, Math.sin(a) * rz]); }
+    for (let i = 0; i < 40; i++) { const a = i / 40 * TAU, c = Math.cos(a); let x = c * (c > 0 ? rf : rr); if (x > rf * flat) x = rf * flat; pts.push([x, Math.sin(a) * rz]); }
     return pts;
   }
   return roundPoly(plan.poly, plan.r || .05);
@@ -1082,7 +1127,7 @@ function planPoints(plan) {
 function turretBody(T, mat) {
   const plan = planPoints(T.plan), sh = new THREE.Shape(plan.map(([x, z]) => new THREE.Vector2(x, -z)));
   if (T.open) sh.holes.push(new THREE.Path(plan.map(([x, z]) => new THREE.Vector2(x * T.open, -z * T.open)).reverse()));
-  const g = new THREE.ExtrudeGeometry(sh, {depth: T.h, bevelEnabled: false, curveSegments: 6});
+  const g = new THREE.ExtrudeGeometry(sh, {depth: T.h, bevelEnabled: true, bevelThickness: .03, bevelSize: .025, bevelSegments: 1, curveSegments: 6});
   g.rotateX(-Math.PI / 2);
   const p = g.attributes.position, xmax = Math.max(...plan.map(q => q[0]));
   for (let i = 0; i < p.count; i++) {
@@ -1116,7 +1161,8 @@ function roadWheel(r, w, mats, rim = true) {
   const g = new THREE.Group();
   const tyre = cyl(r, r, w, mats.rubber, 18); tyre.rotation.x = Math.PI / 2; g.add(tyre);
   const disc = cyl(r * .82, r * .82, w + .02, mats.wheel, 18); disc.rotation.x = Math.PI / 2; g.add(disc);
-  if (rim) { const hub = cyl(r * .28, r * .32, w + .08, mats.metal, 10); hub.rotation.x = Math.PI / 2; g.add(hub); }
+  if (rim) { const hub = cyl(r * .28, r * .32, w + .08, mats.metal, 10); hub.rotation.x = Math.PI / 2; g.add(hub);
+    for (const s of [-1, 1]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(r * .8, r * .045, 5, 20), mats.metal); ring.position.z = s * (w / 2 + .012); g.add(ring); } }
   return g;
 }
 
@@ -1202,6 +1248,35 @@ function makeTankMesh(sp, cos) {
   if (m.extras.includes('exhausts')) for (const s of [-1, 1]) { const e = cyl(.08, .09, .7, mats.dark, 10); e.position.set(-m.L / 2 + .05, hullTop - .05, s * .45); hull.add(e); }
   if (m.extras.includes('deflector')) { const d = box(.15, .35, m.hullW * .7, mats.dark); d.position.set(-m.L / 2 + .02, .8, 0); hull.add(d); }
   for (const s of [-1, 1]) { const hatch = cyl(.27, .27, .05, body, 14); hatch.position.set(front - 1.25, hullTop + .02, s * m.hullW * .22); hull.add(hatch); }
+  // ---- detail common to every hull: periscopes, driver's visor, tow hooks, tools and a tow cable
+  const sideZ = y => m.hullW / 2 - (m.slope && y > m.slopeY ? (y - m.slopeY) * Math.tan(m.slope * D2R) : 0);   // hull side at height y
+  const roofFront = frontXAt(hullTop - .02);
+  for (const s of [-1, 1]) {
+    const p = box(.1, .09, .2, mats.dark); p.position.set(roofFront - .25, hullTop + .06, s * m.hullW * .22); hull.add(p);
+    const pg = box(.02, .05, .16, mats.glass); pg.position.set(roofFront - .19, hullTop + .07, s * m.hullW * .22); hull.add(pg);
+    for (const ex of [front, Math.min(...m.hull.map(q => q[0]))]) {   // tow hooks, front and rear
+      const hk = new THREE.Mesh(new THREE.TorusGeometry(.09, .03, 5, 10), mats.metal), hy = .75;
+      hk.position.set(ex === front ? frontXAt(hy) + .02 : ex - .02, hy, s * m.hullW * .3); hk.rotation.y = Math.PI / 2; hull.add(hk);
+    }
+  }
+  { const vy = hullTop - .18, vx = frontXAt(vy); if (vx > 0) { const v = box(.12, .14, .38, body); v.position.set(vx - .02, vy, m.hullW * .22); hull.add(v);
+      const slit = box(.03, .03, .26, mats.dark); slit.position.set(vx + .045, vy + .02, m.hullW * .22); hull.add(slit); } }
+  { // shovel and pick on the left track guard (or the hull roof edge), tow cable along the right side
+    const tz = m.hullW < m.W - .2 && !m.churchill ? -(m.hullW / 2 + (m.W - m.hullW) / 4) : -(m.hullW / 2 - .3), ty = m.hullW < m.W - .2 && !m.churchill ? m.trackTop + .09 : hullTop + .05;
+    const handle = box(1.0, .04, .05, mats.wheel); handle.position.set(-m.L * .05, ty, tz); hull.add(handle);
+    const blade = box(.28, .03, .2, mats.metal); blade.position.set(-m.L * .05 + .62, ty, tz); hull.add(blade);
+    const pick = box(.9, .04, .05, mats.wheel); pick.position.set(m.L * .15, ty, tz + .12); hull.add(pick);
+    const head = box(.06, .04, .36, mats.metal); head.position.set(m.L * .15 + .45, ty, tz + .12); hull.add(head);
+    const cy = hullTop - .25, cable = cyl(.025, .025, m.L * .55, mats.metal, 6); cable.rotation.z = Math.PI / 2; cable.position.set(-m.L * .05, cy, sideZ(cy) + .04); hull.add(cable);
+    const cable2 = cable.clone(); cable2.position.y = cy - .08; hull.add(cable2);
+  }
+  // ---- per-tank features
+  if (m.extras.includes('nose')) { const n = cyl(.42, .42, m.hullW * .92, body, 16); n.rotation.x = Math.PI / 2; n.position.set(front - .38, .72, 0); hull.add(n);   // Sherman's rounded transmission cover
+    for (const s of [-1, 0, 1]) { const b = box(.05, .5, .04, mats.dark); b.position.set(front + .03, .75, s * m.hullW * .3); hull.add(b); } }
+  if (m.extras.includes('feifel')) for (const s of [-1, 1]) { const f = cyl(.2, .2, .55, mats.wheel, 14); f.position.set(Math.min(...m.hull.map(q => q[0])) - .18, 1.25, s * .7); hull.add(f); }   // Tiger's rear air filters
+  if (m.extras.includes('rearBoxes')) for (const s of [-1, 1]) { const b = box(.55, .5, .6, body); b.position.set(Math.min(...m.hull.map(q => q[0])) + .05, 1.35, s * (m.hullW / 2 - .45)); hull.add(b); }   // Panther's rear stowage bins
+  if (m.extras.includes('sideLinks')) for (let k = 0; k < 3; k++) { const y = (m.slopeY || 1) + .25, l = box(.2, .32, .05, mats.track); l.position.set(front - 1.3 - k * .24, y, sideZ(y) + .03); l.rotation.x = -(m.slope || 0) * D2R; hull.add(l); }
+  if (m.extras.includes('deckBoxes')) for (const s of [-1, 1]) { const b = box(.7, .3, .5, body); b.position.set(Math.min(...m.hull.map(q => q[0])) + .6, hullTop + .15, s * .7); hull.add(b); }
 
   // turret
   const T = m.turret, tb = turretBody(T, body);
@@ -1234,6 +1309,22 @@ function makeTankMesh(sp, cos) {
   if (m.extras.includes('smoke')) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { const d = cyl(.05, .05, .25, mats.dark, 8); d.rotation.x = s * .6; d.position.set(.2 - k * .2, T.h * .8, s * (tb.rz * .9)); turret.add(d); }
   if (m.extras.includes('mgRing')) { const ring = new THREE.Mesh(new THREE.TorusGeometry(.35, .03, 6, 16), mats.metal); ring.rotation.x = Math.PI / 2; ring.position.set(-tb.back + .3, T.h + .05, 0); turret.add(ring);
     const mg = cyl(.025, .025, 1.1, mats.metal, 6); mg.rotation.z = -Math.PI / 2; mg.position.set(-tb.back + .7, T.h + .2, 0); turret.add(mg); }
+  // turret detail: periscopes, a vision block or pistol port on each side, the lifting eyes
+  if (!T.open) {
+    const pz = m.cupola ? -m.cupola[1] * .6 : -.35, ps = box(.12, .1, .18, mats.dark); ps.position.set(tb.front * .45, T.h + .06, pz); turret.add(ps);
+    const pg = box(.02, .05, .14, mats.glass); pg.position.set(tb.front * .45 + .065, T.h + .08, pz); turret.add(pg);
+    for (const s of [-1, 1]) { const zs = s * (tb.rz * (1 - (1 - T.taper) * .4)); const vb = box(.18, .12, .05, mats.dark); vb.position.set(tb.front * .15, T.h * .62, zs); vb.rotateX(s * -Math.atan((1 - T.taper) * tb.rz / T.h)); turret.add(vb);
+      const eye = new THREE.Mesh(new THREE.TorusGeometry(.05, .015, 5, 8), mats.metal); eye.position.set(-tb.back * .5, T.h + .05, s * tb.rz * T.taper * .7); turret.add(eye); }
+  }
+  if (m.extras.includes('handrails')) for (const s of [-1, 1]) { const zr = s * (tb.rz * (1 - (1 - T.taper) * .65) + .07), rail = cyl(.018, .018, (tb.front + tb.back) * .6, mats.metal, 5);
+    rail.rotation.z = Math.PI / 2; rail.position.set((tb.front - tb.back) * .2, T.h * .68, zr); turret.add(rail); }
+  if (m.extras.includes('roofMG')) { const post = cyl(.03, .03, .35, mats.metal, 6), x0 = m.cupola ? m.cupola[0] : -tb.back * .4, z0 = m.cupola ? m.cupola[1] : .3;
+    post.position.set(x0 + .25, T.h + .3, z0); turret.add(post); const mg = cyl(.03, .035, 1.35, mats.metal, 8); mg.rotation.z = -Math.PI / 2; mg.position.set(x0 + .6, T.h + .48, z0); turret.add(mg);
+    const rcv = box(.3, .12, .1, mats.metal); rcv.position.set(x0 + .1, T.h + .48, z0); turret.add(rcv); }
+  if (m.extras.includes('mgShield')) { const sh = box(.06, .45, .7, body); sh.position.set(tb.front * .2, T.h + .25, -.35); sh.rotation.z = -.15; turret.add(sh);
+    const mg = cyl(.025, .025, .9, mats.metal, 6); mg.rotation.z = -Math.PI / 2; mg.position.set(tb.front * .2 + .45, T.h + .3, -.35); turret.add(mg); }
+  if (m.extras.includes('turretBox')) { const b = box(.45, .4, tb.rz * 1.5, body); b.position.set(-tb.back - .18, T.h * .5, 0); turret.add(b); }
+  if (m.extras.includes('mantletDetail')) for (const s of [-1, 1]) { const port = box(.04, .1, .08, mats.dark); port.position.set(ml.d * .5 + .02, .12, s * .38); gun.add(port); }
   // markings: national insignia (or your store emblem) on the turret sides, tilted with the armour
   const emTex = cos.emblem === 'star' ? insigniaTex(sp.nation) : emblemTex(cos.emblem);
   const emMat = new THREE.MeshStandardMaterial({map: emTex, transparent: true, alphaTest: .4, roughness: .8, polygonOffset: true, polygonOffsetFactor: -2});
@@ -1425,7 +1516,7 @@ function createBattle(cfg) {
   }
   mySeat = net ? (net.role === 'host' ? 0 : net.seat) : 0;
   aimPitch = 0; arcPref = 0;
-  player = tanks[mySeat]; tanks.forEach(seatRider); riderMsg = null; riderLowSaid = false;
+  player = tanks[mySeat]; tanks.forEach(seatRider); riderMsg = null; riderLowSaid = false; fly.on = false;
   mode = 'game'; paused = false; worldTime = 0; nextFlight = rnd(10, 20);
   hideScreens();
 }
@@ -1438,7 +1529,7 @@ function startOffline() {
   audioInit();
   const seats = [{spec: setup.tank, name: myName || TANKS[setup.tank].name, cos: profile.equip, ai: false}];
   const pool = shuffled([...TANKS.keys()]);
-  for (let i = 0; i < setup.foes; i++) seats.push({spec: pool[i], name: TANKS[pool[i]].name, cos: COS_DEFAULT, ai: true});
+  for (let i = 0; i < setup.foes; i++) seats.push({spec: pool[i], name: TANKS[pool[i]].name, cos: {...COS_DEFAULT, rider: pick(COSMETICS.rider).id}, ai: true});
   createBattle({map: setup.map, seed: (Math.random() * 1e9) | 0, lvl: setup.lvl, seats});
   emit({t: 'feed', s: 'BATTLE ON ' + mapDef.name + ' · ' + setup.foes + ' CPU (' + CPU_LEVELS[setup.lvl].name + ')', c: '#d6c99c'});
   startFight();
@@ -1451,10 +1542,12 @@ function startFight() {
   for (const t of tanks) { t.reload = t.reloadMax = t.ai ? rnd(2.5, 4.5) : 2; startReel(t, true); }   // everyone opens a free supply crate
   emit({t: 'start'});
 }
+// knocked out offline: Enter ends the battle now instead of watching it play out
+function endOfflineNow() { if (state !== 'battle') return; state = 'over'; overT = 0; winner = -1; emit({t: 'over', w: -1}); }
 function checkOver() {
   if (state === 'over') return true;
   const alive = tanks.filter(t => t.alive);
-  const done = net ? alive.length <= 1 : (!player.alive || !alive.some(t => t !== player));
+  const done = net ? alive.length <= 1 : (!alive.some(t => t !== player) || (!player.alive && alive.length <= 1));   // offline the battle plays on after you fall
   if (!done) return false;
   state = 'over'; overT = 0; winner = alive.length === 1 ? alive[0].i : -1;
   emit({t: 'over', w: winner});
@@ -1473,7 +1566,7 @@ function muzzleOf(t, yaw, elev, still) {
   return {x: t.base.x + fx * gp.x + fx * ce * gl, y: t.base.y + gp.y + se * gl, z: t.base.z + fz * gp.x + fz * ce * gl, dx: fx * ce, dy: se, dz: fz * ce};
 }
 function newShell(t, w, yaw, elev, power) {
-  const m = muzzleOf(t, yaw, elev, true), v = shotSpeed(power);   // shells always leave from the gun at rest, so the sight's prediction is exact
+  const m = muzzleOf(t, yaw, elev, true), v = shotSpeed(power) * (t.spec.vk || 1);   // shells always leave from the gun at rest, so the sight's prediction is exact
   return {x: m.x, y: m.y, z: m.z, ox: m.x, oy: m.y, oz: m.z, vx: m.dx * v, vy: m.dy * v, vz: m.dz * v, w, owner: t, bore: w.bore || 0, bored: false, under: false,
     bounces: w.bounces || 0, t: 0, clear: false, dead: false, split: false, mesh: null, whistled: false, trail: 0};
 }
@@ -1800,7 +1893,7 @@ function tankPhysics(t, dt, sim) {
       if (t.y <= s.g) {
         t.y = s.g; t.falling = false; t.vy = 0;
         const drop = t.fallFrom - s.g;
-        if (drop > 3 && t.alive) { damage(t, Math.round((drop - 3) * 5), t.lastHitBy, 'fall'); emit({t: 'dust', x: r2(t.x), y: r2(t.y), z: r2(t.z)}); }
+        if (drop > 3 && t.alive) emit({t: 'dust', x: r2(t.x), y: r2(t.y), z: r2(t.z)});   // no fall damage: a drop just kicks up dust
       }
     } else { t.y = s.g; t.falling = false; t.vy = 0; }
   }
@@ -1914,7 +2007,7 @@ function applyEvent(e) {
       else lastShot = {rng: aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null, elev: e.e, brg: bearingOf(e.y), w: e.w, res: null, x: t.x, z: t.z};
       fireFx(t); break; }
     case 'hurt': { const t = T(e.i); if (!t) break; pops.push({x: t.x, y: t.y + t.mesh.top + 2, z: t.z, s: '-' + e.d, c: e.f ? '#d6c99c' : '#ffb199', t: 0}); if (t === player) { if (e.d >= 15 && worldTime - riderHitAt > 6 && t.hp > 0) { riderHitAt = worldTime; riderSay(t.hp / t.maxHp < .3 && !riderLowSaid ? (riderLowSaid = true, 'low') : 'hit'); } dmgFlash = Math.min(1, .45 + e.d / 60); camShake = Math.max(camShake, .8); } break; }
-    case 'kill': { const t = T(e.i); if (t) killVisual(t, e.b); if (e.by === mySeat && e.i !== mySeat && player && player.alive) riderSay('kill', true); break; }
+    case 'kill': { const t = T(e.i); if (t) killVisual(t, e.b); if (t && t === player) riderSay('lose', true); if (e.by === mySeat && e.i !== mySeat && player && player.alive) riderSay('kill', true); break; }
     case 'feed': feedMsg(e.s, e.c); break;
     case 'start': showBanner('ENGAGE', 'Free fire · drive and shoot at will', '#e6b44c', 2.6); sfx.tick(700); setTimeout(() => riderSay('start'), 1600); break;
     case 'spot': if (e.i === mySeat) spotReport(e.x, e.z, e.d >= 0 && T(e.d) !== player ? T(e.d) : null); break;
@@ -1932,7 +2025,7 @@ function applyEvent(e) {
       if (e.i != null) { sfx.prize(); const t = T(e.i); if (t && !auth()) { t.x = e.x; t.z = e.z; t.y = e.y; } } break;
     case 'sfx': if (sfx[e.n] && (e.i == null || e.i === mySeat)) sfx[e.n](e.f); break;
     case 'say': { const t = T(e.i); if (t) { feedMsg((t.name) + ': ' + e.s, t.color); sfx.chat(); } break; }
-    case 'over': winner = e.w; state = 'over'; overT = 0; riderSay((net ? winner === mySeat : player && player.alive) ? 'win' : 'lose', true);
+    case 'over': winner = e.w; state = 'over'; overT = 0; if (net ? winner === mySeat : player && player.alive) riderSay('win', true);
       if (net) showBanner(winner === mySeat ? 'VICTORY' : winner >= 0 ? tanks[winner].name + ' WINS' : 'DRAW', winner === mySeat ? 'Last tank standing' : 'Battle over', winner >= 0 ? tanks[winner].color : '#d6c99c', 3);
       else showBanner(player.alive ? 'VICTORY' : 'KNOCKED OUT', player.alive ? 'Last tank standing' : 'Your tank is out of action', player.alive ? '#e6b44c' : '#e0573a', 3);
       break;
@@ -2003,7 +2096,7 @@ function hostSeat(conn, pid) {
   net.pids[seat] = pid; net.dropped[seat] = false;
   net.conns.push({conn, seat, seen: performance.now()});
   conn.send({t: 'welcome', seat});
-  if (mode === 'menu') { if (lobby.seats[seat].k === 'open') lobby.seats[seat] = {k: 'human', n: '', s: 0, c: COS_DEFAULT}; bcastLobby(); }
+  if (mode === 'menu') { if (lobby.seats[seat].k === 'open') lobby.seats[seat] = {k: 'human', n: '', s: 0, c: COS_DEFAULT, r: false}; bcastLobby(); }
   else {
     const t = tanks[seat];
     if (t && t.dropped) { t.ai = false; t.dropped = false; t.plan = null; t.drv = {th: 0, st: 0}; emit({t: 'feed', s: t.name + ' reconnected', c: '#86efac'}); }
@@ -2025,6 +2118,7 @@ function hostData(conn, d) {
   if (!c) { if (d.t === 'hello') hostSeat(conn, typeof d.pid === 'string' ? d.pid.slice(0, 16) : null); return; }
   c.seen = performance.now();
   if (d.t === 'ping') return;
+  if (d.t === 'ready' && mode === 'menu') { const s = lobby.seats[c.seat]; if (s && s.k === 'human') { s.r = !!d.r; bcastLobby(); } return; }
   if (d.t === 'pick' && mode === 'menu') {
     const s = lobby.seats[c.seat]; if (!s || s.k !== 'human') return;
     s.n = cleanName(d.n); s.s = clamp(d.s | 0, 0, TANKS.length - 1); s.c = cleanCos(d.c); bcastLobby(); return;
@@ -2047,12 +2141,13 @@ function hostData(conn, d) {
 }
 function cleanChat(s) { return String(s).replace(/[^\x20-\x7E]/g, '').trim().slice(0, 40); }
 function bcastLobby() { bcast({t: 'lobby', lb: lobby}); renderOnline(); }
+const allReady = () => !lobby || lobby.seats.every(s => s.k !== 'human' || s.r);   // every joined player has pressed READY
 function hostStart() {
-  if (!net || net.role !== 'host' || net.status !== 'ready') return;
+  if (!net || net.role !== 'host' || net.status !== 'ready' || !allReady()) return;
   audioInit();
   const pool = shuffled([...TANKS.keys()]);
   const seats = lobby.seats.map((s, i) => s.k === 'open'
-    ? {spec: pool[i], name: TANKS[pool[i]].name, cos: COS_DEFAULT, ai: true}
+    ? {spec: pool[i], name: TANKS[pool[i]].name, cos: {...COS_DEFAULT, rider: pick(COSMETICS.rider).id}, ai: true}
     : {spec: s.s, name: s.n || 'PLAYER ' + (i + 1), cos: s.c, ai: false, remote: i !== 0});
   net.dropped = [false, false, false, false];
   createBattle({map: lobby.map, seed: (Math.random() * 1e9) | 0, lvl: lobby.lvl, seats});
@@ -2151,7 +2246,7 @@ function startClientRound(m) {
   for (const c of m.carves || []) applyEvent({t: 'carve', x: c[0], y: c[1], z: c[2], r: c[3], vs: c[4], sc: c[5]});
   tanks = seats.map((s, i) => { const p = m.pos[i]; const t = makeTank(i, s, p[0], p[1], p[2]); t.yaw = p[3]; t.elev = p[4]; t.hp = p[5]; return t; });
   tanks.forEach((t, i) => { t.name = seats[i].name; if (!m.pos[i][6]) killVisual(t, null, true); });
-  mySeat = net.seat; player = tanks[mySeat]; tanks.forEach(seatRider); riderMsg = null; riderLowSaid = false;
+  mySeat = net.seat; player = tanks[mySeat]; tanks.forEach(seatRider); riderMsg = null; riderLowSaid = false; fly.on = false;
   mode = 'game'; paused = false; worldTime = 0; state = 'battle'; stateT = 0;
   hideScreens(); requestLock();
 }
@@ -2200,7 +2295,7 @@ function sendInputs() {   // client: my aim (and drive) to the host, only when s
   const t = player; if (!t || !t.alive) return;
   const sig = [r3(t.yaw), r2(t.elev), Math.round(t.power), t.weapon, t.armed].join();
   if (sig !== net.lastIn && performance.now() - (net.inAt || 0) > 60) { net.lastIn = sig; net.inAt = performance.now(); sendHost({t: 'in', y: r3(t.yaw), e: r2(t.elev), p: Math.round(t.power), w: t.weapon === 'S' ? -1 : t.weapon, a: t.armed}); }
-  const th = chatOpen || paused ? 0 : (keys.w ? 1 : 0) - (keys.s ? 1 : 0), st = chatOpen || paused ? 0 : (keys.a ? 1 : 0) - (keys.d ? 1 : 0), ds = th + ',' + st;
+  const th = chatOpen || paused || fly.on ? 0 : (keys.w ? 1 : 0) - (keys.s ? 1 : 0), st = chatOpen || paused || fly.on ? 0 : (keys.a ? 1 : 0) - (keys.d ? 1 : 0), ds = th + ',' + st;
   if (ds !== net.lastDrv || performance.now() - (net.drvAt || 0) > 1000) { net.lastDrv = ds; net.drvAt = performance.now(); sendHost({t: 'drv', th, st}); }
 }
 
@@ -2217,23 +2312,25 @@ document.addEventListener('pointerlockchange', () => {
 glc.addEventListener('mousedown', e => {
   audioInit();
   if (mode !== 'game' || paused) return;
+  if (!locked) requestLock();
+  if (fly.on) return;
   if (e.button === 2) zoomHeld = true;
   if (e.button === 0) myFire();
-  if (!locked) requestLock();
 });
 addEventListener('mouseup', e => { if (e.button === 2) zoomHeld = false; if (e.button === 0) dragging = false; });
 glc.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('mousemove', e => {
   if (mode !== 'game' || paused || chatOpen) return;   // no button needed: the mouse always aims (pointer lock just keeps the cursor from hitting the screen edge)
+  if (fly.on) { fly.yaw = wrapA(fly.yaw - e.movementX * .0021 * settings.sens); fly.pitch = clamp(fly.pitch - e.movementY * .07 * settings.sens * (settings.invert ? -1 : 1), -85, 85); return; }
   const t = player; if (!t || !t.alive || state === 'over') return;
   const zf = zoom > .5 ? .22 * settings.zsens * scopeFov() / 16 : 1, s = settings.sens;
   t.yaw = wrapA(t.yaw - e.movementX * .0021 * s * zf);
-  aimPitch = clamp(aimPitch - e.movementY * .07 * s * zf * (settings.invert ? -1 : 1), -35, 40);   // the mouse moves your view; the gun lays itself to hit what you look at
+  aimPitch = clamp(aimPitch - e.movementY * .07 * s * zf * (settings.invert ? -1 : 1), -35, 70);   // the mouse moves your view; the gun lays itself to hit what you look at
 });
 glc.addEventListener('wheel', e => {
   if (mode !== 'game' || paused || !player) return;
   e.preventDefault();
-  if (state === 'battle' && player.alive) setZero(zeroRange + (e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 5 : 25));   // wheel: sight zero range
+  if (state === 'battle' && player.alive && zoom > .5) setZero(zeroRange + (e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 5 : 25));   // wheel zeroes only in the scope   // wheel: sight zero range
 }, {passive: false});
 function myFire() {
   if (!player || !player.alive || state !== 'battle') return;
@@ -2260,6 +2357,12 @@ addEventListener('keydown', e => {
   keys[k] = true; keys.shift = e.shiftKey;
   if (e.repeat) return;
   audioInit();
+  if (k === 'f' && player) { if (fly.on) exitFly(); else enterFly(); return; }
+  if (fly.on) {   // flying: WASD/E/Q/Space move the camera, so tank controls are off
+    if (k === 'enter' && !net && player && !player.alive && state === 'battle') endOfflineNow();
+    if (state === 'over' && overT > 2.5 && k === 'enter') showEnd();
+    if (k === 'c' || k === 'm' || k === '[' || k === ']') { /* fall through to the shared keys below */ } else return;
+  }
   if (k === 'r' && state === 'battle' && player.alive) { const rf = rangefind(); if (rf) { setZero(rf.d, 'lase'); feedMsg('LASED ' + Math.round(rf.d) + ' m · zero set', '#e6b44c'); } else sfx.bad(); }
   if (k === 'x' && state === 'battle' && player.alive) { arcPref = arcPref ? 0 : 1; sfx.tick(arcPref ? 1200 : 800); feedMsg(arcPref ? 'LOB: high arc over cover' : 'DIRECT: flat, fast shot', '#e6b44c'); }
   if (k === 'v' && myShell && !myShell.dead) followShell = myShell;   // hold V: ride along with your shell full-screen
@@ -2280,13 +2383,13 @@ addEventListener('keyup', e => { const k = e.key.toLowerCase(); keys[k] = false;
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; zoomHeld = dragging = false; if (mode === 'game' && !paused && !net) setPaused(true); });
 
 function playerInput(dt) {
-  const t = player; if (!t || !t.alive || state === 'over' || paused) { engineLevel = 0; traverseRate = 0; return; }
+  const t = player; if (!t || !t.alive || state === 'over' || paused || fly.on) { engineLevel = 0; traverseRate = 0; if (t && fly.on && auth()) t.drv = {th: 0, st: 0}; return; }
   const fine = keys.shift ? .25 : 1, zf = zoom > .5 ? .3 * scopeFov() / 16 : 1;
   const y0 = t.yaw;
   if (keys.arrowleft) t.yaw += 40 * D2R * dt * fine * zf;
   if (keys.arrowright) t.yaw -= 40 * D2R * dt * fine * zf;
-  if (keys.arrowup) aimPitch = clamp(aimPitch + 12 * dt * fine * zf, -35, 40);
-  if (keys.arrowdown) aimPitch = clamp(aimPitch - 12 * dt * fine * zf, -35, 40);
+  if (keys.arrowup) aimPitch = clamp(aimPitch + 12 * dt * fine * zf, -35, 70);
+  if (keys.arrowdown) aimPitch = clamp(aimPitch - 12 * dt * fine * zf, -35, 70);
   const thr = chatOpen ? 0 : (keys.w ? 1 : 0) - (keys.s ? 1 : 0), str = chatOpen ? 0 : (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
   if (auth()) t.drv = {th: thr, st: str};
   engineLevel = Math.max(Math.abs(thr), Math.abs(str) * .6);
@@ -2305,7 +2408,9 @@ function step(dt) {
   stateT += dt;
   if (paused) for (const k in keys) keys[k] = false;
   playerInput(dt);
-  { const zt = (zoomHeld || keys.z) && player && player.alive && !camHold && !followShell ? 1 : 0;   // ease toward the target and stop there (it used to overshoot and bounce every frame)
+  if (player && !player.alive && !fly.on && state === "battle") enterFly();   // knocked out: fly around and watch the rest
+  stepFly(dt);
+  { const zt = (zoomHeld || keys.z) && player && player.alive && !camHold && !followShell && !fly.on ? 1 : 0;   // ease toward the target and stop there (it used to overshoot and bounce every frame)
     zoom = zt > zoom ? Math.min(zt, zoom + dt * 7) : Math.max(zt, zoom - dt * 7); }
   if (auth()) hostStep(dt); else clientStep(dt);
   // shared visuals
@@ -2391,7 +2496,7 @@ let aimPitch = 0, arcPref = 0, zeroRange = 300, zeroOut = false, scopeMag = 4, z
 const scopeFov = () => scopeMag === 8 ? 8 : 16;   // x4 and x8 (Tab switches)
 const ZERO_MIN = 50, ZERO_MAX = 725;
 function gunElevFor(t, pitchDeg, R, lob) {   // gun elevation (deg) that drops a full-charge shell on the sight line at range R
-  const v = shotSpeed(POWER), p = pitchDeg * D2R;
+  const v = shotSpeed(POWER) * (t.spec.vk || 1), p = pitchDeg * D2R;
   const eyeY = t.base.y + t.mesh.eye.y, pivY = t.base.y + t.mesh.gp.y;
   const dx = Math.max(5, R - t.mesh.gp.x), h = eyeY + R * Math.tan(p) - pivY;
   const disc = v ** 4 - G * (G * dx * dx + 2 * h * v * v);
@@ -2401,80 +2506,110 @@ function gunElevFor(t, pitchDeg, R, lob) {   // gun elevation (deg) that drops a
 function gunLay(dt) {
   const t = player;
   if (!t || !t.alive || mode !== 'game' || state !== 'battle') return;
-  const e = gunElevFor(t, aimPitch, zeroRange, arcPref);
-  zeroOut = e == null;
-  const want = clamp(e == null ? 45 : e, ELEV_MIN, ELEV_MAX);
+  // in the normal view the gun simply points where you look; only the gunsight applies the zero (superelevation)
+  let want = aimPitch;
+  if (zoom > .5) { const e = gunElevFor(t, aimPitch, zeroRange, arcPref); zeroOut = e == null; want = e == null ? 45 : e; } else zeroOut = false;
+  want = clamp(want, ELEV_MIN, ELEV_MAX);
   t.elev += clamp(want - t.elev, -120 * dt, 120 * dt);   // fast enough to feel locked to the mouse
 }
 function setZero(r, why) {
-  zeroRange = clamp(Math.round(r / 5) * 5, ZERO_MIN, ZERO_MAX); zeroFlash = 1.4;
+  zeroRange = clamp(Math.round(r / 5) * 5, ZERO_MIN, player ? Math.min(1200, player.spec.range) : ZERO_MAX); zeroFlash = 1.4;
   sfx.tick(why === 'lase' ? 1500 : 900);
 }
 // ================================================================ the tank rider: Sgt. Vera, who rides on your rear deck
 // and shouts at the enemy. Her lines show in a speech bar and are spoken with the browser's own voice (settings: RIDER VOICE).
-const RIDER_NAME = 'SGT. VERA';
+const myRider = () => cosItem('rider', player && player.cos ? player.cos.rider : profile.equip.rider);
 const RIDER_LINES = {
   start: ['Mount up, boys. Let\'s give them something to remember.', 'I\'ll spot, you shoot. Deal?', 'Nice day for a war. Let\'s keep it short.', 'Engine\'s warm. Guns are hot. Go!'],
   kill: ['Arrivederci!', 'Auf Wiedersehen!', 'Do svidaniya!', 'Hasta la vista!', 'G.I. go home!', 'Tschüss!', 'Bonsoir, mon ami!', 'Scratch one!', 'That\'s a brew-up!',
          'Bullseye! Paint that one on the barrel!', 'Next!', 'Who taught you to drive that thing?', 'Sayonara!', 'Ciao, bello!', 'Back to the factory with you!',
-         'Ha! Did you see that turret fly?', 'One less to worry about!', 'That\'s for Kursk!', 'Tell your friends!'],
+         'Ha! Did you see that turret fly?', 'One less to worry about!', 'Tell your friends!'],
   hit: ['Ow! Watch the paint!', 'They\'re ranging us, move!', 'That one rang my helmet!', 'Hey! I\'m sitting up here!', 'Get us out of their sights!', 'Return fire, return fire!'],
   low: ['We\'re smoking! Get us out of here!', 'One more like that and we\'re walking home!', 'I can smell the engine. Not good!'],
   win: ['Last one standing! Drinks are on you!', 'Victory! Not a scratch on me. Mostly.', 'That\'s how it\'s done!'],
   lose: ['I\'m bailing out! Good luck, sweetheart!', 'Abandon tank!', 'Well. That could have gone better.'],
 };
 let riderMsg = null, riderLast = '', riderHitAt = -99, riderLowSaid = false, riderWave = 0;
+function speak(s, rider) {
+  if (!settings.voice || !window.speechSynthesis || settings.vol <= 0) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(s), vs = speechSynthesis.getVoices();
+    const v = vs.find(v => /female|zira|samantha|victoria|karen|moira|tessa|susan|hazel|libby|sonia/i.test(v.name) && /^en/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang));
+    if (v) u.voice = v;
+    u.rate = rider.voice.rate; u.pitch = rider.voice.pitch; u.volume = clamp(settings.vol * 1.2, 0, 1);
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
 function riderSay(kind, force) {
   if (!force && riderMsg && riderMsg.t < 1.2) return;
-  const pool = RIDER_LINES[kind].filter(s => s !== riderLast), s = pick(pool.length ? pool : RIDER_LINES[kind]);
-  riderLast = s; riderMsg = {s, t: 0, dur: 2.2 + s.length * .05, kind};
+  const rd = myRider(), own = rd.lines[kind] || [];
+  const all = [...own, ...own, ...RIDER_LINES[kind]], pool = all.filter(s => s !== riderLast), s = pick(pool.length ? pool : all);   // her own lines come up twice as often
+  riderLast = s; riderMsg = {s, t: 0, dur: 2.2 + s.length * .05, kind, name: rd.name};
   if (kind === 'kill' || kind === 'win') riderWave = 1.6;
-  if (settings.voice && window.speechSynthesis && settings.vol > 0) {
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(s), vs = speechSynthesis.getVoices();
-      const v = vs.find(v => /female|zira|samantha|victoria|karen|moira|tessa|susan|hazel|libby|sonia/i.test(v.name) && /^en/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang));
-      if (v) u.voice = v;
-      u.rate = 1.12; u.pitch = 1.25; u.volume = clamp(settings.vol * 1.2, 0, 1);
-      speechSynthesis.speak(u);
-    } catch (e) {}
-  }
+  speak(s, rd);
 }
-// a seated rider in a 1940s pin-up two-piece and tank helmet, legs over the side of the hull
-const SUIT_COL = {US: 0xc8302a, SU: 0x2f5aa0, UK: 0x2d4a7a, DE: 0x1f1f22};
-function makeRider(nation) {
-  const g = new THREE.Group();
+// swimsuit fabric: plain, polka dots, stripes or a contrasting trim
+function suitTex(rd, col) {
+  const k = 'suit:' + rd.id + ':' + col;
+  if (texCache[k]) return texCache[k];
+  const c = new THREE.Color(col), c2 = new THREE.Color(rd.look.suit2 || 0xffffff);
+  return texCache[k] = canvasTex(64, (g, s) => {
+    g.fillStyle = '#' + c.getHexString(); g.fillRect(0, 0, s, s);
+    g.fillStyle = '#' + c2.getHexString();
+    if (rd.look.pattern === 'dots') for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { g.beginPath(); g.arc(x * 16 + (y % 2) * 8 + 4, y * 16 + 8, 3.2, 0, TAU); g.fill(); }
+    else if (rd.look.pattern === 'stripes') for (let y = 0; y < 8; y += 2) g.fillRect(0, y * 8, s, 8);
+    else if (rd.look.pattern === 'trim') { g.fillRect(0, 0, s, 7); g.fillRect(0, s - 7, s, 7); }
+  });
+}
+// a seated rider in a 1940s pin-up two-piece, legs over the side of the hull; each rider has her own hair, suit, hat and accessories
+function makeRider(nation, rd) {
+  const L = rd.look, g = new THREE.Group();
   const mat = (c, r = .85) => new THREE.MeshStandardMaterial({color: c, roughness: r});
-  const dark = mat(0x2c261f, .9), skin = mat(0xe0b092, .65), hair = mat(0x6a3a22), suit = mat(SUIT_COL[nation] || 0xc8302a, .5);
-  const helm = new THREE.MeshStandardMaterial({color: {US: 0x4e5530, SU: 0x3b3a30, UK: 0x4c4a35, DE: 0x4a4f48}[nation] || 0x4e5530, roughness: .7, metalness: .2});
+  const suitCol = L.suit === 'nation' ? ({US: 0xc8302a, SU: 0x2f5aa0, UK: 0x2d4a7a, DE: 0x1f1f22}[nation] || 0xc8302a) : L.suit;
+  const dark = mat(0x2c261f, .9), skin = mat(L.skin, .65), hair = mat(L.hair, .75);
+  const suit = L.pattern ? new THREE.MeshStandardMaterial({map: suitTex(rd, suitCol), roughness: .5}) : mat(suitCol, .5);
   const sph = (r, m, ws = 12, hs = 10) => new THREE.Mesh(new THREE.SphereGeometry(r, ws, hs), m);
   const add = (mesh, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz); mesh.scale.set(sx, sy, sz); mesh.castShadow = true; g.add(mesh); return mesh; };
-  const body = skin;
   add(sph(.17, suit), 0, .12, 0, 0, 0, 0, 1, .75, 1.15);                                // hips, swimsuit bottom
-  add(sph(.15, body), 0, .38, -.03, .12, 0, 0, .8, 1.25, .95);                          // waist and ribs
-  add(sph(.1, suit), .09, .5, -.1, 0, 0, 0, 1, .95, 1); add(sph(.1, suit), .09, .5, .04, 0, 0, 0, 1, .95, 1);   // bikini top
+  add(sph(.15, skin), 0, .38, -.03, .12, 0, 0, .8, 1.25, .95);                          // waist and ribs
+  add(sph(.1, suit), .09, .5, -.1, 0, 0, 0, 1, .95, 1); add(sph(.1, suit), .09, .5, .04, 0, 0, 0, 1, .95, 1);   // swimsuit top
   add(box(.05, .03, .26, suit), .02, .5, -.03);                                         // band
   add(sph(.09, skin), 0, .6, -.03, 0, 0, 0, 1.1, .7, 1.6);                              // shoulders
   add(cyl(.045, .05, .1, skin, 8), 0, .69, -.03);                                       // neck
   add(sph(.105, skin), 0, .8, -.03);                                                    // head
-  add(new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 8, 0, TAU, 0, Math.PI / 2), helm), 0, .83, -.03);
-  add(box(.06, .045, .2, dark), .085, .86, -.03);                                       // goggles on the helmet
-  add(sph(.07, hair), -.02, .78, -.14); add(sph(.07, hair), -.02, .78, .08); add(box(.08, .22, .2, hair), -.07, .66, -.03, 0, 0, .15);   // victory rolls and curls
+  add(box(.02, .018, .05, mat(0xa8202a, .4)), .1, .76, -.03);                           // lipstick
+  // hair
+  if (L.style === 'rolls') { add(sph(.07, hair), -.02, .84, -.13); add(sph(.07, hair), -.02, .84, .07); add(box(.08, .2, .2, hair), -.07, .7, -.03, 0, 0, .15); }
+  else if (L.style === 'bob') { add(sph(.12, hair), -.03, .8, -.03, 0, 0, 0, 1, .9, 1.05); }
+  else if (L.style === 'braid') { add(sph(.11, hair), -.02, .82, -.03); for (let k = 0; k < 4; k++) add(sph(.035, hair), -.09 - k * .015, .66 - k * .07, -.03); }
+  else { add(sph(.115, hair), -.02, .82, -.03); add(box(.06, .34, .24, hair), -.08, .62, -.03, 0, 0, .1); }   // long, down the back
+  // hat
+  const hatCol = L.hatCol || {US: 0x4e5530, SU: 0x5a5a3a, UK: 0x4c4a35, DE: 0x4a4f48}[nation] || 0x4e5530;
+  if (L.hat === 'helmet') add(new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 8, 0, TAU, 0, Math.PI / 2), new THREE.MeshStandardMaterial({color: hatCol, roughness: .7, metalness: .2})), 0, .83, -.03);
+  else if (L.hat === 'scarf') { const sc = L.pattern === 'dots' ? new THREE.MeshStandardMaterial({map: suitTex(rd, 0xd0332b), roughness: .6}) : mat(0xd0332b); add(sph(.118, sc), 0, .85, -.03, 0, 0, 0, 1, .55, 1.05); add(sph(.035, sc), -.02, .93, -.03); }
+  else if (L.hat === 'garrison' || L.hat === 'pilotka') { add(box(.2, .06, .09, mat(L.hat === 'pilotka' ? 0x5a5a3a : 0x4e5530)), 0, .91, -.06, .25); if (L.hat === 'pilotka') add(sph(.015, mat(0xc8302a)), .1, .91, -.06); }
+  else if (L.hat === 'beret') add(sph(.12, mat(hatCol)), -.01, .9, -.05, 0, 0, .25, 1, .35, 1);
+  else if (L.hat === 'sailor') { add(cyl(.11, .1, .07, mat(0xf2f2f0, .6), 14), 0, .9, -.03); add(cyl(.1, .1, .015, mat(0x1d2a4a), 14), 0, .875, -.03); }
+  // accessories
+  if (L.acc === 'goggles') add(box(.06, .045, .2, dark), .085, .87, -.03);
+  if (L.acc === 'sunglasses' || L.acc === 'both') add(box(.03, .035, .17, mat(0x0d0d0d, .2)), .1, .81, -.03);
+  if (L.acc === 'flower' || L.acc === 'both') { add(sph(.035, mat(0xe8304a, .6)), .02, .84, .1); add(sph(.012, mat(0xf2d24a)), .045, .84, .11); }
   for (const s of [-1, 1]) {
-    add(cyl(.06, .075, .42, body, 10), .16, .1, s * .09, 0, 0, Math.PI / 2);           // thighs forward over the edge
-    add(cyl(.05, .042, .38, body, 10), .35, -.12, s * .09);                             // shins hanging down
-    add(box(.15, .1, .12, dark), .37, -.33, s * .1);                                    // boots
+    add(cyl(.06, .075, .42, skin, 10), .16, .1, s * .09, 0, 0, Math.PI / 2);           // thighs forward over the edge
+    add(cyl(.05, .042, .38, skin, 10), .35, -.12, s * .09);                             // shins hanging down
+    add(box(.15, .1, .12, L.hat === 'helmet' ? dark : mat(suitCol, .6)), .37, -.33, s * .1);   // boots, or heels to match the suit
   }
   const armR = new THREE.Group(); armR.position.set(0, .62, .16); g.add(armR);          // the waving arm
-  const ua = cyl(.035, .03, .3, body, 8); ua.position.y = -.15; ua.castShadow = true; armR.add(ua);
+  const ua = cyl(.035, .03, .3, skin, 8); ua.position.y = -.15; ua.castShadow = true; armR.add(ua);
   const hand = sph(.045, skin, 8, 6); hand.position.y = -.32; armR.add(hand);
-  add(cyl(.035, .03, .32, body, 8), .08, .47, -.2, 0, 0, -.5);                         // other arm, braced on the deck
+  add(cyl(.035, .03, .32, skin, 8), .08, .47, -.2, 0, 0, -.5);                         // other arm, braced on the deck
   g.userData.arm = armR;
   return g;
 }
 function seatRider(t) {   // on the rear deck, facing out over the left track
   if (!t || t.mesh.rider) return;
-  const m = t.spec.m3, r = makeRider(t.spec.nation), hullTop = Math.max(...m.hull.map(p => p[1]));
+  const m = t.spec.m3, r = makeRider(t.spec.nation, cosItem('rider', t.cos && t.cos.rider)), hullTop = Math.max(...m.hull.map(p => p[1]));
   r.position.set(-m.L * .28, hullTop, -(m.hullW / 2 - .32)); r.rotation.y = Math.PI / 2;
   t.mesh.hull.add(r); t.mesh.rider = r;
 }
@@ -2491,16 +2626,33 @@ function drawRider() {
   if (!riderMsg) return;
   const m = riderMsg, a = Math.min(1, m.t * 6, (m.dur - m.t) * 3), w = Math.min(560, W - 40);
   hx.font = `600 19px ${FONT.body}`; const tw = hx.measureText('“' + m.s + '”').width;
-  const bw = Math.min(w, tw + 150), x = W / 2 - bw / 2, y = 96;
+  hx.font = `12px ${FONT.data}`; const nw = hx.measureText(m.name).width + 26;
+  const bw = Math.min(w, tw + nw + 20), x = W / 2 - bw / 2, y = 96;
   hx.globalAlpha = Math.max(0, a);
   hx.fillStyle = 'rgba(14,16,11,.84)'; hx.fillRect(x, y, bw, 40); hx.fillStyle = '#e6b44c'; hx.fillRect(x, y, 4, 40);
-  txt(RIDER_NAME, x + 14, y + 25, 12, '#e6b44c', 'left', 'data');
-  txt('“' + m.s + '”', x + 110, y + 27, 19, m.kind === 'hit' || m.kind === 'low' || m.kind === 'lose' ? '#ffb199' : '#f2e6b8', 'left', 'body', '600');
+  txt(m.name, x + 14, y + 25, 12, '#e6b44c', 'left', 'data');
+  txt('“' + m.s + '”', x + nw, y + 27, 19, m.kind === 'hit' || m.kind === 'low' || m.kind === 'lose' ? '#ffb199' : '#f2e6b8', 'left', 'body', '600');
   hx.globalAlpha = 1;
 }
 
 // ================================================================ camera
 let camEye = {ok: false}, camAim = {p: null};
+// free-fly spectator: F leaves your tank (it sits still) and lets you fly around; it switches on by itself when you're knocked out
+const fly = {on: false, x: 0, y: 0, z: 0, yaw: 0, pitch: 0};
+function enterFly() {
+  if (fly.on || mode !== 'game') return;
+  Object.assign(fly, {on: true, x: camera.position.x, y: camera.position.y + 2, z: camera.position.z, yaw: player ? player.yaw : 0, pitch: -12});
+  zoom = 0; zoomHeld = false; followShell = null; camHold = null;
+}
+function exitFly() { if (player && player.alive) fly.on = false; }
+function stepFly(dt) {
+  if (!fly.on) return;
+  const sp = (keys.shift ? 75 : 26) * dt, cp = Math.cos(fly.pitch * D2R), [fx, fz] = fwd(fly.yaw);
+  const f = (keys.w ? 1 : 0) - (keys.s ? 1 : 0), r = (keys.d ? 1 : 0) - (keys.a ? 1 : 0), u = (keys[' '] || keys.e ? 1 : 0) - (keys.q ? 1 : 0);
+  fly.x += (fx * cp * f - fz * r) * sp; fly.z += (fz * cp * f + fx * r) * sp; fly.y += (Math.sin(fly.pitch * D2R) * f + u) * sp;
+  fly.x = clamp(fly.x, -HALF + 5, HALF - 5); fly.z = clamp(fly.z, -HALF + 5, HALF - 5);
+  fly.y = clamp(fly.y, groundAt(fly.x, fly.z) + 1.5, 600);
+}
 // shell cam: a small picture-in-picture that chases your latest shell (and lingers on the blast) while you keep driving
 let myShell = null;
 const pipCam = new THREE.PerspectiveCamera(55, 1.6, .5, 4200);
@@ -2540,8 +2692,8 @@ function updateCamera(dt) {
   const t = player; if (!t) return;
   const m = t.mesh;
   let fovTarget = lerp(70, scopeFov(), zoom);
-  const spectating = net && !t.alive;
-  if (followShell && !followShell.dead && !followShell.under && (followShell.mesh)) {
+  const spectating = fly.on;
+  if (!fly.on && followShell && !followShell.dead && !followShell.under && (followShell.mesh)) {
     const s = followShell, sp = Math.hypot(s.vx, s.vy, s.vz) || 1;
     const tx = s.x - s.vx / sp * 12, ty = s.y - s.vy / sp * 12 + 3.2, tz = s.z - s.vz / sp * 12;
     const k = 1 - Math.exp(-dt * 10);
@@ -2549,17 +2701,14 @@ function updateCamera(dt) {
     const g = groundAt(camera.position.x, camera.position.z) + 1.5; if (camera.position.y < g) camera.position.y = g;
     camera.lookAt(s.x + s.vx * .15, s.y + s.vy * .15, s.z + s.vz * .15);
     fovTarget = 62;
-  } else if (camHold) {
+  } else if (!fly.on && camHold) {
     const g = groundAt(camera.position.x, camera.position.z) + 1.5; if (camera.position.y < g) camera.position.y = g;
     camera.lookAt(camHold.x, Math.max(camHold.y, groundAt(camHold.x, camHold.z)) + 3, camHold.z);
     fovTarget = 62;
-  } else if (spectating) {   // knocked out online: ride along behind whoever got you (or anyone still fighting)
-    const c = t.lastHitBy && t.lastHitBy.alive ? t.lastHitBy : tanks.find(o => o.alive) || t;
-    const [fx, fz] = fwd(c.yaw), tx = c.base.x - fx * 16, tz = c.base.z - fz * 16, ty = Math.max(c.base.y + 7, groundAt(tx, tz) + 3);
-    const k = 1 - Math.exp(-dt * 4);
-    camera.position.x += (tx - camera.position.x) * k; camera.position.y += (ty - camera.position.y) * k; camera.position.z += (tz - camera.position.z) * k;
-    camera.lookAt(c.base.x + fx * 30, c.base.y + 2, c.base.z + fz * 30);
-    fovTarget = 62;
+  } else if (spectating) {   // free-fly spectator camera
+    camera.position.set(fly.x, fly.y, fly.z);
+    camera.rotation.set(fly.pitch * D2R, fly.yaw - Math.PI / 2, 0, 'YXZ');
+    fovTarget = 70;
   } else {
     const [fx, fz] = fwd(t.yaw);
     const e = m.eye, base = t.deb ? (t.deb.p || t.base) : t.base;
@@ -2608,9 +2757,16 @@ function menuUpdate(dt) {
   menuAng += dt * .12;
   const t = menuTank; tankPhysics(t, dt, true); syncTank(t, dt);
   // showroom shot: a low orbit, with the tank framed in the open space left of the side panel
-  const R = 15, ax = t.x + Math.cos(menuAng) * R, az = t.z + Math.sin(menuAng) * R;
-  camera.position.set(ax, Math.max(groundAt(ax, az) + 2.2, t.y + 2.6), az);
-  camera.lookAt(t.x, t.y + 1.5, t.z);
+  const riderView = activeTab === "store" && storeCat === "rider" && !document.getElementById("menu").hidden;   // the rider shop zooms in on her
+  if (riderView && t.mesh.rider) {   // swing gently around her side of the tank
+    const rp = t.mesh.rider.getWorldPosition(new THREE.Vector3()), a = Math.atan2(-Math.cos(t.hullYaw), -Math.sin(t.hullYaw)) + Math.sin(menuAng * 3) * .7;
+    camera.position.set(rp.x + Math.cos(a) * 3.4, rp.y + .9, rp.z + Math.sin(a) * 3.4);
+    camera.lookAt(rp.x, rp.y + .35, rp.z);
+  } else {
+    const R = 15, ax = t.x + Math.cos(menuAng) * R, az = t.z + Math.sin(menuAng) * R;
+    camera.position.set(ax, Math.max(groundAt(ax, az) + 2.2, t.y + 2.6), az);
+    camera.lookAt(t.x, t.y + 1.5, t.z);
+  }
   const panel = W > 900 ? Math.min(600, W * .5) : 0, fx = ((W - panel) / 2) / W, hf = Math.atan(Math.tan(camera.fov * D2R / 2) * camera.aspect);
   camera.rotateY(-Math.atan((.5 - fx) * 2 * Math.tan(hf)));
   if (Math.abs(camera.fov - 50) > .05) { camera.fov = 50; camera.updateProjectionMatrix(); }
@@ -2647,12 +2803,12 @@ function drawHUD() {
   hx.clearRect(0, 0, W, Hh);
   if (mode !== 'game' || !player) return;
   hx.textBaseline = 'alphabetic';
-  const t = player, inShellCam = !!(followShell || camHold), spectating = net && !t.alive;
+  const t = player, inShellCam = !!(followShell || camHold) || fly.on, spectating = fly.on;
   if (!inShellCam && t.alive && zoom < .5) drawReticle();
   if (zoom > .02 && !inShellCam) drawOptic();   // the scope grows in over the plain crosshair
   if (!inShellCam && t.alive) aimNote();
   drawTags(); drawPops(); drawCompass(); drawRoster(); drawRadar(); drawPanel(); drawHealth(); drawLastShot(); drawPipFrame(); drawRider(); drawFeed(); drawSpot(); drawBanner(); drawHints();
-  if (spectating && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt('KNOCKED OUT · SPECTATING', W / 2, 92, 18, '#e0573a', 'center', 'display'); hx.shadowBlur = 0; }
+  if (fly.on && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt(t.alive ? 'SPECTATOR' : 'KNOCKED OUT · SPECTATING', W / 2, 92, 18, t.alive ? '#e6b44c' : '#e0573a', 'center', 'display'); txt('WASD fly · E / Space up · Q down · Shift fast · ' + (t.alive ? 'F back to your tank' : net ? 'watching to the end' : 'ENTER for results'), W / 2, 112, 12, '#e9dfb9', 'center', 'data'); hx.shadowBlur = 0; }
   if (myReel()) drawReel(myReel());
   if (chatOpen) drawChat();
   if (net && net.role === 'client' && net.re) { hx.fillStyle = 'rgba(6,7,5,.7)'; hx.fillRect(0, Hh / 2 - 40, W, 80); txt('CONNECTION LOST · RECONNECTING…', W / 2, Hh / 2 + 6, 26, '#e6b44c', 'center', 'display'); txt('Esc to give up', W / 2, Hh / 2 + 28, 13, '#d6c99c', 'center', 'data'); }
@@ -2680,7 +2836,6 @@ function aimNote() {
   const t = player; if (!t.alive || state !== 'battle') return;
   hx.shadowColor = 'rgba(0,0,0,.9)'; hx.shadowBlur = 4;
   const zoomed = zoom > .5, x = W / 2 + (zoomed ? 40 : 22), y = Hh / 2 - (zoomed ? 8 : 6);
-  if (!zoomed) txt((arcPref ? 'LOB ' : '') + zeroRange, x, y, 13, zeroOut ? '#f0a28f' : '#e6b44c', 'left', 'data');
   if (zeroOut) txt('OUT OF RANGE', W / 2, Hh / 2 + 34, 13, '#f0a28f', 'center', 'data');
   hx.shadowBlur = 0;
   if (!zoomed) return;
@@ -2770,7 +2925,7 @@ function drawOptic() {
 }
 function drawTags() {
   for (const t of tanks) {
-    if (t === player && !(followShell || camHold || (net && !player.alive))) continue;
+    if (t === player && !(followShell || camHold || fly.on)) continue;
     const p = toScreen(t.x, t.y + t.mesh.top + 2.2, t.z); if (!p) continue;
     const d = Math.hypot(t.x - player.x, t.z - player.z), cur = false;
     hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 4;
@@ -3031,7 +3186,8 @@ function pickChanged() {
 const TSTAT = [
   ['ARMOR',     t => t.real.armor,                        t => t.real.armor + ' mm · ' + t.hp + ' HP',                          true],
   ['SPEED',     t => t.real.speed,                        t => t.real.speed + ' km/h',                                         true],
-  ['GUN',       t => t.atk,                               t => t.real.gun + ' · ' + Math.round(45 * t.atk / 100) + ' dmg',     true],
+  ['HIT',       t => t.atk,                               t => t.ammo3.kg + ' kg ' + t.ammo3.round + ' · ' + Math.round(45 * t.atk / 100) + ' dmg', true],
+  ['RANGE',     t => t.range,                             t => t.ammo3.mv + ' m/s · ' + t.range + ' m',                         true],
   ['RELOAD',    t => t.rel,                               t => t.real.rof + '/min · ' + (RELOAD.missile * t.rel).toFixed(1) + ' s', false],
   ['SIZE',      t => t.m3.L * t.m3.W,                     t => t.m3.L.toFixed(1) + ' × ' + t.m3.W.toFixed(1) + ' m',           false],
 ];
@@ -3101,7 +3257,7 @@ function mapCard(i, on, click, disabled) {
 function renderPlate() {
   const t = TANKS[setup.tank];
   $('plateName').textContent = t.name; $('plateRole').textContent = t.role;
-  $('plateStats').innerHTML = [[t.real.armor + '<small> mm</small>', 'ARMOR'], [t.real.speed + '<small> km/h</small>', 'TOP SPEED'], [t.real.cal + '<small> mm</small>', 'GUN'], [t.real.rof + '<small>/min</small>', 'RATE OF FIRE'], [t.real.weight + '<small> t</small>', 'WEIGHT']]
+  $('plateStats').innerHTML = [[t.real.armor + '<small> mm</small>', 'ARMOR'], [t.real.speed + '<small> km/h</small>', 'TOP SPEED'], [t.ammo3.mv + '<small> m/s</small>', 'MUZZLE VEL.'], [t.real.rof + '<small>/min</small>', 'RATE OF FIRE'], [t.real.weight + '<small> t</small>', 'WEIGHT']]
     .map(([v, k]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
 }
 function tankGrid(el, statsEl) {
@@ -3152,7 +3308,7 @@ function renderOnline() {
   $('seatList').innerHTML = lobby.seats.map((s, i) => {
     const me = i === mySeat, open = s.k === 'open';
     const nm = open ? 'OPEN SEAT' : (s.n || 'PLAYER ' + (i + 1)) + (me ? ' (YOU)' : '');
-    const st = open ? 'CPU IF EMPTY' : s.k === 'host' ? 'HOST' : 'PLAYER';
+    const st = open ? 'CPU IF EMPTY' : s.k === 'host' ? 'HOST' : s.r ? '<span style="color:var(--green)">READY</span>' : 'NOT READY';
     return `<div class="seat${open ? ' open' : ''}"><i class="sw" style="background:${SEAT_COLORS[i]}"></i><span class="nm">${nm}</span><span class="tk">${open ? '' : TANKS[s.s] ? TANKS[s.s].name : ''}</span><span class="st">${st}</span></div>`;
   }).join('');
   tankGrid($('lobbyTanks'), $('lobbyStats'));
@@ -3162,15 +3318,22 @@ function renderOnline() {
   const ll = $('lobbyLvl'); ll.innerHTML = '';
   CPU_LEVELS.forEach((l, i) => { const b = optBtn(l.name, '', lobby.lvl === i, () => { if (!host) return; lobby.lvl = i; bcastLobby(); }, l.color); b.disabled = !host; ll.appendChild(b); });
   $('startBtn').hidden = !host;
-  $('startBtn').disabled = !(host && net.status === 'ready');
+  $('startBtn').disabled = !(host && net.status === 'ready' && allReady());
+  $('readyBtn').hidden = host; const meReady = !host && lobby.seats[mySeat] && lobby.seats[mySeat].r;
+  $('readyBtn').textContent = meReady ? 'READY ✓  (click to cancel)' : 'READY UP'; $('readyBtn').style.filter = meReady ? 'hue-rotate(60deg) saturate(.8)' : '';
   const humans = lobby.seats.filter(s => s.k !== 'open').length;
-  $('lobbyMsg').textContent = net.re ? 'Connection lost. Reconnecting…' : host ? (net.status !== 'ready' ? 'Opening the room…' : humans < 2 ? 'Share the code. You can start now; empty seats become CPU tanks.' : humans + ' players in. Start when ready.') : 'Waiting for the host to start the battle.';
+  const waiting = lobby.seats.filter(s => s.k === 'human' && !s.r).map((s, i) => s.n || 'a player');
+  $('lobbyMsg').textContent = net.re ? 'Connection lost. Reconnecting…'
+    : host ? (net.status !== 'ready' ? 'Opening the room…' : humans < 2 ? 'Share the code. You can start now; empty seats become CPU tanks.'
+      : waiting.length ? 'Waiting for ' + waiting.join(', ') + ' to press READY.' : 'Everyone is ready. Start the battle!')
+    : (lobby.seats[mySeat] && lobby.seats[mySeat].r ? 'You\'re ready. Waiting for the host to start.' : 'Pick your tank, then press READY UP.');
   if (!host && lobby.map !== mapIdx && mode === 'menu') { setup.map = lobby.map; menuWorld(); }
 }
 $('hostBtn').addEventListener('click', () => { if (!hostedOK) { netMsg = 'Open the hosted page to play online.'; renderOnline(); } hostRoom(setup.seats); });
 $('joinBtn').addEventListener('click', () => joinRoom($('codeIn').value));
 $('leaveBtn').addEventListener('click', () => leaveRoom());
 $('startBtn').addEventListener('click', hostStart);
+$('readyBtn').addEventListener('click', () => { const s = lobby && lobby.seats[mySeat]; if (!s) return; s.r = !s.r; sendHost({t: 'ready', r: s.r}); sfx.tick(s.r ? 1200 : 700); renderOnline(); });
 $('copyLink').addEventListener('click', () => {
   if (!net) return;
   const link = inviteLink(), b = $('copyLink');
@@ -3179,7 +3342,7 @@ $('copyLink').addEventListener('click', () => {
 });
 
 // store
-let storeCat = 'camo', storeSel = null, buyArmed = false;
+let storeCat = 'rider', storeSel = null, buyArmed = false;
 function renderStore() {
   renderMoney();
   const cats = $('storeCats'); cats.innerHTML = '';
@@ -3214,6 +3377,7 @@ function preview(cat, id) {
   if (cat === 'trail') { previewCos = null; menuTankSwap(); previewTrail(id); return; }
   if (cat === 'boom') { previewCos = null; menuTankSwap(); previewBoom(id); return; }
   previewCos = Object.assign({}, profile.equip, {[cat]: id}); menuTankSwap();
+  if (cat === 'rider') { const rd = cosItem('rider', id); speak((rd.lines.start || RIDER_LINES.start)[0], rd); }   // she introduces herself
 }
 
 // settings panel, built into both the Esc menu and the main menu's SETTINGS tab
@@ -3280,7 +3444,7 @@ function toMenu(keepNet) {
 function hostToLobby() {
   if (!net || net.role !== 'host') return;
   toMenu(true);
-  lobby.seats.forEach((s, i) => { if (i > 0 && s.k === 'human' && !net.conns.some(c => c.seat === i)) lobby.seats[i] = {k: 'open'}; });
+  lobby.seats.forEach((s, i) => { if (i > 0 && s.k === 'human' && !net.conns.some(c => c.seat === i)) lobby.seats[i] = {k: 'open'}; else s.r = false; });   // everyone readies up again
   showTab('online'); bcastLobby();
 }
 function showEnd() {

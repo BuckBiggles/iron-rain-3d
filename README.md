@@ -22,6 +22,7 @@ A first-person, real-time take on [Iron Rain](https://buckbiggles.github.io/iron
 | Click · Space | Fire |
 | 1–4 · Q | Shell type · arm a supply special |
 | V · C | Hold to ride with your shell · always follow (a shell cam inset shows every shot) |
+| F | Spectator: fly around the battlefield (automatic when you are knocked out) |
 | T · Esc | Chat (online) · menu |
 | [ · ] | Mouse sensitivity down · up (full settings: Esc menu or the SETTINGS tab) |
 
