@@ -362,6 +362,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/meshoptimizer@0.18.1/meshopt_decoder.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
@@ -2589,7 +2590,130 @@ FOOT_W.forEach(w => { ALLW[w.key] = w; });
 RELOAD.rpg = 7.5; RELOAD.c4 = 1.5;
 const C4_FUSE = 4;
 const specOf = i => i === -1 ? ASHTON : TANKS[i] || TANKS[0];
+// ---- Ashton's models (see CREDITS.md): the rigged soldier and the RPG-7, loaded once and copied per battle
+let infTpl = null, infWait = null;
+function loadInfantry() {
+  if (infTpl) return Promise.resolve(infTpl);
+  if (!gltfLoader || !THREE.SkeletonUtils) return Promise.reject(new Error('loader missing'));
+  return infWait = infWait || Promise.all(['soldier', 'rpg7'].map(n => new Promise((ok, bad) => gltfLoader.load('assets/infantry/' + n + '.glb', g => ok(g.scene), undefined, bad))))
+    .then(([sol, rpg]) => (infTpl = {sol: prepSoldier(sol), rpg: prepRPG(rpg)}));
+}
+function fixModelMats(root) {   // same treatment as the tanks: no black "fully metallic" exports, linear colour like the rest of the game
+  root.traverse(o => { if (!o.isMesh) return; for (const m of [].concat(o.material)) {
+    if (m.metalness != null) { m.metalness = Math.min(m.metalness, .15); m.metalnessMap = null; m.roughness = Math.max(m.roughness, .6); }
+    m.vertexTangents = false; for (const tx of [m.map, m.emissiveMap]) if (tx && tx.encoding !== THREE.LinearEncoding) { tx.encoding = THREE.LinearEncoding; tx.needsUpdate = true; }
+    m.needsUpdate = true; } });
+}
+function prepSoldier(root) {   // 1.8 m tall, feet on y = 0, facing +x
+  fixModelMats(root);
+  const g = new THREE.Group(); g.add(root); root.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(root), h = b.max.y - b.min.y, s = 1.8 / h;
+  root.scale.multiplyScalar(s); root.updateMatrixWorld(true);
+  const b2 = new THREE.Box3().setFromObject(root), c = b2.getCenter(new THREE.Vector3());
+  root.position.x -= c.x; root.position.z -= c.z; root.position.y -= b2.min.y;
+  g.rotation.y = Math.PI / 2;   // the model faces +z; the game's forward is +x
+  const w = new THREE.Group(); w.add(g); return w;
+}
+function prepRPG(root) {
+  // the launcher along +x, 0.95 m long (the real RPG-7), its rear 0.45 m behind the shoulder; the model keeps its rocket
+  // beside the launcher, so the rocket is slotted into the muzzle with the warhead sticking out, the way it's carried loaded
+  fixModelMats(root);
+  const g = new THREE.Group(); g.add(root); root.updateMatrixWorld(true);
+  const rk = root.getObjectByName('pCylinder8'), boxOf = (o, skip) => { const b = new THREE.Box3(); o.traverse(q => { if (q.isMesh && !(skip && isIn(q, skip))) b.expandByObject(q); }); return b; };
+  const isIn = (o, p) => { for (let q = o; q; q = q.parent) if (q === p) return true; return false; };
+  const lb = boxOf(root, rk), s = lb.getSize(new THREE.Vector3()), c = lb.getCenter(new THREE.Vector3());
+  const ax = s.x >= s.y && s.x >= s.z ? 'x' : s.z >= s.y ? 'z' : 'y', ai = 'xyz'.indexOf(ax);
+  // the warhead is the fat end of the rocket: that end of the launcher is the muzzle
+  let front = 1;
+  if (rk) { const pts = []; const v = new THREE.Vector3(); rk.traverse(q => { if (!q.isMesh) return; const p = q.geometry.attributes.position; for (let i = 0; i < p.count; i += 3) { v.fromBufferAttribute(p, i).applyMatrix4(q.matrixWorld); pts.push(v.clone()); } });
+    const rb = new THREE.Box3().setFromPoints(pts), rc = rb.getCenter(new THREE.Vector3()), lo = rb.min.getComponent(ai), hi = rb.max.getComponent(ai), L = hi - lo;
+    const rad = (a0, a1) => { let m = 0; for (const p of pts) { const a = p.getComponent(ai); if (a >= a0 && a <= a1) { const d = p.clone().sub(rc); d.setComponent(ai, 0); m = Math.max(m, d.length()); } } return m; };
+    front = rad(hi - L * .3, hi) > rad(lo, lo + L * .3) ? 1 : -1; }
+  root.position.sub(c);
+  const r = new THREE.Group(); r.add(g);
+  if (ax === 'z') r.rotation.y = front > 0 ? Math.PI / 2 : -Math.PI / 2; else if (ax === 'x' && front < 0) r.rotation.y = Math.PI; else if (ax === 'y') r.rotation.z = front > 0 ? -Math.PI / 2 : Math.PI / 2;
+  r.scale.setScalar(.95 / s[ax]); r.position.x = .025;   // launcher from x = -0.45 to +0.50
+  const w = new THREE.Group(); w.add(r); w.updateMatrixWorld(true);
+  // the tube's axis at the muzzle, and the pistol grip (the plastic part) for the right hand
+  const tube = root.getObjectByName('pCube12_black_metal_0') || root, mz = []; const v = new THREE.Vector3();
+  tube.traverse(q => { if (!q.isMesh) return; const p = q.geometry.attributes.position; for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(q.matrixWorld); if (v.x > .33 && v.x < .45) mz.push(v.clone()); } });
+  const med = a => a.length ? a.slice().sort((p, q) => p - q)[a.length >> 1] : 0;
+  // the tube's centre from a plain section just behind the muzzle (the front sight post sits right at the muzzle)
+  const tb = new THREE.Box3().setFromPoints(mz.length ? mz : [new THREE.Vector3(.4, 0, 0)]), axisY = (tb.min.y + tb.max.y) / 2, axisZ = (tb.min.z + tb.max.z) / 2;
+  if (rk) { w.attach(rk); w.updateMatrixWorld(true); const rb = new THREE.Box3().setFromObject(rk), rcen = rb.getCenter(new THREE.Vector3());
+    rk.position.x += .5 + .42 - rb.max.x; rk.position.y += axisY - rcen.y; rk.position.z += axisZ - rcen.z; }   // warhead 0.42 m out of the muzzle
+  // the trigger grip: the lowest part of the grips (plastic) next to the trigger mechanism
+  const ptsOf = name => { const o = root.getObjectByName(name), out = []; if (o) o.traverse(q => { if (!q.isMesh) return; const p = q.geometry.attributes.position; for (let i = 0; i < p.count; i++) out.push(v.fromBufferAttribute(p, i).applyMatrix4(q.matrixWorld).clone()); }); return out; };
+  const pl = ptsOf('pCube12_plastek_0'), trg = ptsOf('pCube12_with_metal_0');
+  let grip = new THREE.Vector3(.3, -.06, axisZ);
+  if (pl.length) { const pb = new THREE.Box3().setFromPoints(pl), tx = trg.length ? new THREE.Box3().setFromPoints(trg).getCenter(new THREE.Vector3()).x : pb.max.x;
+    const low = pl.filter(p => p.y < pb.min.y + .06 && Math.abs(p.x - tx) < .07);
+    if (low.length) { const lb = new THREE.Box3().setFromPoints(low); grip = lb.getCenter(new THREE.Vector3()); } }   // the middle of the grip the hand closes round
+  const rmid = rk ? new THREE.Box3().setFromObject(rk).getCenter(new THREE.Vector3()) : new THREE.Vector3(.7, axisY, axisZ);   // where the left hand holds a fresh rocket
+  return {g: w, rocket: rk ? rk.name : null, grip, fore: new THREE.Vector3(.46, axisY - .05, axisZ), axisY, rmid};
+}
+// two-bone reach (shoulder-elbow-hand, hip-knee-foot): bend toward `pole`, put the end on `T` (world space)
+const _iv = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()], _iq = [new THREE.Quaternion(), new THREE.Quaternion(), new THREE.Quaternion()];
+const _zAxis = new THREE.Vector3(0, 0, 1);   // the soldier rig's fingers bend about their own z axis
+function aimBone(bone, childPos, target) {
+  const P = bone.getWorldPosition(_iv[3]), cur = _iv[4].copy(childPos).sub(P).normalize(), want = target.clone().sub(P).normalize();
+  const dq = _iq[0].setFromUnitVectors(cur, want), wq = bone.getWorldQuaternion(_iq[1]), pq = bone.parent.getWorldQuaternion(_iq[2]).invert();
+  bone.quaternion.copy(pq.multiply(dq.multiply(wq))); bone.updateMatrixWorld(true);
+}
+function reach2(a, b, c, T, pole) {
+  const A = a.getWorldPosition(new THREE.Vector3()), B0 = b.getWorldPosition(new THREE.Vector3()), C0 = c.getWorldPosition(new THREE.Vector3());
+  const l1 = A.distanceTo(B0), l2 = B0.distanceTo(C0), d = Math.max(.05, Math.min(A.distanceTo(T), (l1 + l2) * .999)), dir = T.clone().sub(A).normalize();
+  const cosA = clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1), sinA = Math.sqrt(1 - cosA * cosA);
+  const side = pole.clone().sub(dir.clone().multiplyScalar(pole.dot(dir))).normalize();
+  const E = A.clone().addScaledVector(dir, l1 * cosA).addScaledVector(side, l1 * sinA);
+  aimBone(a, B0, E);
+  aimBone(b, c.getWorldPosition(new THREE.Vector3()), A.clone().addScaledVector(dir, d));
+}
+// pose Ashton every frame: hands on the launcher's grips at any elevation, legs running with his movement
+function poseSoldier(t, m, dt) {
+  const B = m.bones; if (!B.Hips) return;
+  for (const k in B) B[k].quaternion.copy(B[k].userData.rest);
+  m.turret.updateMatrixWorld(true);
+  const W = (x, y, z) => m.turret.localToWorld(new THREE.Vector3(x, y, z)), dirW = (x, y, z) => W(x, y, z).sub(W(0, 0, 0)).normalize();
+  const run = t.moving && t.alive; m.runK = lerp(m.runK || 0, run ? 1 : 0, 1 - Math.exp(-dt * 8)); m.stride = (m.stride || 0) + dt * 10 * m.runK;
+  for (const [sd, ph] of [['Left', 0], ['Right', Math.PI]]) {
+    const hip = B[sd + 'UpLeg'], knee = B[sd + 'Leg'], foot = B[sd + 'Foot']; if (!hip || !knee || !foot) continue;
+    const H = m.turret.worldToLocal(hip.getWorldPosition(new THREE.Vector3())), ll = hip.getWorldPosition(new THREE.Vector3()).distanceTo(knee.getWorldPosition(new THREE.Vector3())) + knee.getWorldPosition(new THREE.Vector3()).distanceTo(foot.getWorldPosition(new THREE.Vector3()));
+    const a = m.stride + ph, k = m.runK;
+    reach2(hip, knee, foot, W(H.x + Math.sin(a) * .36 * k, H.y - ll * (1 - .07 * k) + Math.max(0, -Math.cos(a)) * .16 * k, H.z), dirW(1, 0, 0));
+  }
+  if (!t.alive) return;
+  m.gun.updateMatrixWorld(true);
+  const G = (x, y, z) => m.gun.localToWorld(new THREE.Vector3(x, y, z));
+  // the wrist goes just behind and above the grip, then the hand is turned so the fingers wrap down and round it
+  const gr = infTpl.rpg.grip, fing = (sd) => B[sd + 'HandMiddle1'] || B[sd + 'HandIndex1'];
+  let fo = infTpl.rpg.fore;
+  if (m.round && m.round.visible && (m.round.position.x > .02 || m.round.position.y < -.02)) {   // reloading: the left hand carries the fresh rocket into the muzzle
+    const rm = infTpl.rpg.rmid, rp = m.round.position; fo = new THREE.Vector3(rm.x + rp.x - .08, rm.y + rp.y - .02, rm.z + rp.z); }
+  if (B.RightArm && B.RightForeArm && B.RightHand) { reach2(B.RightArm, B.RightForeArm, B.RightHand, G(gr.x - .075, gr.y + .035, gr.z + .025), dirW(-.3, -1, .7));
+    if (fing('Right')) aimBone(B.RightHand, fing('Right').getWorldPosition(new THREE.Vector3()), G(gr.x + .03, gr.y - .005, gr.z)); }
+  if (B.LeftArm && B.LeftForeArm && B.LeftHand) { reach2(B.LeftArm, B.LeftForeArm, B.LeftHand, G(fo.x - .07, fo.y - .02, fo.z - .05), dirW(0, -1, -.6));
+    if (fing('Left')) aimBone(B.LeftHand, fing('Left').getWorldPosition(new THREE.Vector3()), G(fo.x + .03, fo.y - .03, fo.z + .02)); }
+  // close both hands round what they hold
+  const curl = new THREE.Quaternion();
+  for (const sd of ['Left', 'Right']) for (const f of ['Index', 'Middle', 'Ring', 'Pinky']) for (const k of [1, 2, 3]) { const b = B[sd + 'Hand' + f + k]; if (b) b.quaternion.multiply(curl.setFromAxisAngle(_zAxis, k === 1 ? .9 : 1.1)); }
+}
 function makeSoldierMesh(cos) {
+  if (!infTpl) return makeSoldierMeshCoded(cos);
+  const hull = new THREE.Group(), turret = new THREE.Group(), gun = new THREE.Group();
+  const body = THREE.SkeletonUtils.clone(infTpl.sol); turret.add(body);
+  const rpg = infTpl.rpg.g.clone(true); gun.add(rpg);
+  gun.position.set(.08, 1.5, .2); turret.add(gun);
+  const mats = []; for (const o of [body, rpg]) o.traverse(q => { if (q.isMesh) { q.material = q.material.clone(); mats.push(q.material); q.castShadow = true; q.frustumCulled = false; } });
+  turret.updateMatrixWorld(true);
+  const round = new THREE.Group(); gun.add(round); round.updateMatrixWorld(true);
+  const rk = infTpl.rpg.rocket && rpg.getObjectByName(infTpl.rpg.rocket); if (rk) round.attach(rk);   // the rocket as its own piece, for the reload
+  const bones = {}; body.traverse(o => { if (o.isBone) { const n = o.name.replace(/^.*?(mixamorig|mott_var01):?/, '').replace(/_\d+$/, ''); bones[n] = o; o.userData.rest = o.quaternion.clone(); } });   // three.js drops the ':' of 'mott_var01:Hips'
+  scene.add(hull, turret);
+  return {hull, turret, gun, round, body, bones, flag: null, mount: new THREE.Vector3(0, 0, 0), gp: new THREE.Vector3(.08, 1.5, 0), L: .7, W: .7, gunLen: .8, top: 1.85,
+    eye: new THREE.Vector3(.14, 1.63, 0), mats, foot: true, model: 'ashton'};
+}
+function makeSoldierMeshCoded(cos) {   // the built-in soldier: used if the soldier model can't be loaded
   const M = (c, r = .85) => new THREE.MeshStandardMaterial({color: c, roughness: r});
   const olive = M(0x4f5532), dark = M(0x2b2a22), skin = M(0xd9a988, .6), helm = M(0x4a5030, .7), tubeM = M(0x3d4a2a, .6), head = M(0x6a6e44, .7), strap = M(0x3a3326);
   const hull = new THREE.Group(), turret = new THREE.Group(), gun = new THREE.Group();
@@ -2746,10 +2870,10 @@ function hideScreens() {
 
 // load the models a battle needs (a moment on first use, then cached) before building it
 function needModels(specIdx, go) {
-  const specs = specIdx.map(specOf).filter(sp => !sp.foot);
-  if (specs.every(tplReady)) { go(); return; }
+  const all = specIdx.map(specOf), specs = all.filter(sp => !sp.foot), foot = all.some(sp => sp.foot);
+  if (specs.every(tplReady) && (!foot || infTpl)) { go(); return; }
   $('loading').hidden = false; $('loadingMsg').textContent = 'Bringing the tanks up…';
-  loadTankModels(specs).then(() => { $('loading').hidden = true; go(); },
+  Promise.all([loadTankModels(specs), foot ? loadInfantry().catch(() => null) : null]).then(() => { $('loading').hidden = true; go(); },   // Ashton falls back to the built-in soldier if his models fail
     e => { $('loadingMsg').textContent = 'A tank model could not be loaded (' + (e && e.message || 'network') + '). Check your connection and try again.'; setTimeout(() => { $('loading').hidden = true; }, 4000); });
 }
 function startOffline() {
@@ -3195,8 +3319,9 @@ function syncTank(t, dt) {
       const p = 1 - t.reload / t.reloadMax, tilt = sstep(0, .12, p) * (1 - sstep(.86, 1, p)), ins = sstep(.3, .72, p);
       m.gun.rotation.z = lerp(t.elev * D2R, -40 * D2R, tilt);
       m.round.visible = p > .26;
-      m.round.position.set((1 - ins) * .55, (1 - ins) * .12 - (1 - sstep(.26, .4, p)) * .3, 0);
+      m.round.position.set((1 - ins) * .3, (1 - ins) * .06 - (1 - sstep(.26, .4, p)) * .25, 0);   // comes up in his left hand, then slides into the muzzle
     } else { m.round.visible = true; m.round.position.set(0, 0, 0); }
+    if (m.bones) { const r = m.turret.position.y; m.turret.position.y = t.base.y; poseSoldier(t, m, dt); m.turret.position.y = r; }   // the model's own run cycle replaces the bob
     return;
   }
   m.hull.position.set(t.x, t.y, t.z); m.hull.rotation.set(t.roll, t.hullYaw, t.pitch, 'YZX'); m.hull.updateMatrixWorld(true);
