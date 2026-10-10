@@ -321,7 +321,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-10.6';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-10.7';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2371,7 +2371,7 @@ function spawnPoints(n, rand) {
 }
 
 // ================================================================ ASHTON: one player on foot (online, 4 players, the host picks who)
-// He runs (WASD strafes, the body turns with the mouse) and carries an RPG (unlimited, 5 s reload, 50 damage) and three
+// He runs (WASD strafes, the body turns with the mouse) and carries an RPG (unlimited, 7.5 s reload, 50 damage) and three
 // C4 charges (150 damage): thrown, they stick to whatever they land on, ground or tank, and go off after a short fuse.
 // spec index -1 means Ashton everywhere a seat names its tank.
 const ASHTON = {name: 'ASHTON', role: 'On foot · RPG and C4', foot: true, nation: 'US', hp: 100, atk: 100, vk: 1, range: 350, rel: 1, speed: 5.5, w: .7};
@@ -2380,7 +2380,7 @@ const FOOT_W = [
   {key: 'c4', name: 'C4', short: 'C4', r: 9, dmg: 150, n: 1, ammo: 3, col: '#d8d0a0', kind: 'c4', gk: 1, sp: 15},
 ];
 FOOT_W.forEach(w => { ALLW[w.key] = w; });
-RELOAD.rpg = 5; RELOAD.c4 = 1.5;
+RELOAD.rpg = 7.5; RELOAD.c4 = 1.5;
 const C4_FUSE = 4;
 const specOf = i => i === -1 ? ASHTON : TANKS[i] || TANKS[0];
 function makeSoldierMesh(cos) {
@@ -2404,16 +2404,51 @@ function makeSoldierMesh(cos) {
   put(turret, cyl(.16, .16, .015, helm, 14), 0, 1.72, 0);                               // brim
   put(turret, limb(new THREE.Vector3(0, 1.5, .2), new THREE.Vector3(.2, 1.42, .2), .045, .04, olive));   // arms up to the launcher
   put(turret, limb(new THREE.Vector3(0, 1.5, -.2), new THREE.Vector3(.3, 1.38, .08), .045, .04, olive));
-  // the launcher, on his right shoulder: tube, grip and a warhead in front
-  put(gun, cyl(.045, .045, 1.0, tubeM, 10), .05, 0, 0, 0, 0, -Math.PI / 2);
-  put(gun, new THREE.Mesh(new THREE.ConeGeometry(.08, .28, 10), head), .7, 0, 0, 0, 0, -Math.PI / 2);
-  put(gun, cyl(.08, .08, .1, head, 10), .52, 0, 0, 0, 0, -Math.PI / 2);
-  put(gun, box(.06, .14, .04, dark), .15, -.09, 0);
-  put(gun, box(.1, .06, .03, dark), -.05, .07, -.04);                                   // sight
+  // the launcher, on his right shoulder
+  const rpg = makeRPG7(); gun.add(rpg.g);
   gun.position.set(.08, 1.5, .2); turret.add(gun);
   scene.add(hull, turret);
-  return {hull, turret, gun, flag: null, mount: new THREE.Vector3(0, 0, 0), gp: new THREE.Vector3(.08, 1.5, 0), L: .7, W: .7, gunLen: .85, top: 1.85,
-    eye: new THREE.Vector3(.14, 1.63, 0), mats: [olive, dark, skin, helm, tubeM, head, strap], foot: true};
+  return {hull, turret, gun, round: rpg.round, flag: null, mount: new THREE.Vector3(0, 0, 0), gp: new THREE.Vector3(.08, 1.5, 0), L: .7, W: .7, gunLen: .8, top: 1.85,
+    eye: new THREE.Vector3(.14, 1.63, 0), mats: [olive, dark, skin, helm, tubeM, head, strap, ...rpg.mats], foot: true};
+}
+// an RPG-7 with a PG-7V round loaded, built to its real proportions (x forward along the tube, metres):
+// steel tube with the flared venturi at the back, wooden heat guard, pistol and fore grips, PGO-7 optic on the left,
+// iron sights, and the cone-and-ogive warhead sticking out of the muzzle
+function makeRPG7() {
+  const M = (o) => new THREE.MeshStandardMaterial(Object.assign({roughness: .6, metalness: 0}, o));
+  const steel = M({color: 0x2f322e, roughness: .45, metalness: .65}), wood = M({map: btex('wood'), color: 0xc08850, roughness: .7}),
+    olive = M({color: 0x59603a, roughness: .55, metalness: .2}), black = M({color: 0x161614, roughness: .8}), glass = M({color: 0x2a3a40, roughness: .1, metalness: .6}), tan = M({color: 0x8a7a55, roughness: .7});
+  const g = new THREE.Group(), add = (mesh, x, y, z, rx = 0, ry = 0, rz = 0) => { mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz); mesh.castShadow = true; g.add(mesh); return mesh; };
+  const lathe = (pts, mat, x0, seg = 18) => { const geo = new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg); geo.rotateZ(-Math.PI / 2); return add(new THREE.Mesh(geo, mat), x0, 0, 0); };
+  const tubeX = (r, len, mat, x, seg = 16) => add(cyl(r, r, len, mat, seg), x, 0, 0, 0, 0, -Math.PI / 2);
+  // tube, from the venturi bell at the back to the muzzle
+  lathe([[.001, 0], [.052, 0], [.05, .03], [.036, .1], [.026, .16], [.024, .2], [.024, .96], [.027, .97], [.027, 1.0], [.001, 1.0]], steel, -.64);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(.047, .047, .005, 18, 1, true), black), -.64, 0, 0, 0, 0, -Math.PI / 2);   // the dark inside of the bell
+  // wooden heat guard round the middle, with steel bands
+  tubeX(.04, .3, wood, -.04, 18);
+  for (const x of [-.19, .11]) tubeX(.042, .018, steel, x, 18);
+  // pistol grip and trigger guard, then the fore grip
+  add(box(.032, .11, .028, black), .05, -.075, 0, 0, 0, .22);
+  add(new THREE.Mesh(new THREE.TorusGeometry(.024, .005, 5, 12, Math.PI), steel), .1, -.04, 0, 0, 0, Math.PI);
+  add(box(.008, .03, .006, steel), .1, -.035, 0);                                                        // trigger
+  add(box(.028, .09, .026, black), .22, -.065, 0, 0, 0, .12);
+  add(box(.09, .022, .03, steel), .2, -.025, 0);                                                        // grip mounting block
+  // PGO-7 optic on its bracket, on the left of the tube
+  add(box(.05, .03, .02, steel), .01, .015, -.035);
+  add(box(.15, .045, .04, olive), .01, .045, -.055);
+  tubeX(.019, .05, black, -.085, 12).position.set(-.085, .045, -.055);                                   // rubber eyecup
+  tubeX(.017, .02, glass, .095, 12).position.set(.095, .045, -.055);                                     // objective lens
+  add(box(.03, .02, .03, olive), .03, .075, -.055);                                                      // adjustment knob
+  // iron sights: a folding rear leaf and the front post
+  add(box(.01, .035, .03, steel), .04, .04, 0);
+  add(box(.012, .045, .006, steel), .32, .045, 0); add(box(.02, .012, .03, steel), .32, .025, 0);
+  // sling swivels
+  for (const x of [-.3, .28]) add(new THREE.Mesh(new THREE.TorusGeometry(.012, .003, 4, 8), steel), x, -.03, 0, Math.PI / 2);
+  // PG-7V round: the stub of the motor tube, then the warhead: cylinder, cone, ogive and the piezo nose probe
+  // (its own group, so the reload can slide a fresh one into the muzzle)
+  const round = new THREE.Group(); g.add(round);
+  round.add(tubeX(.019, .06, tan, .38, 12), lathe([[.001, 0], [.022, 0], [.042, .03], [.0425, .1], [.04, .15], [.03, .23], [.018, .29], [.011, .32], [.001, .325]], olive, .4, 20), tubeX(.006, .05, steel, .745, 8));
+  return {g, round, mats: [steel, wood, olive, black, glass, tan]};
 }
 // C4 charges: stuck to the ground or to a tank (and carried with it), beeping until they go off
 let c4s = [], c4Id = 1;
@@ -2937,6 +2972,13 @@ function syncTank(t, dt) {
     m.turret.position.copy(t.base); m.turret.rotation.set(0, t.yaw, t.pitch, 'YZX');
     const run = t.moving && t.alive ? Math.sin(worldTime * 11 + t.i) * .05 : 0; m.turret.position.y += Math.abs(run);   // a bob as he runs
     m.gun.rotation.z = t.alive ? t.elev * D2R : 0; m.gun.position.x = .08 - t.recoil * .25;
+    // reloading the RPG: lower the launcher, a fresh rocket comes up from the pack and slides into the muzzle, shoulder it again
+    if (t.lastW === 'RPG' && t.reload > 0 && t.reloadMax > 0 && t.alive) {
+      const p = 1 - t.reload / t.reloadMax, tilt = sstep(0, .12, p) * (1 - sstep(.86, 1, p)), ins = sstep(.3, .72, p);
+      m.gun.rotation.z = lerp(t.elev * D2R, -40 * D2R, tilt);
+      m.round.visible = p > .26;
+      m.round.position.set((1 - ins) * .55, (1 - ins) * .12 - (1 - sstep(.26, .4, p)) * .3, 0);
+    } else { m.round.visible = true; m.round.position.set(0, 0, 0); }
     return;
   }
   m.hull.position.set(t.x, t.y, t.z); m.hull.rotation.set(t.roll, t.hullYaw, t.pitch, 'YZX'); m.hull.updateMatrixWorld(true);
@@ -3012,7 +3054,7 @@ const hitDot = new THREE.Points(hitGeo, new THREE.PointsMaterial({size: 16, size
 hitDot.frustumCulled = false; hitDot.visible = false; hitDot.renderOrder = 5; scene.add(hitDot);
 function updateAimDots() {
   const t = player;
-  aimDots.visible = !!(mode === 'game' && t && t.alive && state === 'battle' && !followShell && !camHold);
+  aimDots.visible = !!(mode === 'game' && t && t.alive && !t.spec.foot && state === 'battle' && !followShell && !camHold);   // no aiming dots for Ashton's RPG
   hitDot.visible = false;
   if (!aimDots.visible) return;
   const pos = aimGeo.attributes.position.array, col = aimGeo.attributes.color.array, n = Math.min(AIM_N, aimPath.length / 3);
@@ -3059,7 +3101,7 @@ function applyEvent(e) {
       break;
     }
     case 'fire': { const t = T(e.i); if (!t) break;
-      if (t !== player) { t.yaw = e.y; t.elev = e.e; }
+      t.lastW = e.w; if (t !== player) { t.yaw = e.y; t.elev = e.e; }
       else lastShot = {rng: aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null, elev: e.e, brg: bearingOf(e.y), w: e.w, res: null, x: t.x, z: t.z};
       fireFx(t, e.w); break; }
     case 'c4': case 'c4x': c4Event(e); break;
@@ -3423,6 +3465,7 @@ addEventListener('keydown', e => {
   if (e.repeat) return;
   audioInit();
   if (k === 'f' && player) { if (fly.on) exitFly(); else enterFly(); return; }
+  if (k === 'h' && player && player.spec.foot) { feedMsg('Ashton fights in first person', '#d6c99c'); return; }
   if (k === 'h' && !fly.on) { settings.thirdP = !settings.thirdP; save('ironrain3d.settings', settings); sfx.tick(settings.thirdP ? 1000 : 800); feedMsg(settings.thirdP ? 'Third-person view (H for the gunner\'s seat)' : 'Gunner\'s seat view', '#d6c99c'); return; }
   if (fly.on) {   // flying: WASD/E/Q/Space move the camera, so tank controls are off
     if (k === 'enter' && !net && player && !player.alive && state === 'battle') endOfflineNow();
@@ -3562,7 +3605,7 @@ function payRound() {
 // nearer or farther targets use the range marks on the reticle (hold over). Wheel sets the zero, R lases the range
 // under the crosshair and sets the zero to it, X switches to the high lob solution for that range.
 let aimPitch = 0, arcPref = 0, zeroRange = 300, zeroOut = false, scopeMag = 4, zeroFlash = 0;
-const scopeFov = () => scopeMag === 8 ? 8 : 16;   // x4 and x8 (Tab switches)
+const scopeFov = () => player && player.spec.foot ? 42 : scopeMag === 8 ? 8 : 16;   // x4 and x8 (Tab switches); Ashton just raises the RPG's iron sights
 const ZERO_MIN = 50, ZERO_MAX = 725;
 function gunElevFor(t, pitchDeg, R, lob) {   // gun elevation (deg) that drops a full-charge shell on the sight line at range R
   const v = shotSpeed(POWER) * (t.spec.vk || 1), p = pitchDeg * D2R;
@@ -3894,7 +3937,7 @@ function renderPip(dt) {
   pip.on = true;
 }
 // third-person view (H): what the crosshair is on, so the gun can be aimed at it from below the camera
-const thirdView = () => !!(settings.thirdP && player && player.alive && !player.deb);
+const thirdView = () => !!(settings.thirdP && player && player.alive && !player.deb && !player.spec.foot);   // Ashton is always first person
 let tpAim = null;
 function castAim() {
   const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
@@ -3934,12 +3977,13 @@ function updateCamera(dt) {
     const [fx, fz] = fwd(t.yaw);
     const e = m.eye, base = t.deb ? (t.deb.p || t.base) : t.base;
     let px = base.x + fx * e.x - fz * e.z, py = base.y + e.y + (t.deb ? 1.5 : 0), pz = base.z + fz * e.x + fx * e.z;
-    if (zoom > .5) { px = base.x + fx * (m.gp.x + .3); py = base.y + m.gp.y + .45; pz = base.z + fz * (m.gp.x + .3); }   // the sight sits on the gun's trunnion (no recoil)
+    if (zoom > .5 && !m.foot) { px = base.x + fx * (m.gp.x + .3); py = base.y + m.gp.y + .45; pz = base.z + fz * (m.gp.x + .3); }   // the sight sits on the gun's trunnion (no recoil)
     // smooth the eye point: the hull rocks on the terrain at the 60 Hz sim rate, and through a x4 sight that reads as shaking
     const tp = thirdView() && zoom <= .5;
     if (tp) {   // third person: orbit behind and above the turret along your aim, swinging higher as you look down
-      const cp = Math.cos(aimPitch * D2R), sp = Math.sin(aimPitch * D2R), dist = 8 + m.L * 1.1;
-      px = base.x - fx * cp * dist; pz = base.z - fz * cp * dist; py = base.y + m.top + 2.8 - sp * dist * .75;
+      const cp = Math.cos(aimPitch * D2R), sp = Math.sin(aimPitch * D2R), dist = m.foot ? 3.4 : 8 + m.L * 1.1;   // over the shoulder for Ashton
+      px = base.x - fx * cp * dist; pz = base.z - fz * cp * dist; py = base.y + m.top + (m.foot ? .35 : 2.8) - sp * dist * .75;
+      if (m.foot) { px -= fz * .7; pz += fx * .7; }   // off his right shoulder, the side the launcher is on
       py = Math.max(py, groundAt(px, pz) + 1.2);
     }
     if (!camEye.ok || Math.hypot(px - camEye.x, py - camEye.y, pz - camEye.z) > 4) camEye = {x: px, y: py, z: pz, ok: true};
@@ -3963,6 +4007,7 @@ function updateCamera(dt) {
   if (camera.fov !== fovTarget) { camera.fov = Math.abs(camera.fov - fovTarget) < .05 ? fovTarget : camera.fov + (fovTarget - camera.fov) * (1 - Math.exp(-dt * 12)); camera.updateProjectionMatrix(); }
   const own = zoom < .5 || !!followShell || !!camHold || spectating;
   m.turret.visible = own || !!t.deb; m.hull.visible = own || !!t.deb;
+  if (m.foot && t.alive && !spectating && !followShell && !camHold && !thirdView()) m.turret.visible = m.hull.visible = false;   // Ashton's own body would fill the view from inside his head
   m.gun.visible = !(zoom < .5 && !thirdView() && !followShell && !camHold && !spectating && !t.deb && t.elev > 28);   // a steep barrel would stand right across your view
 }
 function placeSun() {
@@ -4038,7 +4083,7 @@ function drawHUD() {
   hx.textBaseline = 'alphabetic';
   const t = player, inShellCam = !!(followShell || camHold) || fly.on, spectating = fly.on;
   if (!inShellCam && t.alive && zoom < .5) drawReticle();
-  if (zoom > .02 && !inShellCam) drawOptic();   // the scope grows in over the plain crosshair
+  if (zoom > .02 && !inShellCam) { if (t.spec.foot) drawIronSights(); else drawOptic(); }   // the scope (or Ashton's iron sights) grows in over the plain crosshair
   if (!inShellCam && t.alive) aimNote();
   drawTags(); drawPops(); drawCompass(); drawRoster(); drawRadar(); drawPanel(); drawHealth(); drawLastShot(); drawPipFrame(); drawRider(); drawFeed(); drawSpot(); drawBanner(); drawHints();
   if (fly.on && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt(t.alive ? 'SPECTATOR' : 'DESTROYED · SPECTATING', W / 2, 160, 18, t.alive ? '#e6b44c' : '#e0573a', 'center', 'display'); txt('WASD fly · E / Space up · Q down · Shift fast · ' + (t.alive ? 'F back to your tank' : net ? 'watching to the end' : 'ENTER for results'), W / 2, 180, 12, '#e9dfb9', 'center', 'data'); hx.shadowBlur = 0; }
@@ -4110,6 +4155,47 @@ function rangefind() {
     if (Math.abs(x) > HALF || Math.abs(z) > HALF) return null;
   }
   return null;
+}
+// Ashton aiming down the RPG-7's iron sights: the blurred rear leaf with its notch close to the eye, the front post on the
+// line of sight (its tip is the aim point), the tube running away underneath and the warhead's nose beyond it.
+// While he reloads the launcher drops out of view and comes back up.
+function drawIronSights() {
+  const t = player, k = clamp(zoom, 0, 1), ease = k * k * (3 - 2 * k), cx = W / 2, cy = Hh / 2;
+  let drop = (1 - ease) * Hh * .7;
+  if (t.lastW === 'RPG' && t.reload > 0 && t.reloadMax > 0) { const p = 1 - t.reload / t.reloadMax; drop += Hh * .8 * sstep(0, .12, p) * (1 - sstep(.86, 1, p)); }
+  const kk = camKick * camKick; drop += kk * 40;
+  hx.save(); hx.translate(0, drop);
+  // tube: a long steel cylinder seen from behind, narrowing toward the muzzle, with the wooden heat guard part way along
+  const tube = (y0, w0, y1, w1, c0, c1) => { const g = hx.createLinearGradient(cx - w0 / 2, 0, cx + w0 / 2, 0); g.addColorStop(0, c0); g.addColorStop(.45, c1); g.addColorStop(1, c0);
+    hx.fillStyle = g; hx.beginPath(); hx.moveTo(cx - w0 / 2, y0); hx.lineTo(cx - w1 / 2, y1); hx.lineTo(cx + w1 / 2, y1); hx.lineTo(cx + w0 / 2, y0); hx.closePath(); hx.fill(); };
+  tube(Hh + 40, W * .34, cy + 74, 46, '#1c1e1b', '#4a4e48');
+  tube(cy + 175, 150, cy + 112, 84, '#5a3a22', '#a8743f');                                    // heat guard
+  hx.fillStyle = '#2a2c28'; hx.fillRect(cx - 44, cy + 110, 88, 5); hx.fillRect(cx - 76, cy + 171, 152, 7);   // its steel bands
+  // the warhead's nose, wider than the tube, sitting just under the front post
+  const wg = hx.createRadialGradient(cx - 10, cy + 54, 4, cx, cy + 62, 34); wg.addColorStop(0, '#7a8250'); wg.addColorStop(1, '#3d4228');
+  hx.fillStyle = wg; hx.beginPath(); hx.ellipse(cx, cy + 62, 34, 26, 0, 0, TAU); hx.fill();
+  hx.fillStyle = '#2b2d29'; hx.beginPath(); hx.arc(cx, cy + 50, 4, 0, TAU); hx.fill();       // the probe on its nose
+  // front sight post with its guard ears; the tip of the post is the aim point
+  hx.fillStyle = '#121311';
+  hx.fillRect(cx - 2, cy, 4, 42); hx.fillRect(cx - 9, cy + 38, 18, 8);
+  for (const s of [-1, 1]) hx.fillRect(cx + s * 12 - 2, cy - 4, 4, 48);
+  // rear sight leaf, close to the eye so it's soft: a plate across the view with a U notch, and range marks
+  hx.shadowColor = 'rgba(0,0,0,.6)'; hx.shadowBlur = 10;
+  hx.fillStyle = 'rgba(22,23,20,.94)';
+  const lw = 92, lh = 46;   // a small leaf: just wide enough to frame the post
+  hx.beginPath(); hx.moveTo(cx - lw, cy - 4); hx.lineTo(cx - 24, cy - 4); hx.lineTo(cx - 24, cy + 8); hx.quadraticCurveTo(cx - 24, cy + 22, cx, cy + 22);
+  hx.quadraticCurveTo(cx + 24, cy + 22, cx + 24, cy + 8); hx.lineTo(cx + 24, cy - 4); hx.lineTo(cx + lw, cy - 4); hx.lineTo(cx + lw - 8, cy + lh); hx.lineTo(cx - lw + 8, cy + lh); hx.closePath(); hx.fill();
+  hx.shadowBlur = 0;
+  hx.fillStyle = 'rgba(230,220,190,.6)'; hx.font = `9px ${FONT.data}`; hx.textAlign = 'center';
+  [2, 3, 4, 5].forEach((n, i) => { const x = cx + 34 + i * 13; hx.fillRect(x - .5, cy + 1, 1, 6); hx.fillText(String(n), x, cy + 17); });   // range marks, hundreds of metres
+  hx.restore();
+  // readouts below the sights
+  if (worldTime - rangeCache.t > .1 || worldTime < rangeCache.t) rangeCache = {t: worldTime, v: rangefind()};
+  const r = rangeCache.v;
+  hx.shadowColor = 'rgba(0,0,0,.95)'; hx.shadowBlur = 4;
+  txt(r ? Math.round(r.d) + ' m' : '---- m', cx - W * .2, Hh - 132, 18, r && r.tank ? r.tank.color : '#f2e6b8', 'center', 'data');
+  txt(t.reload > 0 ? 'RELOADING ' + t.reload.toFixed(1) + 's' : weaponOf(t).name + ' READY', cx + W * .2, Hh - 132, 16, t.reload > 0 ? '#f0a28f' : '#e6b44c', 'center', 'data');
+  hx.shadowBlur = 0;
 }
 function drawOptic() {
   const t = player, k = clamp(zoom, 0, 1), ease = k * k * (3 - 2 * k);
@@ -4388,7 +4474,7 @@ function drawLastShot() {
 function drawHints() {
   if (zoom > .5) return;   // the scope carries its own readouts
   let s = '';
-  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · CLICK fire · 1 RPG · 2 C4 (sticks to tanks, 4 s fuse) · H 3rd person';
+  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · CLICK fire · 1 RPG · 2 C4 (sticks to tanks, 4 s fuse)';
   else if (state === 'battle' && player.alive) s = 'CLICK fire · R lase · Z sight · H 3rd person · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
   if (!s) return;
