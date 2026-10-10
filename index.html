@@ -420,11 +420,11 @@ const TANKS = [
   {name:'CHALLENGER 2', role:'British main battle tank', era:'modern', model:'chall2', nation:'UK', armor:850, speed:59, gun:'120 mm L30A1', cal:120, round:'L27A1', mv:1700, kg:4.5, rof:8, weight:62.5, crew:4, L:8.3, W:3.5,
    elev:[-10, 20], trav:36, erate:25, cfg:{turret:{auto:true, y:1.9, x:-.4, rx:2.6, rz:1.75}, gun:{r:.22}}},
   {name:'KF51 PANTHER', role:'German next-gen MBT', era:'modern', model:'kf51', nation:'DE', armor:750, speed:70, gun:'130 mm Rh-130 L/52', cal:130, round:'130 mm APFSDS', mv:1650, kg:6.5, rof:10, weight:59, crew:3, L:7.7, W:3.6,
-   elev:[-9, 20], trav:40, erate:25, cfg:{clipAll:true, turret:{y:1.86, x:0, rx:3.0, rz:1.85}, gun:{r:.24, x:2.3}}},
+   elev:[-9, 20], trav:40, erate:25, cfg:{clipAll:true, footprint:true, drop:.45, turret:{y:1.86, x:0, rx:3.0, rz:1.85}, gun:{r:.24, x:2.3}}},
   {name:'MERKAVA MK4', role:'Israeli main battle tank', era:'modern', model:'merkava', nation:'IL', armor:800, speed:64, gun:'120 mm MG253', cal:120, round:'M338', mv:1700, kg:4.6, rof:10, weight:65, crew:4, L:7.6, W:3.72,
    elev:[-7, 20], trav:36, erate:25, cfg:{autoYaw:true, turret:{auto:true, y:1.85, x:-.9, rx:2.7, rz:1.9}, gun:{r:.22}}},
   {name:'M1A2 ABRAMS', role:'SEPv3 · US main battle tank', era:'modern', model:'abrams', nation:'US', armor:900, speed:67, gun:'120 mm M256', cal:120, round:'M829A4', mv:1555, kg:4.6, rof:10, weight:66.8, crew:4, L:7.93, W:3.66,
-   elev:[-9, 20], trav:42, erate:25, cfg:{clipAll:true, turret:{y:1.72, x:-.4, rx:3.1, rz:1.85}, gun:{r:.32, x:2.1}}},
+   elev:[-9, 20], trav:42, erate:25, cfg:{clipAll:true, footprint:true, drop:.45, turret:{y:1.72, x:-.4, rx:3.1, rz:1.85}, gun:{r:.32, x:2.1}}},
   {name:'T-90M', role:'Russian main battle tank', era:'modern', model:'t90m', nation:'SU', armor:800, speed:60, gun:'125 mm 2A46M-4', cal:125, round:'3BM60', mv:1660, kg:4.8, rof:8, weight:46.5, crew:3, L:6.86, W:3.78,
    elev:[-6, 14], trav:24, erate:20, cfg:{turret:{y:1.55, x:-.1, rx:1.9, rz:1.7}, gun:{r:.22}}},
 ];
@@ -2317,6 +2317,19 @@ function prepTank(root, spec) {
   const G = C.gun || {}, piv = new THREE.Vector3(G.x != null ? G.x : T.x + T.rx * .8, G.y != null ? G.y : tip.y, 0), gr = C.gun && C.gun.r || .2;
   const dirG = new THREE.Vector3(tip.x - piv.x, tip.y - piv.y, 0).normalize();
   const nameOf = m => { let s = ''; for (let o = m; o; o = o.parent) s += '/' + o.name; return s; };
+  let foot = null; const cutY = C.footprint ? T.y - (C.drop || .5) : T.y;
+  if (C.footprint) {   // the turret roof's outline from above (convex hull of everything well above the ring, barrel excluded)
+    const pts = [];
+    for (const {g} of baked) { const p = g.attributes.position; for (let i = 0; i < p.count; i += 2) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      if (y > T.y + (C.roofAbove || .3) && ((x - T.x) / (T.rx * 1.15)) ** 2 + (z / (T.rz * 1.15)) ** 2 < 1 && !(x > piv.x && Math.abs(z - tip.z) < .45)) pts.push([x, z]); } }
+    pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+    for (const q of pts) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+    for (let i = pts.length - 1; i >= 0; i--) { const q = pts[i]; while (hi.length > 1 && cr(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop(); hi.push(q); }
+    const hull2 = lo.slice(0, -1).concat(hi.slice(0, -1)), mx = hull2.reduce((a, q) => a + q[0], 0) / hull2.length, mz = hull2.reduce((a, q) => a + q[1], 0) / hull2.length;
+    foot = hull2.map(([x, z]) => { const d = Math.hypot(x - mx, z - mz) || 1; return [x + (x - mx) / d * .1, z + (z - mz) / d * .1]; });   // grown 10 cm
+  }
+  const inPoly = (x, z) => { for (let i = 0; i < foot.length; i++) { const a = foot[i], b = foot[(i + 1) % foot.length]; if ((b[0] - a[0]) * (z - a[1]) - (b[1] - a[1]) * (x - a[0]) < 0) return false; } return true; };
   for (const {m, g} of baked) {
     const nm = nameOf(m), p = g.attributes.position, cls = new Uint8Array(p.count / 3);
     const named = C.names && (C.names.gun && C.names.gun.test(nm) ? 2 : C.names.turret && C.names.turret.test(nm) ? 1 : C.names.hullOnly ? 0 : -1);
@@ -2333,7 +2346,7 @@ function prepTank(root, spec) {
     const put = (c, V) => V.forEach((arr, a) => { for (const x of arr) outs[c][a].push(x); });
     const mix = (P0, P1, t) => P0.map((arr, a) => arr.map((x, q) => x + (P1[a][q] - x) * t));
     const yA = atts.findIndex(([nm]) => nm === 'position');
-    const clip = (poly, keepAbove) => { const out = []; for (let k = 0; k < poly.length; k++) { const P0 = poly[k], P1 = poly[(k + 1) % poly.length], d0 = P0[yA][1] - T.y, d1 = P1[yA][1] - T.y, in0 = keepAbove ? d0 >= 0 : d0 < 0, in1 = keepAbove ? d1 >= 0 : d1 < 0;
+    const clip = (poly, keepAbove) => { const out = []; for (let k = 0; k < poly.length; k++) { const P0 = poly[k], P1 = poly[(k + 1) % poly.length], d0 = P0[yA][1] - cutY, d1 = P1[yA][1] - cutY, in0 = keepAbove ? d0 >= 0 : d0 < 0, in1 = keepAbove ? d1 >= 0 : d1 < 0;
       if (in0) out.push(P0); if (in0 !== in1) out.push(mix(P0, P1, d0 / (d0 - d1))); } return out; };
     for (let i = 0; i < p.count / 3; i++) {
       const V = [vert(i * 3), vert(i * 3 + 1), vert(i * 3 + 2)];
@@ -2342,12 +2355,12 @@ function prepTank(root, spec) {
       const cx = (A.x + B.x + D.x) / 3, cy = (A.y + B.y + D.y) / 3, cz = (A.z + B.z + D.z) / 3;
       const along = (cx - piv.x) * dirG.x + (cy - piv.y) * dirG.y, off = Math.hypot(cx - piv.x - dirG.x * along, cy - piv.y - dirG.y * along, cz - tip.z);
       if (along > -(C.gun && C.gun.back || .3) && off < gr) { V.forEach(q => put(2, q)); continue; }
-      const c = comp.get(find(i * 3)), inFoot = !C.casemate && ((cx - T.x) / T.rx) ** 2 + (cz / T.rz) ** 2 < 1;
-      if (c.big && inFoot && Math.min(A.y, B.y, D.y) < T.y && Math.max(A.y, B.y, D.y) > T.y) {
+      const c = comp.get(find(i * 3)), inFoot = !C.casemate && (foot ? inPoly(cx, cz) : ((cx - T.x) / T.rx) ** 2 + (cz / T.rz) ** 2 < 1);
+      if (c.big && inFoot && Math.min(A.y, B.y, D.y) < cutY && Math.max(A.y, B.y, D.y) > cutY) {
         for (const [keep, cl] of [[true, 1], [false, 0]]) { const poly = clip(V, keep); for (let k = 1; k + 1 < poly.length; k++) { put(cl, poly[0]); put(cl, poly[k]); put(cl, poly[k + 1]); } }
         continue;
       }
-      V.forEach(q => put(c.big ? (inFoot && cy > T.y ? 1 : 0) : c.tur ? 1 : 0, q));
+      V.forEach(q => put(c.big ? (inFoot && cy > cutY ? 1 : 0) : c.tur ? 1 : 0, q));
     }
     for (let c = 0; c < 3; c++) {
       if (!outs[c][yA].length) continue;
