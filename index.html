@@ -292,7 +292,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-09.7';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-09.8';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -499,24 +499,24 @@ const COSMETICS = {
   // tank riders: who sits on your rear deck and shouts at the enemy. Look, voice and signature lines differ.
   rider: [
     {id:'vera', name:'SGT. VERA', price:0, sw:'#c8302a', tag:'Tank helmet, goggles and a swimsuit in your nation\'s colours.',
-     look:{skin:0xe0b092, hair:0x6a3a22, style:'rolls', suit:'nation', hat:'helmet', acc:'goggles'}, voice:{pitch:1.25, rate:1.12}, lines:{}},
+     look:{skin:0xe0b092, hair:0x6a3a22, style:'rolls', suit:'nation', hat:'helmet', acc:'goggles'}, voice:{langs:['en-us'], pitch:1.2, rate:1.1}, lines:{}},
     {id:'rosie', name:'RIVETER ROSIE', price:300, sw:'#d0332b', tag:'Polka dots, a red bandana and a rivet gun\'s worth of attitude.',
-     look:{skin:0xe8b898, hair:0x8a3b1c, style:'bob', suit:0xd0332b, pattern:'dots', hat:'scarf', acc:'none'}, voice:{pitch:1.15, rate:1.05},
+     look:{skin:0xe8b898, hair:0x8a3b1c, style:'bob', suit:0xd0332b, pattern:'dots', hat:'scarf', acc:'none'}, voice:{langs:['en-us'], pitch:.95, rate:1.08},
      lines:{kill:['We can do it! We just did!', 'Riveted!', 'Back to the assembly line with you!', 'Built it, broke it!'], start:['Sleeves up, let\'s get to work!']}},
     {id:'betty', name:'BOMBSHELL BETTY', price:450, sw:'#f2efe6', tag:'Platinum curls, sunglasses and a garrison cap at a jaunty angle.',
-     look:{skin:0xf0c6a8, hair:0xf2dfa0, style:'rolls', suit:0xf2efe6, suit2:0xc8302a, pattern:'trim', hat:'garrison', acc:'sunglasses'}, voice:{pitch:1.4, rate:1.0},
+     look:{skin:0xf0c6a8, hair:0xf2dfa0, style:'rolls', suit:0xf2efe6, suit2:0xc8302a, pattern:'trim', hat:'garrison', acc:'sunglasses'}, voice:{langs:['en-us'], pitch:1.55, rate:.92},
      lines:{kill:['Bombs away, darling!', 'Kiss that one goodbye!', 'Wasn\'t even trying, sugar.', 'Ooh, that one\'s going in my scrapbook!'], start:['Don\'t smudge my lipstick, boys.']}},
     {id:'katya', name:'SNIPER KATYA', price:500, sw:'#2f5aa0', tag:'A long braid, a striped swimsuit and a pilotka with a red star.',
-     look:{skin:0xe6bca0, hair:0x2a1c14, style:'braid', suit:0xf2f2f2, suit2:0x2f5aa0, pattern:'stripes', hat:'pilotka', acc:'none'}, voice:{pitch:1.1, rate:1.15},
+     look:{skin:0xe6bca0, hair:0x2a1c14, style:'braid', suit:0xf2f2f2, suit2:0x2f5aa0, pattern:'stripes', hat:'pilotka', acc:'none'}, voice:{langs:['ru', 'pl', 'en-gb'], pitch:1.05, rate:1.0},
      lines:{kill:['Do svidaniya, comrade!', 'For the motherland!', 'One shot. One tank.', 'Too slow, tovarishch!'], start:['I count. You shoot.']}},
     {id:'lili', name:'LILI MARLENE', price:650, sw:'#151517', tag:'Long blonde waves, a black swimsuit and a beret, singing under the lantern.',
-     look:{skin:0xf0c8ae, hair:0xe3c27a, style:'long', suit:0x151517, hat:'beret', hatCol:0x7a1d22, acc:'none'}, voice:{pitch:1.2, rate:.95},
+     look:{skin:0xf0c8ae, hair:0xe3c27a, style:'long', suit:0x151517, hat:'beret', hatCol:0x7a1d22, acc:'none'}, voice:{langs:['de', 'en-gb'], pitch:1.1, rate:.9},
      lines:{kill:['Auf Wiedersehen, Liebling!', 'Under the lantern... boom.', 'Wunderbar!', 'Gute Nacht!'], start:['Shall we dance, darling?']}},
     {id:'scarlett', name:'SCARLETT', price:800, sw:'#1f7a4a', tag:'Auburn hair with a flower, an emerald swimsuit and a sailor cap.',
-     look:{skin:0xf2c4a6, hair:0x9a3b1f, style:'long', suit:0x1f7a4a, hat:'sailor', acc:'flower'}, voice:{pitch:1.3, rate:1.05},
+     look:{skin:0xf2c4a6, hair:0x9a3b1f, style:'long', suit:0x1f7a4a, hat:'sailor', acc:'flower'}, voice:{langs:['en-gb', 'en-ie', 'en-au'], pitch:1.3, rate:1.04},
      lines:{kill:['Frankly, my dear... you\'re scrap.', 'Fiddle-dee-dee, another one!', 'Anchors aweigh!', 'Tomorrow is another day. Not for you.'], start:['Ahoy, boys. Let\'s make waves.']}},
     {id:'dolores', name:'DOLORES "DYNAMITE"', price:1200, sw:'#d4a72c', tag:'Jet-black hair, a gold swimsuit, a hibiscus and dark glasses.',
-     look:{skin:0xc58c64, hair:0x141010, style:'long', suit:0xd4a72c, hat:'none', acc:'both'}, voice:{pitch:1.25, rate:1.12},
+     look:{skin:0xc58c64, hair:0x141010, style:'long', suit:0xd4a72c, hat:'none', acc:'both'}, voice:{langs:['es', 'it', 'pt'], pitch:1.2, rate:1.12},
      lines:{kill:['¡Adiós, amigo!', '¡Olé!', 'Dynamite, baby!', '¡Hasta nunca!'], start:['Light the fuse, cariño.']}},
   ],
 };
@@ -2530,13 +2530,35 @@ const RIDER_LINES = {
   lose: ['I\'m bailing out! Good luck, sweetheart!', 'Abandon tank!', 'Well. That could have gone better.'],
 };
 let riderMsg = null, riderLast = '', riderHitAt = -99, riderLowSaid = false, riderWave = 0;
+// each rider gets her own voice from what this computer has installed: her accent's language first (German for Lili,
+// Russian for Katya, Spanish for Dolores, British for Scarlett), preferring female voices, and a different English voice
+// for each of the American girls. Pitch and speed then set her apart further.
+const FEMALE_V = /female|woman|zira|aria|jenny|michelle|samantha|victoria|karen|moira|tessa|susan|hazel|libby|sonia|maisie|emily|hedda|katja|amala|helena|laura|elvira|irina|svetlana|dariya|paulina|monica|elsa|isabella|clara|denise|julie|zuzana|google/i;
+const MALE_V = /\bmale\b|david|mark|george|james|daniel|alex\b|fred|pablo|stefan|guy|ryan|thomas|pavel|diego|jorge|raul|conrad|ravi|richard|sean/i;
+let voiceCache = {};
+if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { voiceCache = {}; };
+function riderVoice(rd) {
+  if (voiceCache[rd.id] !== undefined) return voiceCache[rd.id];
+  const vs = speechSynthesis.getVoices().filter(v => !MALE_V.test(v.name)), lang = v => v.lang.replace('_', '-').toLowerCase();
+  const rank = v => (FEMALE_V.test(v.name) ? 0 : 1);
+  let pick = null;
+  for (const want of rd.voice.langs) {
+    const c = vs.filter(v => lang(v).startsWith(want)).sort((a, b) => rank(a) - rank(b));
+    if (!c.length) continue;
+    // riders sharing a language take different voices from it, in store order
+    const sharers = COSMETICS.rider.filter(r => r.voice.langs[0] === want), k = Math.max(0, sharers.indexOf(rd));
+    pick = c[k % c.length]; break;
+  }
+  if (!pick) { const en = vs.filter(v => lang(v).startsWith('en')).sort((a, b) => rank(a) - rank(b)); pick = en.length ? en[COSMETICS.rider.indexOf(rd) % en.length] : null; }
+  if (vs.length) voiceCache[rd.id] = pick;
+  return pick;
+}
 function speak(s, rider) {
   if (!settings.voice || !window.speechSynthesis || settings.vol <= 0) return;
   try {
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(s), vs = speechSynthesis.getVoices();
-    const v = vs.find(v => /female|zira|samantha|victoria|karen|moira|tessa|susan|hazel|libby|sonia/i.test(v.name) && /^en/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang));
-    if (v) u.voice = v;
+    const u = new SpeechSynthesisUtterance(s), v = riderVoice(rider);
+    if (v) { u.voice = v; u.lang = v.lang; }
     u.rate = rider.voice.rate; u.pitch = rider.voice.pitch; u.volume = clamp(settings.vol * 1.2, 0, 1);
     speechSynthesis.speak(u);
   } catch (e) {}
@@ -2546,7 +2568,7 @@ function riderSay(kind, force) {
   const rd = myRider(), own = rd.lines[kind] || [];
   const all = [...own, ...own, ...RIDER_LINES[kind]], pool = all.filter(s => s !== riderLast), s = pick(pool.length ? pool : all);   // her own lines come up twice as often
   riderLast = s; riderMsg = {s, t: 0, dur: 2.2 + s.length * .05, kind, name: rd.name};
-  if (kind === 'kill' || kind === 'win') riderWave = 1.6;
+  riderReact(kind);
   speak(s, rd);
 }
 // swimsuit fabric: plain, polka dots, stripes or a contrasting trim
@@ -2562,49 +2584,92 @@ function suitTex(rd, col) {
     else if (rd.look.pattern === 'trim') { g.fillRect(0, 0, s, 7); g.fillRect(0, s - 7, s, 7); }
   });
 }
-// a seated rider in a 1940s pin-up two-piece, legs over the side of the hull; each rider has her own hair, suit, hat and accessories
+// a seated rider in a 1940s pin-up two-piece, legs over the side of the hull. Built as a person: a shaped torso, jointed
+// limbs with knees, elbows, hands and heels, and a face. Each rider has her own skin, hair, suit, hat and accessories.
+// Local frame: +x is the way she faces (out over the track), +y up, z across her body.
+function limb(a, b, r0, r1, mat, seg = 12) {   // a tapered segment between two points, with a rounded joint at the start
+  const g = new THREE.Group(), dir = new THREE.Vector3().subVectors(b, a), len = dir.length();
+  const c = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, seg), mat);
+  c.position.copy(a).addScaledVector(dir, .5); c.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+  const j = new THREE.Mesh(new THREE.SphereGeometry(r0 * 1.02, seg, 8), mat); j.position.copy(a);
+  c.castShadow = j.castShadow = true; g.add(c, j); return g;
+}
 function makeRider(nation, rd) {
-  const L = rd.look, g = new THREE.Group();
-  const mat = (c, r = .85) => new THREE.MeshStandardMaterial({color: c, roughness: r});
+  const L = rd.look, g = new THREE.Group(), V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const mat = (c, r = .85, extra = {}) => new THREE.MeshStandardMaterial(Object.assign({color: c, roughness: r}, extra));
   const suitCol = L.suit === 'nation' ? ({US: 0xc8302a, SU: 0x2f5aa0, UK: 0x2d4a7a, DE: 0x1f1f22}[nation] || 0xc8302a) : L.suit;
-  const dark = mat(0x2c261f, .9), skin = mat(L.skin, .65), hair = mat(L.hair, .75);
-  const suit = L.pattern ? new THREE.MeshStandardMaterial({map: suitTex(rd, suitCol), roughness: .5}) : mat(suitCol, .5);
-  const sph = (r, m, ws = 12, hs = 10) => new THREE.Mesh(new THREE.SphereGeometry(r, ws, hs), m);
+  const skinC = new THREE.Color(L.skin);
+  const skin = mat(skinC, .55, {emissive: skinC.clone().multiplyScalar(.08)});   // a little glow so skin doesn't go grey in shade
+  const dark = mat(0x2c261f, .9), hair = mat(L.hair, .6), white = mat(0xf4f1ec, .4), iris = mat(0x3b5a6e, .3), lips = mat(0xb0283a, .35), brow = mat(new THREE.Color(L.hair).multiplyScalar(.7), .8);
+  const suit = L.pattern ? new THREE.MeshStandardMaterial({map: suitTex(rd, suitCol), roughness: .45}) : mat(suitCol, .45);
+  const sph = (r, m, ws = 16, hs = 12) => new THREE.Mesh(new THREE.SphereGeometry(r, ws, hs), m);
   const add = (mesh, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz); mesh.scale.set(sx, sy, sz); mesh.castShadow = true; g.add(mesh); return mesh; };
-  add(sph(.17, suit), 0, .12, 0, 0, 0, 0, 1, .75, 1.15);                                // hips, swimsuit bottom
-  add(sph(.15, skin), 0, .38, -.03, .12, 0, 0, .8, 1.25, .95);                          // waist and ribs
-  add(sph(.1, suit), .09, .5, -.1, 0, 0, 0, 1, .95, 1); add(sph(.1, suit), .09, .5, .04, 0, 0, 0, 1, .95, 1);   // swimsuit top
-  add(box(.05, .03, .26, suit), .02, .5, -.03);                                         // band
-  add(sph(.09, skin), 0, .6, -.03, 0, 0, 0, 1.1, .7, 1.6);                              // shoulders
-  add(cyl(.045, .05, .1, skin, 8), 0, .69, -.03);                                       // neck
-  add(sph(.105, skin), 0, .8, -.03);                                                    // head
-  add(box(.02, .018, .05, mat(0xa8202a, .4)), .1, .76, -.03);                           // lipstick
+
+  // torso: a lathed hourglass (hips, waist, ribs, chest, shoulders), flattened front to back and leaning back a touch
+  const prof = [[.001, 0], [.13, .01], [.155, .07], [.14, .14], [.112, .21], [.118, .28], [.132, .35], [.13, .41], [.115, .45], [.07, .48], [.001, .49]].map(([r, y]) => new THREE.Vector2(r, y));
+  const torso = new THREE.Mesh(new THREE.LatheGeometry(prof, 20), skin); torso.castShadow = true;
+  torso.scale.set(.72, 1, 1); torso.position.set(0, .06, 0); torso.rotation.z = .1; g.add(torso);
+  // swimsuit: bottom over the hips, top over the bust, with a band and halter straps
+  add(new THREE.Mesh(new THREE.LatheGeometry(prof.slice(0, 4).map(p => new THREE.Vector2(p.x * 1.03 + .004, p.y)), 20), suit), 0, .06, 0, 0, 0, .1, .74, 1, 1);
+  for (const s of [-1, 1]) add(sph(.068, suit), .07, .43, s * .055, 0, 0, .1, .95, .92, 1);   // cups
+  add(box(.02, .025, .2, suit), .055, .385, 0, 0, 0, .1);
+  for (const s of [-1, 1]) add(cyl(.008, .008, .17, suit, 6), .03, .52, s * .05, s * .35, 0, -.1);
+  // shoulders, neck and head
+  for (const s of [-1, 1]) add(sph(.052, skin), -.01, .51, s * .135);
+  add(cyl(.036, .042, .1, skin, 12), -.005, .6, 0);
+  const head = new THREE.Group(); head.position.set(0, .73, 0); head.rotation.z = -.06; g.add(head);
+  const hAdd = (mesh, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz); mesh.scale.set(sx, sy, sz); mesh.castShadow = true; head.add(mesh); return mesh; };
+  hAdd(sph(.095, skin, 20, 16), 0, 0, 0, 0, 0, 0, .92, 1.12, .84);                        // skull and face
+  hAdd(sph(.05, skin), .045, -.06, 0, 0, 0, 0, .9, .7, 1.1);                               // jaw and chin
+  for (const s of [-1, 1]) {
+    hAdd(sph(.017, white, 10, 8), .074, .012, s * .032, 0, 0, 0, .6, 1, 1);               // eyes
+    hAdd(sph(.009, iris, 8, 6), .084, .012, s * .032);
+    hAdd(box(.008, .007, .03, brow), .08, .04, s * .033, s * .15);                         // brows
+    hAdd(sph(.016, skin, 8, 6), -.005, 0, s * .078, 0, 0, 0, .6, 1, .5);                   // ears
+    hAdd(sph(.02, mat(0xe39a8f, .6), 8, 6), .07, -.025, s * .045, 0, 0, 0, .4, .7, 1);   // a touch of rouge
+  }
+  hAdd(new THREE.Mesh(new THREE.ConeGeometry(.012, .035, 6), skin), .09, -.008, 0, 0, 0, -Math.PI / 2 + .25);   // nose
+  hAdd(sph(.018, lips, 10, 8), .083, -.045, 0, 0, 0, 0, .5, .42, 1.15);                   // lips
   // hair
-  if (L.style === 'rolls') { add(sph(.07, hair), -.02, .84, -.13); add(sph(.07, hair), -.02, .84, .07); add(box(.08, .2, .2, hair), -.07, .7, -.03, 0, 0, .15); }
-  else if (L.style === 'bob') { add(sph(.12, hair), -.03, .8, -.03, 0, 0, 0, 1, .9, 1.05); }
-  else if (L.style === 'braid') { add(sph(.11, hair), -.02, .82, -.03); for (let k = 0; k < 4; k++) add(sph(.035, hair), -.09 - k * .015, .66 - k * .07, -.03); }
-  else { add(sph(.115, hair), -.02, .82, -.03); add(box(.06, .34, .24, hair), -.08, .62, -.03, 0, 0, .1); }   // long, down the back
+  const hr = (mesh, ...a) => hAdd(mesh, ...a);
+  hr(sph(.103, hair, 18, 12, ), -.012, .022, 0, 0, 0, 0, .95, 1.06, .9);                  // cap of hair over the crown
+  if (L.style === 'rolls') { for (const s of [-1, 1]) hr(sph(.045, hair), .02, .09, s * .05, 0, 0, 0, 1, .8, 1.2); hr(sph(.07, hair), -.07, -.05, 0, 0, 0, 0, .8, 1, 1.25); }
+  else if (L.style === 'bob') { hr(sph(.11, hair), -.02, -.01, 0, 0, 0, 0, .95, .95, 1.05); }
+  else if (L.style === 'braid') { for (let k = 0; k < 6; k++) hr(sph(.026 - k * .002, hair, 8, 6), -.09 - k * .012, -.06 - k * .055, 0); }
+  else { hr(box(.07, .32, .19, hair), -.07, -.14, 0, 0, 0, .1); for (const s of [-1, 1]) hr(box(.04, .22, .03, hair), .0, -.1, s * .085, 0, 0, .05); }   // long, past the shoulders
   // hat
   const hatCol = L.hatCol || {US: 0x4e5530, SU: 0x5a5a3a, UK: 0x4c4a35, DE: 0x4a4f48}[nation] || 0x4e5530;
-  if (L.hat === 'helmet') add(new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 8, 0, TAU, 0, Math.PI / 2), new THREE.MeshStandardMaterial({color: hatCol, roughness: .7, metalness: .2})), 0, .83, -.03);
-  else if (L.hat === 'scarf') { const sc = L.pattern === 'dots' ? new THREE.MeshStandardMaterial({map: suitTex(rd, 0xd0332b), roughness: .6}) : mat(0xd0332b); add(sph(.118, sc), 0, .85, -.03, 0, 0, 0, 1, .55, 1.05); add(sph(.035, sc), -.02, .93, -.03); }
-  else if (L.hat === 'garrison' || L.hat === 'pilotka') { add(box(.2, .06, .09, mat(L.hat === 'pilotka' ? 0x5a5a3a : 0x4e5530)), 0, .91, -.06, .25); if (L.hat === 'pilotka') add(sph(.015, mat(0xc8302a)), .1, .91, -.06); }
-  else if (L.hat === 'beret') add(sph(.12, mat(hatCol)), -.01, .9, -.05, 0, 0, .25, 1, .35, 1);
-  else if (L.hat === 'sailor') { add(cyl(.11, .1, .07, mat(0xf2f2f0, .6), 14), 0, .9, -.03); add(cyl(.1, .1, .015, mat(0x1d2a4a), 14), 0, .875, -.03); }
+  if (L.hat === 'helmet') hAdd(new THREE.Mesh(new THREE.SphereGeometry(.122, 16, 8, 0, TAU, 0, Math.PI / 2), mat(hatCol, .7, {metalness: .2})), -.005, .04, 0);
+  else if (L.hat === 'scarf') { const sc = L.pattern === 'dots' ? new THREE.MeshStandardMaterial({map: suitTex(rd, 0xd0332b), roughness: .6}) : mat(0xd0332b); hAdd(sph(.108, sc), -.01, .05, 0, 0, 0, 0, 1, .6, 1.02); hAdd(sph(.03, sc), -.01, .12, 0, 0, 0, 0, 1, .7, 1.6); }
+  else if (L.hat === 'garrison' || L.hat === 'pilotka') { hAdd(box(.2, .055, .085, mat(L.hat === 'pilotka' ? 0x5a5a3a : 0x4e5530)), -.01, .12, -.03, .25); if (L.hat === 'pilotka') hAdd(sph(.014, mat(0xc8302a)), .09, .12, -.03); }
+  else if (L.hat === 'beret') hAdd(sph(.115, mat(hatCol)), -.02, .1, -.02, 0, 0, .3, 1, .32, 1);
+  else if (L.hat === 'sailor') { hAdd(cyl(.1, .095, .06, mat(0xf2f2f0, .6), 16), -.01, .12, 0); hAdd(cyl(.096, .096, .014, mat(0x1d2a4a), 16), -.01, .095, 0); }
   // accessories
-  if (L.acc === 'goggles') add(box(.06, .045, .2, dark), .085, .87, -.03);
-  if (L.acc === 'sunglasses' || L.acc === 'both') add(box(.03, .035, .17, mat(0x0d0d0d, .2)), .1, .81, -.03);
-  if (L.acc === 'flower' || L.acc === 'both') { add(sph(.035, mat(0xe8304a, .6)), .02, .84, .1); add(sph(.012, mat(0xf2d24a)), .045, .84, .11); }
+  if (L.acc === 'goggles') { hAdd(box(.03, .04, .17, dark), .07, .1, 0); for (const s of [-1, 1]) hAdd(cyl(.02, .02, .012, mat(0x6a8a99, .2, {metalness: .5}), 10), .085, .1, s * .042, 0, 0, Math.PI / 2); }
+  if (L.acc === 'sunglasses' || L.acc === 'both') for (const s of [-1, 1]) hAdd(sph(.022, mat(0x0d0d0d, .15), 10, 8), .086, .014, s * .033, 0, 0, 0, .35, .8, 1.1);
+  if (L.acc === 'flower' || L.acc === 'both') { hAdd(sph(.03, mat(0xe8304a, .6)), .0, .07, .09); hAdd(sph(.01, mat(0xf2d24a)), .02, .07, .1); }
+
+  // legs: thighs forward over the edge; each calf hangs from a knee pivot so it can swing; heels (or boots for the helmet girl)
+  const calves = [];
   for (const s of [-1, 1]) {
-    add(cyl(.06, .075, .42, skin, 10), .16, .1, s * .09, 0, 0, Math.PI / 2);           // thighs forward over the edge
-    add(cyl(.05, .042, .38, skin, 10), .35, -.12, s * .09);                             // shins hanging down
-    add(box(.15, .1, .12, L.hat === 'helmet' ? dark : mat(suitCol, .6)), .37, -.33, s * .1);   // boots, or heels to match the suit
+    const hip = V(.02, .08, s * .085), knee = V(.4, .09, s * .1);
+    g.add(limb(hip, knee, .072, .052, skin));
+    const calf = new THREE.Group(); calf.position.copy(knee); g.add(calf); calves.push(calf);
+    const ankle = V(.03, -.39, 0);
+    calf.add(limb(V(0, 0, 0), ankle, .05, .03, skin));
+    const an = sph(.032, skin); an.position.copy(ankle); calf.add(an);
+    if (L.hat === 'helmet') { const bt = box(.15, .12, .085, dark); bt.position.set(ankle.x + .03, ankle.y - .05, 0); calf.add(bt); }   // lace-up boots
+    else { const sh = box(.14, .035, .07, mat(suitCol, .4)); sh.position.set(ankle.x + .05, ankle.y - .045, 0); sh.rotation.z = -.35; calf.add(sh);
+      const hl = cyl(.008, .006, .07, mat(suitCol, .4), 6); hl.position.set(ankle.x - .02, ankle.y - .085, 0); calf.add(hl); }   // pumps
   }
-  const armR = new THREE.Group(); armR.position.set(0, .62, .16); g.add(armR);          // the waving arm
-  const ua = cyl(.035, .03, .3, skin, 8); ua.position.y = -.15; ua.castShadow = true; armR.add(ua);
-  const hand = sph(.045, skin, 8, 6); hand.position.y = -.32; armR.add(hand);
-  add(cyl(.035, .03, .32, skin, 8), .08, .47, -.2, 0, 0, -.5);                         // other arm, braced on the deck
-  g.userData.arm = armR;
+  // arms: both hang from shoulder pivots; the left is braced on the deck behind her, the right is free to wave
+  const armL = new THREE.Group(); armL.position.set(-.01, .5, -.15); g.add(armL);
+  armL.add(limb(V(0, 0, 0), V(-.11, -.2, -.05), .034, .028, skin), limb(V(-.11, -.2, -.05), V(-.19, -.43, -.07), .027, .02, skin));
+  const handL = sph(.028, skin); handL.scale.set(1.3, .6, 1); handL.position.set(-.19, -.44, -.07); armL.add(handL);
+  const armR = new THREE.Group(); armR.position.set(-.01, .5, .15); g.add(armR);
+  armR.add(limb(V(0, 0, 0), V(.05, -.2, .03), .034, .028, skin), limb(V(.05, -.2, .03), V(.16, -.36, .02), .027, .02, skin));
+  const hand = sph(.028, skin); hand.scale.set(1.3, .6, 1); hand.position.set(.18, -.39, .02); armR.add(hand);
+  g.userData = {arm: armR, armL, head, torso, calves, phase: Math.random() * 10, wave: 0, flinch: 0, cheer: 0};
   return g;
 }
 function seatRider(t) {   // on the rear deck, facing out over the left track
@@ -2613,13 +2678,37 @@ function seatRider(t) {   // on the rear deck, facing out over the left track
   r.position.set(-m.L * .28, hullTop, -(m.hullW / 2 - .32)); r.rotation.y = Math.PI / 2;
   t.mesh.hull.add(r); t.mesh.rider = r;
 }
+// rider animation: idle breathing, glancing around and swinging her legs; a wave and a bounce for a kill, a flinch when
+// you're hit, and a two-armed cheer when you win
+function animateRider(r, dt) {
+  const u = r.userData; if (!u || !u.torso) return;
+  const T = worldTime + u.phase;
+  u.wave = Math.max(0, u.wave - dt); u.flinch = Math.max(0, u.flinch - dt); u.cheer = Math.max(0, u.cheer - dt);
+  if (u.y0 == null) u.y0 = r.position.y;
+  u.torso.scale.y = 1 + Math.sin(T * 2.1) * .012;                                    // breathing
+  u.head.rotation.y = Math.sin(T * .45) * .55 + Math.sin(T * 1.7) * .06;             // glancing around
+  u.head.rotation.x = Math.sin(T * .7) * .07;
+  u.calves[0].rotation.z = Math.sin(T * 1.5) * .3; u.calves[1].rotation.z = Math.sin(T * 1.5 + 2.4) * .3;   // swinging legs
+  let rx = 0, lx = 0, bob = 0;
+  if (u.cheer > 0) { rx = Math.PI * .9 + Math.sin(T * 10) * .25; lx = -Math.PI * .9 - Math.sin(T * 10) * .25; bob = Math.abs(Math.sin(T * 9)) * .06; }
+  else if (u.wave > 0) { rx = Math.PI * .85 + Math.sin(T * 14) * .35; bob = Math.abs(Math.sin(T * 8)) * .04; }
+  const k = 1 - Math.exp(-dt * 12);
+  u.arm.rotation.x += (rx - u.arm.rotation.x) * k; u.armL.rotation.x += (lx - u.armL.rotation.x) * k;
+  r.position.y = u.y0 + bob - Math.sin(Math.min(1, u.flinch / .6) * Math.PI) * .04;
+  r.rotation.z = Math.sin(Math.min(1, u.flinch / .6) * Math.PI) * .3;               // flinch: rock back
+  if (u.flinch > 0) u.head.rotation.x -= Math.sin(u.flinch / .6 * Math.PI) * .3;
+}
+function riderReact(kind) {
+  const r = player && player.mesh && player.mesh.rider; if (!r) return;
+  const u = r.userData;
+  if (kind === 'kill') u.wave = 1.8; else if (kind === 'win') u.cheer = 4; else if (kind === 'hit' || kind === 'low') u.flinch = .6;
+}
 function stepRider(dt) {
   if (riderMsg && (riderMsg.t += dt) > riderMsg.dur) riderMsg = null;
-  riderWave = Math.max(0, riderWave - dt);
   for (const t of tanks) {
     const r = t.mesh && t.mesh.rider; if (!r) continue;
     r.visible = t.alive;
-    r.userData.arm.rotation.x = t === player && riderWave > 0 ? Math.PI * .85 + Math.sin(worldTime * 14) * .35 : .15;
+    if (t.alive) animateRider(r, dt);
   }
 }
 function drawRider() {
@@ -2755,7 +2844,7 @@ function menuTankSwap() {
 function menuUpdate(dt) {
   if (!menuTank) return;
   menuAng += dt * .12;
-  const t = menuTank; tankPhysics(t, dt, true); syncTank(t, dt);
+  const t = menuTank; tankPhysics(t, dt, true); syncTank(t, dt); if (t.mesh.rider) animateRider(t.mesh.rider, dt);
   // showroom shot: a low orbit, with the tank framed in the open space left of the side panel
   const riderView = activeTab === "store" && storeCat === "rider" && !document.getElementById("menu").hidden;   // the rider shop zooms in on her
   if (riderView && t.mesh.rider) {   // swing gently around her side of the tank
