@@ -297,7 +297,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-09.9';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-10.1';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2535,32 +2535,40 @@ const RIDER_LINES = {
   lose: ['I\'m bailing out! Good luck, sweetheart!', 'Abandon tank!', 'Well. That could have gone better.'],
 };
 let riderMsg = null, riderLast = '', riderHitAt = -99, riderLowSaid = false, riderWave = 0;
-// each rider gets her own voice from what this computer has installed: her accent's language first (German for Lili,
+// each rider gets her own voice from what this computer has installed (see voiceAssign): her accent's language first (German for Lili,
 // Russian for Katya, Spanish for Dolores, British for Scarlett), preferring female voices, and a different English voice
 // for each of the American girls. Pitch and speed then set her apart further.
 const FEMALE_V = /female|woman|zira|aria|jenny|michelle|samantha|victoria|karen|moira|tessa|susan|hazel|libby|sonia|maisie|emily|hedda|katja|amala|helena|laura|elvira|irina|svetlana|dariya|paulina|monica|elsa|isabella|clara|denise|julie|zuzana|google/i;
 const MALE_V = /\bmale\b|david|mark|george|james|daniel|alex\b|fred|pablo|stefan|guy|ryan|thomas|pavel|diego|jorge|raul|conrad|ravi|richard|sean/i;
-let voiceCache = {};
-if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { voiceCache = {}; if (mode === 'menu' && !document.getElementById('tab-store').hidden && storeCat === 'rider') renderStore(); };   // voices arrive late in some browsers
-function riderVoice(rd) {
-  const vs = speechSynthesis.getVoices(); if (!vs.length) return null;
-  const chosen = loadVoiceMap()[rd.id];   // picked by hand in the store
-  if (chosen) { const v = vs.find(v => v.voiceURI === chosen); if (v) return v; }
-  if (voiceCache[rd.id] !== undefined) return voiceCache[rd.id];
-  const lang = v => v.lang.replace('_', '-').toLowerCase(), fem = vs.filter(v => !MALE_V.test(v.name)), rank = v => (FEMALE_V.test(v.name) ? 0 : 1);
-  let pick = null;
-  for (const want of rd.voice.langs) {   // her accent first (German for Lili, Russian for Katya...)
-    const c = fem.filter(v => lang(v).startsWith(want)).sort((a, b) => rank(a) - rank(b));
-    if (!c.length) continue;
-    const sharers = COSMETICS.rider.filter(r => r.voice.langs[0] === want), k = Math.max(0, sharers.indexOf(rd));
-    if (k < c.length) { pick = c[k]; break; }   // only if there are enough voices in her language to go round
+let voiceCache = null;
+if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { voiceCache = null; if (mode === 'menu' && !document.getElementById('tab-store').hidden && storeCat === 'rider') renderStore(); };   // voices arrive late in some browsers
+// one voice per rider, assigned for the whole cast at once so no two riders share a voice while an unused one is left.
+// Hand-picked voices (store) are reserved first; then the riders with the fewest voices in their own accent choose first;
+// then anyone left takes an unused voice (female and English first). Only when this computer has fewer voices than
+// there are riders does a voice get reused, and then by the riders it fits least, who still differ by pitch and speed.
+function voiceAssign() {
+  if (voiceCache) return voiceCache;
+  const vs = speechSynthesis.getVoices(); if (!vs.length) return {};
+  const lang = v => v.lang.replace('_', '-').toLowerCase(), rank = v => (FEMALE_V.test(v.name) ? 0 : MALE_V.test(v.name) ? 2 : 1);
+  const byRank = a => a.slice().sort((p, q) => rank(p) - rank(q));
+  const out = {}, uses = new Map(vs.map(v => [v, 0])), hand = loadVoiceMap(), take = (rd, v) => { out[rd.id] = v; uses.set(v, uses.get(v) + 1); };
+  const left = [];
+  for (const rd of COSMETICS.rider) { const v = hand[rd.id] && vs.find(v => v.voiceURI === hand[rd.id]); if (v) take(rd, v); else left.push(rd); }
+  const own = rd => byRank(vs.filter(v => rank(v) < 2 && rd.voice.langs.some(l => lang(v).startsWith(l))))
+    .sort((p, q) => rd.voice.langs.findIndex(l => lang(p).startsWith(l)) - rd.voice.langs.findIndex(l => lang(q).startsWith(l)));
+  left.sort((a, b) => own(a).length - own(b).length);
+  const rest = [];
+  for (const rd of left) { const v = own(rd).find(v => !uses.get(v)); if (v) take(rd, v); else rest.push(rd); }
+  const pool = byRank(vs).sort((p, q) => rank(p) - rank(q) || (lang(q).startsWith('en') - lang(p).startsWith('en')));
+  for (const rd of rest) {
+    const free = pool.find(v => !uses.get(v));
+    if (free) { take(rd, free); continue; }
+    const mine = own(rd), least = Math.min(...vs.map(v => uses.get(v)));   // out of voices: share the least-used one, her accent if possible
+    take(rd, mine.find(v => uses.get(v) === least) || pool.find(v => uses.get(v) === least));
   }
-  if (!pick) {   // otherwise spread the riders over every voice there is, female voices first, so they don't all share one
-    const pool = [...fem.sort((a, b) => rank(a) - rank(b)), ...vs.filter(v => MALE_V.test(v.name))];
-    pick = pool[COSMETICS.rider.indexOf(rd) % pool.length];
-  }
-  return voiceCache[rd.id] = pick;
+  return voiceCache = out;
 }
+function riderVoice(rd) { return window.speechSynthesis ? voiceAssign()[rd.id] || null : null; }
 function loadVoiceMap() { try { return JSON.parse(localStorage.getItem('ironrain3d.voices') || '{}') || {}; } catch (e) { return {}; } }
 function saveVoiceMap(m) { try { localStorage.setItem('ironrain3d.voices', JSON.stringify(m)); } catch (e) {} }
 function speak(s, rider, force) {
@@ -3474,13 +3482,15 @@ function renderStore() {
   d.appendChild(btn);
   if (storeCat === 'rider' && window.speechSynthesis) {   // pick which installed voice she speaks with
     const vs = speechSynthesis.getVoices(), cur = loadVoiceMap()[it.id] || '', esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
-    const auto = riderVoice(it), w = document.createElement('div'); w.className = 'vrow';
-    w.innerHTML = `<label for="voiceSel">VOICE</label><select id="voiceSel"><option value="">Automatic${auto ? ' · ' + esc(auto.name.replace(/^Microsoft |^Google /, '')) : ''}</option>` +
-      vs.map(v => `<option value="${esc(v.voiceURI)}">${esc(v.name.replace(/^Microsoft |^Google /, ''))} · ${esc(v.lang)}</option>`).join('') + `</select><button class="btn" id="voiceTest">TEST VOICE</button>` +
-      (vs.length < 5 ? `<p class="fine">Only ${vs.length} voice${vs.length === 1 ? ' is' : 's are'} installed, so riders also differ by pitch and speed. Add more under Windows Settings › Time &amp; language › Speech, or play in Chrome or Edge, which bring their own.</p>` : '');
+    const as = voiceAssign(), others = v => COSMETICS.rider.filter(r => r !== it && as[r.id] === v).map(r => r.name.split(' ')[0].replace(/"/g, ''));
+    const auto = as[it.id], w = document.createElement('div'), nm = v => esc(v.name.replace(/^Microsoft |^Google /, '')); w.className = 'vrow';
+    const shared = auto && others(auto).length;
+    w.innerHTML = `<label for="voiceSel">VOICE</label><select id="voiceSel"><option value="">Automatic${auto && !cur ? ' · ' + nm(auto) : ''}</option>` +
+      vs.map(v => { const o = others(v); return `<option value="${esc(v.voiceURI)}">${nm(v)} · ${esc(v.lang)}${o.length ? ' · used by ' + esc(o.join(', ')) : ''}</option>`; }).join('') + `</select><button class="btn" id="voiceTest">TEST VOICE</button>` +
+      (vs.length < COSMETICS.rider.length ? `<p class="fine">${shared ? 'This voice is shared: ' : ''}Only ${vs.length} voice${vs.length === 1 ? ' is' : 's are'} installed for ${COSMETICS.rider.length} riders, so some share a voice and differ by pitch and speed. Add more under Windows Settings › Time &amp; language › Speech, or play in Chrome or Edge, which bring their own.</p>` : '');
     d.appendChild(w);
     const sel = w.querySelector('#voiceSel'); sel.value = cur;
-    sel.addEventListener('change', () => { const mp = loadVoiceMap(); if (sel.value) mp[it.id] = sel.value; else delete mp[it.id]; saveVoiceMap(mp); voiceCache = {}; speak((it.lines.start || RIDER_LINES.start)[0], it, true); });
+    sel.addEventListener('change', () => { const mp = loadVoiceMap(); if (sel.value) mp[it.id] = sel.value; else delete mp[it.id]; saveVoiceMap(mp); voiceCache = null; speak((it.lines.start || RIDER_LINES.start)[0], it, true); renderStore(); });
     w.querySelector('#voiceTest').addEventListener('click', () => speak(pick([...(it.lines.kill || []), ...RIDER_LINES.kill.slice(0, 4)]), it, true));
   }
 }
