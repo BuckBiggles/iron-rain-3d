@@ -199,6 +199,8 @@ td:first-child{font-family:var(--f-display);font-size:18px}
   background:linear-gradient(180deg,rgba(13,15,10,.9),rgba(13,15,10,.98));border-top:1px solid var(--line);z-index:2}
 #lobby .btnrow .deploy{font-size:24px;padding:10px}
 #lobby .btnrow .btn{flex:0 0 auto}
+.ashBtn{font-family:var(--f-data);font-size:10px;letter-spacing:.12em;padding:2px 6px;margin-right:8px;background:none;border:1px solid rgba(255,179,71,.5);color:#ffb347}
+.ashBtn.on{background:#ffb347;color:#1a1709}
 #nogl{position:fixed;inset:0;display:grid;place-items:center;padding:16px;font-size:20px;text-align:center}
 @media (max-width:900px){#menu{grid-template-columns:1fr;overflow:auto}.brand{align-self:start}}
 @media (prefers-reduced-motion:reduce){.deploy:active{transform:none}}
@@ -239,6 +241,8 @@ td:first-child{font-family:var(--f-display);font-size:18px}
       <section class="pair">
         <div><h2>OPPONENTS</h2><div class="row seg" id="foeRow"></div></div>
         <div><h2>CPU SKILL</h2><div class="row seg" id="lvlRow"></div></div>
+      </section>
+      <section><h2>PLAY AS · ASHTON NEEDS 3 OPPONENTS</h2><div class="row seg" id="ashRow"></div>
       </section>
       <button class="deploy" id="deploy">DEPLOY</button>
       <p class="fine">Real-time free-for-all. Every hit on an enemy spins the supply wheel. Hits, kills and wins earn money for the store.</p>
@@ -317,7 +321,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-10.5';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-10.6';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -472,7 +476,8 @@ const SPECIALS = [
   {id:'bounce',   name:'BOUNCER',        r:10, dmg:45,  n:1, col:'#22c55e', kind:'bounce', bounces:3, tag:'Bounces 3 times'},
   {id:'dig',      name:'DIG BOMB',       r:24, dmg:35,  n:1, col:'#c08040', kind:'dig',     tag:'Blasts out a huge pit'},
   {id:'orbital',  name:'ORBITAL STRIKE', r:14, dmg:130, n:1, col:'#7fd6f5', kind:'orbital', tag:'Satellite laser where it lands'},
-  {id:'teleport', name:'TELEPORT',       r:0,  dmg:0,   n:1, col:'#14b8a6', kind:'teleport', tag:'Warps you to where it lands'},
+  {id:'repair',   name:'REPAIR KIT',     r:0,  dmg:0,   n:1, col:'#4ade80', kind:'repair',   tag:'+50 hull, fixed at once'},
+  {id:'teleport', name:'TELEPORT',      r:0,  dmg:0,   n:1, col:'#14b8a6', kind:'teleport', tag:'Warps you to where it lands'},
 ];
 SPECIALS.forEach(s => s.key = s.id);
 const SPEC = Object.fromEntries(SPECIALS.map(s => [s.id, s]));
@@ -1398,6 +1403,264 @@ function roadsAfterCarve(cx, cz, r) {   // keep the ribbon on the ground in a fr
   }
 }
 
+// ================================================================ the five original maps, reworked with layouts of their own
+// Each keeps its terrain (the old height function becomes `base`) and gains roads, buildings, walls, hedges, woods and
+// rocks that suit it. Everything is placed from the battle seed, so every player in a room builds the same map.
+function flatAt(base, f, x, z, r, tol) {   // is the ground within r of (x, z) level enough to build on?
+  const h0 = base(x, z, f);
+  for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1], [.7, .7], [-.7, .7], [.7, -.7], [-.7, -.7]]) if (Math.abs(base(x + a * r, z + b * r, f) - h0) > tol) return false;
+  return true;
+}
+function roadPts(fn, s0 = -720, s1 = 720, step = 8) { const pts = []; for (let s = s0; s <= s1; s += step) pts.push(fn(s)); return pts; }
+function roadNormal(fn, s) { const [ax, az] = fn(s - 1), [bx, bz] = fn(s + 1), l = Math.hypot(bx - ax, bz - az) || 1; return [-(bz - az) / l, (bx - ax) / l]; }
+// houses along a road, on both sides, facing it
+function roadVillage(L, r, f, base, fn, ss, max, style, tol = 2.5) {
+  let n = 0;
+  for (const [s, side] of shuffledR(ss.flatMap(s => [[s, -1], [s, 1]]), r)) {
+    if (n >= max) break;
+    const b = style(r), [rx, rz] = fn(s), [nx, nz] = roadNormal(fn, s), off = 6 + b.d / 2, x = rx + nx * side * off, z = rz + nz * side * off;
+    if (roadDist(x, z, L) < b.d / 2 + 1 || !flatAt(base, f, x, z, Math.hypot(b.w, b.d) * .5, tol)) continue;
+    if (tryBld(L, Object.assign(b, {x, z, ry: Math.atan2(rx - x, rz - z)}))) n++;
+  }
+  return n;
+}
+// a farmhouse and barn round a walled yard, with an orchard behind
+function farmstead(L, r, f, base, fx, fz, o = {}) {
+  if (roadDist(fx, fz, L) < 40 || !flatAt(base, f, fx, fz, 26, o.tol || 5) || !farFromAll(L, fx, fz, 40)) return false;
+  const ry = r() * TAU, c = Math.cos(ry), s = Math.sin(ry), at = (u, v) => [fx + u * c + v * s, fz - u * s + v * c];
+  const [hx, hz] = at(0, -14), [bx, bz] = at(17, 2);
+  tryBld(L, {type: 'house', x: hx, z: hz, ry, w: 12, d: 8, h: 6, wall: o.wall || 'stone', roof: o.roof || 'tile', shut: o.shut || '#4f6b3c', cottage: o.cottage});
+  tryBld(L, {type: 'barn', x: bx, z: bz, ry: ry + Math.PI / 2, w: 16, d: 10, h: 5.5});
+  stoneWall(L, [at(-24, -24), at(-24, 24), at(26, 24)], .25, r);
+  if (o.orchard !== false) for (let i = 0; i < 3; i++) for (let j = 0; j < 5; j++) { const [ox, oz] = at(-46 - i * 8 + r() * 1.5, -16 + j * 8 + r() * 1.5); L.trees.push({x: ox, z: oz, s: .62 + r() * .2, type: 'broad'}); }
+  L.clear.push([fx, fz, 36], [fx - 55 * c, fz + 55 * s, 30]);
+  return true;
+}
+function addPads(L, base, f) { for (const b of L.blds) if (!b.padded) { b.padded = true; L.pads.push({x: b.x, z: b.z, r: Math.hypot(b.w, b.d) * .5 + 2, y: base(b.x, b.z, f)}); } }
+function woods(L, r, cx, cz, wr, n, broadK, sMin = .85, sR = .6) {
+  for (let i = 0; i < n; i++) { const a = r() * TAU, d = Math.sqrt(r()) * wr, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
+    if (farFromAll(L, x, z, 3)) L.trees.push({x, z, s: sMin + r() * sR, type: r() < broadK ? 'broad' : 'pine'}); }
+  L.clear.push([cx, cz, wr * .85]);
+}
+function looseRocks(L, r, n, test, sK = 1) {
+  for (let i = 0; i < n; i++) { const x = (r() * 2 - 1) * 600, z = (r() * 2 - 1) * 600;
+    if ((!test || test(x, z)) && farFromAll(L, x, z, 3)) L.rocks.push({x, z, s: (.5 + r() * r() * 2.6) * sK, sy: .55 + r() * .4}); }
+}
+function rockCluster(L, r, cx, cz, spread, n, sK = 1) {
+  for (let i = 0; i < n; i++) { const x = cx + (r() - .5) * spread, z = cz + (r() - .5) * spread; if (farFromAll(L, x, z, 3)) L.rocks.push({x, z, s: (.7 + r() * r() * 2.4) * sK, sy: .5 + r() * .4}); }
+}
+function polesAlong(L, fn, s0, s1, step, off, minR = 0) {
+  for (let s = s0; s <= s1; s += step) { const [nx, nz] = roadNormal(fn, s), [rx, rz] = fn(s), x = rx + nx * off, z = rz + nz * off;
+    if (Math.hypot(x, z) > minR && !L.blds.some(b => Math.hypot(b.x - x, b.z - z) < 14)) L.poles.push({x, z}); }
+}
+function fieldGrid(L, r, lines, jit) {   // field boundaries for fieldCrop()
+  L.fx = lines.map(v => v + (r() - .5) * jit); L.fz = lines.map(v => v + (r() - .5) * jit);
+  L.crop = [...Array(49)].map(() => { const q = r(); return q < .35 ? 0 : q < .65 ? 1 : q < .82 ? 2 : 3; });
+}
+// run something along every field boundary segment: fn(ax, az, bx, bz)
+function eachBoundary(L, fn) {
+  const all = v => [-640, ...v, 640];
+  for (const x of L.fx) { const zz = all(L.fz); for (let k = 0; k < zz.length - 1; k++) fn(x, zz[k], x, zz[k + 1]); }
+  for (const z of L.fz) { const xx = all(L.fx); for (let k = 0; k < xx.length - 1; k++) fn(xx[k], z, xx[k + 1], z); }
+}
+function hedgeLine(L, r, ax, az, bx, bz, minR = 130) {
+  const len = Math.hypot(bx - ax, bz - az), n = Math.round(len / 2.4), gate = r() * .7 + .15; let run = [];
+  for (let k = 0; k <= n; k++) {
+    const t = k / n, x = ax + (bx - ax) * t + r() * .8 - .4, z = az + (bz - az) * t + r() * .8 - .4;
+    if (Math.abs(t - gate) * len < 7 || !farFromAll(L, x, z, 5) || Math.hypot(x, z) < minR) { if (run.length > 2) L.hedges.push(run); run = []; continue; }
+    run.push([x, z]);
+    if (k % 10 === 5 && r() < .3) L.trees.push({x: x + r() - .5, z: z + r() - .5, s: 1 + r() * .5, type: 'broad'});
+  }
+  if (run.length > 2) L.hedges.push(run);
+}
+function cropPaint(c, x, z, f, out) {
+  const n = f(x / 30 + 5, z / 30, 2) * .08;
+  if (c === 1) { out[0] = .74 + n; out[1] = .66 + n; out[2] = .36; return .55; }      // wheat
+  if (c === 2) { out[0] = .42 + n; out[1] = .33 + n; out[2] = .23; return .58; }     // ploughed
+  if (c === 3) { out[0] = .5 + n; out[1] = .6 + n; out[2] = .26; return .42; }       // young crop
+  return 0;
+}
+// a winding track that steers round ground too steep to drive (used where a straight road would climb a cliff)
+function walkTrack(L, r, f, base, x, z, a, steps, maxRise) {
+  const pts = [[x, z]];
+  for (let k = 0; k < steps; k++) {
+    let best = null;
+    for (const da of [0, .25, -.25, .5, -.5, .8, -.8, 1.2, -1.2]) { const na = a + da + (r() - .5) * .1, nx = x + Math.cos(na) * 9, nz = z + Math.sin(na) * 9;
+      if (Math.abs(base(nx, nz, f) - base(x, z, f)) < maxRise) { best = [na, nx, nz]; break; } }
+    if (!best) break;
+    [a, x, z] = best; pts.push([x, z]);
+    if (Math.abs(x) > 680 || Math.abs(z) > 680) break;
+  }
+  return pts;
+}
+const PLAIN_HOUSE = (wallP, roofP, shuts) => r => ({type: 'house', w: 8.5 + r() * 3, d: 7 + r() * 1.5, h: r() < .65 ? 6 : 4.5, wall: r() < wallP ? 'stone' : 'plaster', roof: r() < roofP ? 'slate' : 'tile', shut: pick2(r, shuts)});
+
+const CLASSIC = [
+  {   // ROLLING HILLS: a crossroads village with its church, farms on the hills, walled and hedged fields, woods
+    layout(r, f, base) {
+      const L = newLayout(), p1 = r() * 6, p2 = r() * 6;
+      const A = x => 28 * (Math.sin(x / 210 + p1) - Math.sin(p1)) + 10 * Math.sin(x / 95 + p2), B = z => 18 * (Math.sin(z / 170 + p2) - Math.sin(p2));
+      const fnA = s => [s, A(s)], fnB = s => [B(s), s];
+      addRoad(L, roadPts(fnA), 7, 'road'); addRoad(L, roadPts(fnB, A(0) + 4, 720), 6, 'road');
+      { const cx = -40, [nx, nz] = roadNormal(fnA, cx), x = cx - nx * 22, z = A(cx) - nz * 22; tryBld(L, {type: 'church', x, z, ry: Math.atan2(cx - x, A(cx) - z), w: 10, d: 22, h: 8}); }
+      roadVillage(L, r, f, base, fnA, [-112, -86, -62, 30, 56, 82, 108], 6, PLAIN_HOUSE(.5, .35, ['#3d5f7a', '#4f6b3c', '#7a3b2e', '#e2dccb']), 3);
+      roadVillage(L, r, f, base, fnB, [A(0) + 40, A(0) + 66, A(0) + 92], 2, PLAIN_HOUSE(.5, .35, ['#4f6b3c', '#7a3b2e']), 3);
+      L.clear.push([0, A(0), 120]);
+      for (let k = 0, made = 0; k < 40 && made < 3; k++) { const a = r() * TAU, d = 260 + r() * 140; if (farmstead(L, r, f, base, Math.cos(a) * d, Math.sin(a) * d, {wall: r() < .5 ? 'stone' : 'plaster'})) made++; }
+      addPads(L, base, f);
+      for (let w = 0; w < 4; w++) { const a = r() * TAU, d = 200 + r() * 330, cx = Math.cos(a) * d, cz = Math.sin(a) * d; if (farFromAll(L, cx, cz, 50)) woods(L, r, cx, cz, 45 + r() * 25, 40, .6); }
+      fieldGrid(L, r, [-470, -320, -175, 175, 320, 470], 40);
+      eachBoundary(L, (ax, az, bx, bz) => { const q = r(); if (q < .3) stoneWall(L, [[ax, az], [bx, bz]], .3, r); else if (q < .62) hedgeLine(L, r, ax, az, bx, bz); });
+      looseRocks(L, r, 110);
+      for (let i = 0; i < 30; i++) { const x = (r() * 2 - 1) * 560, z = (r() * 2 - 1) * 560; if (fieldCrop(L, x, z) === 1 && farFromAll(L, x, z, 6)) L.bales.push({x, z, ry: r() * TAU}); }
+      polesAlong(L, fnA, -680, 680, 46, 7.5, 130);
+      L.sq = [0, A(0)];
+      return L;
+    },
+    paint(x, z, f, L, out) {
+      if (roadDist(x, z, L) < 3) { out[0] = .5; out[1] = .45; out[2] = .35; return .55; }
+      if (Math.hypot(x - L.sq[0], z - L.sq[1]) < 20) { out[0] = .52; out[1] = .5; out[2] = .46; return .65; }   // the village green's gravel square
+      return cropPaint(fieldCrop(L, x, z), x, z, f, out);
+    },
+  },
+  {   // MOUNTAIN PASS: a road over the notch, alpine villages in the valleys either side, a ruined fort on the pass, pine forests
+    layout(r, f, base) {
+      const L = newLayout(), p1 = r() * 6;
+      const fn = s => [60 + 30 * (Math.sin(s / 130 + p1) - Math.sin(p1)), s];
+      addRoad(L, roadPts(fn), 6, 'road');
+      const alpine = r2 => ({type: 'house', w: 9 + r2() * 2.5, d: 7 + r2() * 1.5, h: 5.5, wall: 'stone', roof: 'slate', shut: pick2(r2, ['#7a3b2e', '#3d5f7a', '#4f6b3c']), cottage: true});
+      const ssN = [], ssS = []; for (let s = 170; s <= 340; s += 22) { ssN.push(s); ssS.push(-s); }
+      roadVillage(L, r, f, base, fn, ssN, 5, alpine, 4);
+      roadVillage(L, r, f, base, fn, ssS, 4, alpine, 4);
+      { let done = false; for (const s of [-230, -260, -200, -290]) { if (done) break; const [rx, rz] = fn(s), [nx, nz] = roadNormal(fn, s);
+          for (const side of [1, -1]) { const x = rx + nx * side * 24, z = rz + nz * side * 24; if (flatAt(base, f, x, z, 13, 4) && tryBld(L, {type: 'church', x, z, ry: Math.atan2(rx - x, rz - z), w: 10, d: 18, h: 7})) { done = true; break; } } } }
+      { const s = 250, [rx, rz] = fn(s), [nx, nz] = roadNormal(fn, s); for (const side of [1, -1]) { const x = rx + nx * side * 30, z = rz + nz * side * 30; if (flatAt(base, f, x, z, 10, 4) && tryBld(L, {type: 'barn', x, z, ry: Math.atan2(rx - x, rz - z), w: 14, d: 9, h: 5})) break; } }
+      { let bs = 0, bh = -1e9; for (let s = -150; s <= 150; s += 6) { const [x, z] = fn(s), h = base(x, z, f); if (h > bh) { bh = h; bs = s; } }   // the ruined fort on the crest
+        const [rx, rz] = fn(bs), [nx, nz] = roadNormal(fn, bs); tryBld(L, {type: 'ruin', x: rx + nx * 16, z: rz + nz * 16, ry: Math.atan2(-nx, -nz), w: 13, d: 9, h: 5}); L.clear.push([rx, rz, 30]); }
+      for (const vz of [255, -255]) { const [vx] = fn(vz); L.clear.push([vx, vz, 60]);
+        const loop = []; for (let k = 0; k <= 14; k++) { const a = k / 14 * TAU; loop.push([vx + Math.cos(a) * 95, vz + Math.sin(a) * 70]); } stoneWall(L, loop, .35, r); }
+      addPads(L, base, f);
+      for (let w = 0, k = 0; w < 8 && k < 200; k++) { const x = (r() * 2 - 1) * 520, z = (r() * 2 - 1) * 520, h = base(x, z, f);
+        if (h > 12 && h < 85 && farFromAll(L, x, z, 50)) { woods(L, r, x, z, 40 + r() * 25, 42, .1, .9, .7); w++; } }
+      for (let c = 0; c < 7; c++) rockCluster(L, r, (r() * 2 - 1) * 500, (r() * 2 - 1) * 500, 60, 14, 1.2);
+      looseRocks(L, r, 120, null, 1.15);
+      polesAlong(L, fn, -660, 660, 50, 6.5);
+      return L;
+    },
+    paint(x, z, f, L, out) { if (roadDist(x, z, L) < 2.6) { out[0] = .5; out[1] = .47; out[2] = .4; return .6; } return 0; },
+  },
+  {   // THE GORGE: tracks along both rims, a walled mission on the west plateau, a mining camp on the east, boulders under the cliffs
+    layout(r, f, base) {
+      const L = newLayout(), c = z => 75 * Math.sin(z / 220) + 60 * f(z / 140, 2.2, 2);
+      const fnW = s => [c(s) - 112 + 8 * Math.sin(s / 60), s], fnE = s => [c(s) + 112 + 8 * Math.sin(s / 70 + 1), s];
+      addRoad(L, roadPts(fnW), 5, 'track'); addRoad(L, roadPts(fnE), 5, 'track');
+      for (let k = 0; k < 30; k++) {   // the mission: church, houses and a walled compound
+        const z0 = (r() * 2 - 1) * 260, x0 = c(z0) - 230 - r() * 80;
+        if (!flatAt(base, f, x0, z0, 34, 3)) continue;
+        tryBld(L, {type: 'church', x: x0, z: z0, ry: Math.PI / 2, w: 10, d: 20, h: 8});
+        for (const [u, v] of [[-26, 18], [-26, -6], [22, 22], [22, -20]]) tryBld(L, {type: 'house', x: x0 + u, z: z0 + v, ry: u < 0 ? Math.PI / 2 : -Math.PI / 2, w: 9, d: 7, h: 4.5, wall: 'plaster', roof: 'tile', shut: '#2f5a6a'});
+        stoneWall(L, [[x0 - 40, z0 - 36], [x0 + 36, z0 - 36], [x0 + 36, z0 + 38], [x0 - 40, z0 + 38], [x0 - 40, z0 - 36]], .3, r);
+        L.sq = [x0, z0]; L.clear.push([x0, z0, 45]); break;
+      }
+      for (let k = 0; k < 30; k++) {   // the mining camp
+        const z0 = (r() * 2 - 1) * 260, x0 = c(z0) + 210 + r() * 80;
+        if (!flatAt(base, f, x0, z0, 30, 3)) continue;
+        tryBld(L, {type: 'barn', x: x0, z: z0, ry: 0, w: 16, d: 10, h: 6});
+        tryBld(L, {type: 'shed', x: x0 + 20, z: z0 + 12, ry: -.4, w: 6, d: 5, h: 3}); tryBld(L, {type: 'shed', x: x0 - 18, z: z0 + 16, ry: .5, w: 6, d: 5, h: 3});
+        tryBld(L, {type: 'ruin', x: x0 + 4, z: z0 - 26, ry: .2, w: 10, d: 7, h: 4});
+        L.camp = [x0, z0]; L.clear.push([x0, z0, 40]); break;
+      }
+      for (let i = 0, n = 0; i < 80 && n < 2; i++) { const x = (r() * 2 - 1) * 520, z = (r() * 2 - 1) * 520;
+        if (base(x, z, f) > 25 && flatAt(base, f, x, z, 9, 2.5) && farFromAll(L, x, z, 30) && tryBld(L, {type: 'ruin', x, z, ry: r() * TAU, w: 10, d: 7, h: 4})) n++; }
+      addPads(L, base, f);
+      for (let i = 0; i < 260; i++) { const z = (r() * 2 - 1) * 640, side = r() < .5 ? -1 : 1, x = c(z) + side * (52 + r() * 22);   // fallen boulders at the foot of the cliffs
+        if (farFromAll(L, x, z, 2)) L.rocks.push({x, z, s: 1 + r() * r() * 3.2, sy: .55 + r() * .4}); }
+      for (let i = 0; i < 90; i++) { const z = (r() * 2 - 1) * 640, x = c(z) + (r() - .5) * 40; L.rocks.push({x, z, s: .8 + r() * 2.2, sy: .5 + r() * .4}); }   // the canyon floor
+      looseRocks(L, r, 70, (x, z) => base(x, z, f) > 20);
+      for (let i = 0; i < 40; i++) { const x = (r() * 2 - 1) * 560, z = (r() * 2 - 1) * 560; if (base(x, z, f) > 25 && farFromAll(L, x, z, 4)) L.trees.push({x, z, s: .5 + r() * .25, type: 'broad'}); }   // junipers
+      if (L.camp) polesAlong(L, s => [L.camp[0] + 30 + s * .05, L.camp[1] + s], -300, 300, 48, 0);
+      return L;
+    },
+    paint(x, z, f, L, out) {
+      if (roadDist(x, z, L) < 2) { out[0] = .62; out[1] = .45; out[2] = .32; return .5; }
+      for (const p of [L.sq, L.camp]) if (p && Math.hypot(x - p[0], z - p[1]) < 34) { out[0] = .7; out[1] = .55; out[2] = .4; return .4; }
+      return 0;
+    },
+  },
+  {   // STEPPE: a collective farm on the road, huge fields, windbreak tree lines, a ruined chapel far out. Still mostly open.
+    layout(r, f, base) {
+      const L = newLayout(), p1 = r() * 6, p2 = r() * 6;
+      const fnA = s => [s, 14 * Math.sin(s / 300 + p1)], fnB = s => [40 * Math.sin(s / 250 + p2), s];
+      addRoad(L, roadPts(fnA), 7, 'road'); addRoad(L, roadPts(fnB), 4.5, 'track');
+      { const cx = r() * 60 - 30, cz = fnA(cx)[1] + 46;   // the kolkhoz: barns and sheds round a yard north of the road, houses along it
+        for (const [u, v, ry] of [[-32, 10, Math.PI / 2], [32, 10, -Math.PI / 2], [0, 34, Math.PI]]) tryBld(L, {type: 'barn', x: cx + u, z: cz + v, ry, w: 22, d: 11, h: 6});
+        for (const [u, v] of [[-30, 36], [30, 36]]) tryBld(L, {type: 'shed', x: cx + u, z: cz + v, ry: Math.PI, w: 7, d: 6, h: 3.2});
+        roadVillage(L, r, f, base, fnA, [cx - 70, cx - 50, cx + 50, cx + 70, cx - 90, cx + 90], 5, PLAIN_HOUSE(.2, .6, ['#3d6aa0', '#5b8a4a', '#d8d2c0']), 3);
+        L.sq = [cx, cz + 10]; L.clear.push([cx, cz, 60]);
+        for (let i = 0; i < 6; i++) L.bales.push({x: cx + (r() - .5) * 30, z: cz + 52 + r() * 8, ry: r() * TAU}); }
+      { const a = r() * TAU, d = 330 + r() * 120; tryBld(L, {type: 'chapel', x: Math.cos(a) * d, z: Math.sin(a) * d, ry: r() * TAU, w: 9, d: 15, h: 6}); }
+      addPads(L, base, f);
+      fieldGrid(L, r, [-480, -300, -130, 130, 300, 480], 50);
+      eachBoundary(L, (ax, az, bx, bz) => {   // windbreaks: lines of trees along about a third of the field edges
+        if (r() > .34) return;
+        const len = Math.hypot(bx - ax, bz - az), n = Math.round(len / 7), gap = r();
+        for (let k = 0; k <= n; k++) { const t = k / n, x = ax + (bx - ax) * t + r() - .5, z = az + (bz - az) * t + r() - .5;
+          if (Math.abs(t - gap) * len < 12 || Math.hypot(x, z) < 120 || !farFromAll(L, x, z, 4)) continue; L.trees.push({x, z, s: .9 + r() * .4, type: 'broad'}); }
+      });
+      for (let i = 0; i < 60; i++) { const x = (r() * 2 - 1) * 580, z = (r() * 2 - 1) * 580; if (fieldCrop(L, x, z) === 1 && farFromAll(L, x, z, 6)) L.bales.push({x, z, ry: r() * TAU}); }
+      looseRocks(L, r, 40, null, .7);
+      polesAlong(L, fnA, -680, 680, 44, 7.5);
+      return L;
+    },
+    paint(x, z, f, L, out) {
+      if (roadDist(x, z, L) < 3) { out[0] = .55; out[1] = .48; out[2] = .36; return .55; }
+      if (Math.hypot(x - L.sq[0], z - L.sq[1]) < 42) { out[0] = .5; out[1] = .43; out[2] = .32; return .55; }   // the trampled farmyard
+      return cropPaint(fieldCrop(L, x, z), x, z, f, out);
+    },
+  },
+  {   // BADLANDS: a ghost town on the flats between the mesas, a trail winding out of it, rockfall under the cliffs
+    layout(r, f, base) {
+      const L = newLayout();
+      let tc = null;
+      for (let k = 0; k < 400 && !tc; k++) { const x = (r() * 2 - 1) * 320, z = (r() * 2 - 1) * 320; if (flatAt(base, f, x, z, 70, 2)) tc = [x, z]; }
+      for (let k = 0; k < 400 && !tc; k++) { const x = (r() * 2 - 1) * 420, z = (r() * 2 - 1) * 420; if (flatAt(base, f, x, z, 45, 3)) tc = [x, z]; }
+      if (!tc) tc = [0, 0];
+      const a = r() * Math.PI, ca = Math.cos(a), sa = Math.sin(a), fn = s => [tc[0] + ca * s, tc[1] + sa * s];
+      addRoad(L, roadPts(fn, -130, 130, 6), 8, 'road');   // main street
+      for (const dir of [1, -1]) { const [ex, ez] = fn(dir * 130); addRoad(L, walkTrack(L, r, f, base, ex, ez, Math.atan2(dir * sa, dir * ca), 80, 3.2), 5, 'track'); }
+      const western = r2 => r2() < .45 ? {type: 'barn', w: 11 + r2() * 4, d: 9, h: 5 + r2()} : r2() < .5 ? {type: 'shed', w: 7, d: 6, h: 3.4} : {type: 'house', w: 9 + r2() * 2, d: 7, h: r2() < .5 ? 6 : 4.5, wall: 'plaster', roof: 'tile', shut: pick2(r2, ['#5a3a28', '#2f5a6a'])};
+      const ss = []; for (let s = -110; s <= 110; s += 20) ss.push(s);
+      roadVillage(L, r, f, base, fn, ss, 12, western, 2.5);
+      { const [x, z] = fn(-150); tryBld(L, {type: 'chapel', x, z, ry: a + Math.PI / 2, w: 9, d: 15, h: 6}); }
+      L.sq = tc; L.clear.push([tc[0], tc[1], 140]);
+      addPads(L, base, f);
+      for (let i = 0, n = 0; i < 4000 && n < 360; i++) {   // rockfall: boulders wherever a cliff drops
+        const x = (r() * 2 - 1) * 600, z = (r() * 2 - 1) * 600, g = Math.abs(base(x + 4, z, f) - base(x - 4, z, f)) + Math.abs(base(x, z + 4, f) - base(x, z - 4, f));
+        if (g > 12 && farFromAll(L, x, z, 3)) { L.rocks.push({x, z, s: .9 + r() * r() * 3, sy: .55 + r() * .4}); n++; } }
+      looseRocks(L, r, 60);
+      polesAlong(L, fn, -120, 120, 30, 6.5);
+      return L;
+    },
+    paint(x, z, f, L, out) {
+      if (roadDist(x, z, L) < 3) { out[0] = .66; out[1] = .5; out[2] = .36; return .55; }
+      if (Math.hypot(x - L.sq[0], z - L.sq[1]) < 120) { out[0] = .74; out[1] = .58; out[2] = .42; return .3 * sstep(120, 60, Math.hypot(x - L.sq[0], z - L.sq[1])); }
+      return 0;
+    },
+  },
+];
+CLASSIC.forEach((C, i) => {
+  const m = MAPS[i], old = m.h;
+  m.base = (x, z, f) => old(x, z, f);
+  m.layout = (r, f) => C.layout(r, f, m.base);
+  m.paint = C.paint;
+  m.h = (x, z, f, L) => L ? padHeight(L, x, z, old(x, z, f)) : old(x, z, f);
+});
+MAPS[0].desc = 'Gentle hills, a village and walled fields. A fair fight.';
+MAPS[1].desc = 'A huge ridge with alpine villages either side. Lob it over.';
+MAPS[2].desc = 'Plateaus over a deep canyon, a mission and a mining camp.';
+MAPS[3].desc = 'Flat farmland. A collective farm, windbreaks and little else.';
+MAPS[4].desc = 'Mesas, sheer drops and a ghost town.';
+
 // the two layout maps: Normandy bocage and the granite highlands
 MAPS.push(
   {name:'NORMANDY', desc:'Hedgerows, orchards and a farm village. Fight from cover.', theme:5, grassN:7500,
@@ -2032,6 +2295,8 @@ const sfx = {
       tone(c + .6, .1, 620, 260, .22, 'square'); nz(c + .6, .14, 3200, 900, .3, 'bandpass', 4);   // breech opens
       tone(c + 1.0, .3, 2350, 2250, .06, 'triangle'); tone(c + 1.12, .25, 2600, 2500, .045, 'triangle'); tone(c + 1.2, .2, 2450, 2400, .03, 'triangle');   // the spent case rings on the floor
     } },
+  rpg(dist = 0) { if (!AC) return; const v = clamp(1 - dist / 900, .08, 1), t = AC.currentTime + dist / 340;   // pop, roar of the motor
+    nz(t, .12, 5000, 1200, .6 * v, 'highpass'); tone(t, .25, 120, 50, .5 * v); nz(t + .05, .9, 900, 2400, .35 * v, 'bandpass', 1.2); },
   boom(dist, r) { if (!AC) return; const v = clamp(1 - dist / 1300, .05, 1) * Math.min(1.2, .45 + r / 22), t = AC.currentTime + Math.min(dist / 340, 3);
     nz(t, 1.6 + r / 25, 1400 - Math.min(dist, 900), 40, .9 * v); tone(t, .9, 70, 24, .9 * v); if (dist < 200) nz(t, .3, 5000, 1500, .25 * v, 'highpass'); },
   whistle(dur) { if (!AC) return; tone(AC.currentTime, dur, 2100, 520, .07); },
@@ -2078,7 +2343,7 @@ const fwd = yaw => [Math.cos(yaw), -Math.sin(yaw)];
 const bearingOf = yaw => ((90 - yaw / D2R) % 360 + 360) % 360;
 const myReel = () => reels.find(r => r.seat === mySeat);
 const canFire = t => t && t.alive && state === 'battle' && t.reload <= 0;
-function weaponOf(t) { return t.weapon === 'S' ? (SPEC[t.stock[t.armed]] || WEAPONS[0]) : WEAPONS[t.weapon] || WEAPONS[0]; }
+function weaponOf(t) { if (t.spec.foot) return FOOT_W[t.weapon] || FOOT_W[0]; return t.weapon === 'S' ? (SPEC[t.stock[t.armed]] || WEAPONS[0]) : WEAPONS[t.weapon] || WEAPONS[0]; }
 
 function spawnPoints(n, rand) {
   const out = [], ok = mapDef.ok || (() => true);
@@ -2105,11 +2370,95 @@ function spawnPoints(n, rand) {
   return out;
 }
 
+// ================================================================ ASHTON: one player on foot (online, 4 players, the host picks who)
+// He runs (WASD strafes, the body turns with the mouse) and carries an RPG (unlimited, 5 s reload, 50 damage) and three
+// C4 charges (150 damage): thrown, they stick to whatever they land on, ground or tank, and go off after a short fuse.
+// spec index -1 means Ashton everywhere a seat names its tank.
+const ASHTON = {name: 'ASHTON', role: 'On foot · RPG and C4', foot: true, nation: 'US', hp: 100, atk: 100, vk: 1, range: 350, rel: 1, speed: 5.5, w: .7};
+const FOOT_W = [
+  {key: 'rpg', name: 'RPG', short: 'RPG', r: 5, dmg: 50, n: 1, ammo: Infinity, col: '#ffcf6a', gk: .12, sp: 120},
+  {key: 'c4', name: 'C4', short: 'C4', r: 9, dmg: 150, n: 1, ammo: 3, col: '#d8d0a0', kind: 'c4', gk: 1, sp: 15},
+];
+FOOT_W.forEach(w => { ALLW[w.key] = w; });
+RELOAD.rpg = 5; RELOAD.c4 = 1.5;
+const C4_FUSE = 4;
+const specOf = i => i === -1 ? ASHTON : TANKS[i] || TANKS[0];
+function makeSoldierMesh(cos) {
+  const M = (c, r = .85) => new THREE.MeshStandardMaterial({color: c, roughness: r});
+  const olive = M(0x4f5532), dark = M(0x2b2a22), skin = M(0xd9a988, .6), helm = M(0x4a5030, .7), tubeM = M(0x3d4a2a, .6), head = M(0x6a6e44, .7), strap = M(0x3a3326);
+  const hull = new THREE.Group(), turret = new THREE.Group(), gun = new THREE.Group();
+  const put = (g, mesh, x, y, z, rx = 0, ry = 0, rz = 0) => { mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz); mesh.castShadow = true; g.add(mesh); return mesh; };
+  for (const s of [-1, 1]) {   // legs and boots
+    put(hull, cyl(.075, .065, .48, olive, 8), 0, .7, s * .1); put(hull, cyl(.065, .055, .45, olive, 8), 0, .26, s * .1);
+    put(hull, box(.26, .1, .12, dark), .05, .05, s * .1);
+  }
+  put(hull, box(.22, .2, .34, olive), 0, .95, 0);                                       // hips
+  put(turret, box(.26, .5, .4, olive), 0, 1.3, 0);                                      // torso
+  put(turret, box(.06, .3, .42, strap), .14, 1.3, 0);                                   // webbing and pouches
+  for (const s of [-1, 1]) put(turret, box(.1, .12, .1, strap), .17, 1.15, s * .12);
+  put(turret, box(.2, .32, .3, dark), -.2, 1.35, 0);                                    // pack, with spare rockets
+  for (const s of [-1, 1]) put(turret, cyl(.05, .05, .5, tubeM, 8), -.28, 1.45, s * .09);
+  put(turret, cyl(.05, .055, .1, skin, 8), 0, 1.58, 0);                                 // neck
+  put(turret, new THREE.Mesh(new THREE.SphereGeometry(.11, 12, 10), skin), .01, 1.7, 0);
+  put(turret, new THREE.Mesh(new THREE.SphereGeometry(.135, 12, 8, 0, TAU, 0, Math.PI / 2), helm), 0, 1.72, 0);
+  put(turret, cyl(.16, .16, .015, helm, 14), 0, 1.72, 0);                               // brim
+  put(turret, limb(new THREE.Vector3(0, 1.5, .2), new THREE.Vector3(.2, 1.42, .2), .045, .04, olive));   // arms up to the launcher
+  put(turret, limb(new THREE.Vector3(0, 1.5, -.2), new THREE.Vector3(.3, 1.38, .08), .045, .04, olive));
+  // the launcher, on his right shoulder: tube, grip and a warhead in front
+  put(gun, cyl(.045, .045, 1.0, tubeM, 10), .05, 0, 0, 0, 0, -Math.PI / 2);
+  put(gun, new THREE.Mesh(new THREE.ConeGeometry(.08, .28, 10), head), .7, 0, 0, 0, 0, -Math.PI / 2);
+  put(gun, cyl(.08, .08, .1, head, 10), .52, 0, 0, 0, 0, -Math.PI / 2);
+  put(gun, box(.06, .14, .04, dark), .15, -.09, 0);
+  put(gun, box(.1, .06, .03, dark), -.05, .07, -.04);                                   // sight
+  gun.position.set(.08, 1.5, .2); turret.add(gun);
+  scene.add(hull, turret);
+  return {hull, turret, gun, flag: null, mount: new THREE.Vector3(0, 0, 0), gp: new THREE.Vector3(.08, 1.5, 0), L: .7, W: .7, gunLen: .85, top: 1.85,
+    eye: new THREE.Vector3(.14, 1.63, 0), mats: [olive, dark, skin, helm, tubeM, head, strap], foot: true};
+}
+// C4 charges: stuck to the ground or to a tank (and carried with it), beeping until they go off
+let c4s = [], c4Id = 1;
+const c4Geo = new THREE.BoxGeometry(.3, .14, .2), c4Mat = new THREE.MeshStandardMaterial({color: 0xcfc59a, roughness: .8});
+function plantC4(s, x, y, z, direct) {   // host
+  const o = {t: 'c4', id: c4Id++, o: s.owner.i, ti: direct ? direct.i : -1, x: r2(x), y: r2(y), z: r2(z)};
+  if (direct) { const [lx, ly, lz] = tankLocal(direct, x, y, z); o.l = [r2(lx), r2(clamp(ly, .3, direct.mesh.top)), r2(lz)]; }
+  emit(o);
+}
+function c4Pos(c) {
+  const t = c.ti >= 0 ? tanks[c.ti] : null;
+  if (t && c.l) { const co = Math.cos(t.hullYaw), si = Math.sin(t.hullYaw), [lx, ly, lz] = c.l; c.x = t.x + lx * co + lz * si; c.z = t.z - lx * si + lz * co; c.y = t.y + ly; }
+  return c;
+}
+function stepC4(dt) {
+  for (const c of c4s) {
+    c4Pos(c); c.fuse -= dt;
+    c.mesh.position.set(c.x, c.y + .07, c.z);
+    const on = Math.sin(c.fuse * (c.fuse < 1.5 ? 40 : 14)) > 0;   // the light blinks faster as it's about to go
+    c.led.material.color.setHex(on ? 0xff2a1a : 0x3a0a08);
+    if ((c.beep -= dt) <= 0) { c.beep = c.fuse < 1.5 ? .15 : .5; if (Math.hypot(c.x - camera.position.x, c.z - camera.position.z) < 60) sfx.tick(c.fuse < 1.5 ? 2200 : 1700); }
+    if (auth() && c.fuse <= 0 && !c.gone) {
+      c.gone = true; const w = FOOT_W[1], o = tanks[c.o], tgt = c.ti >= 0 && tanks[c.ti] && tanks[c.ti].alive ? tanks[c.ti] : null;
+      emit({t: 'c4x', id: c.id});
+      blast(c.x, c.y, c.z, w.r, w.dmg, o, tgt, 'c4');
+      if (o) emit({t: 'spot', i: o.i, x: r2(c.x), z: r2(c.z), d: tgt ? tgt.i : -1});
+    }
+  }
+}
+function c4Event(e) {
+  if (e.t === 'c4') {
+    const mesh = new THREE.Mesh(c4Geo, c4Mat), led = new THREE.Mesh(new THREE.SphereGeometry(.035, 6, 4), new THREE.MeshBasicMaterial({color: 0xff2a1a}));
+    led.position.set(0, .09, 0); mesh.add(led); mesh.castShadow = true; scene.add(mesh);
+    c4s.push(c4Pos({id: e.id, o: e.o, ti: e.ti, l: e.l, x: e.x, y: e.y, z: e.z, fuse: C4_FUSE, beep: 0, mesh, led})); sfx.clank();
+  } else {
+    const c = c4s.find(q => q.id === e.id); if (c) { scene.remove(c.mesh); c4s.splice(c4s.indexOf(c), 1); }
+  }
+}
+function clearC4() { for (const c of c4s) scene.remove(c.mesh); c4s = []; }
+
 function makeTank(i, cfg, x, z, hullYaw) {
-  const spec = TANKS[cfg.spec] || TANKS[0], m = makeTankMesh(spec, cfg.cos);
+  const spec = specOf(cfg.spec), m = spec.foot ? makeSoldierMesh(cfg.cos) : makeTankMesh(spec, cfg.cos);
   const t = {i, specIdx: cfg.spec, spec, ai: !!cfg.ai, remote: !!cfg.remote, dropped: false, color: SEAT_COLORS[i], name: cfg.name, cos: cleanCos(cfg.cos), x, z, y: groundAt(x, z), vy: 0, falling: false, fallFrom: 0,
     hullYaw, yaw: hullYaw, elev: 10, power: POWER, pitch: 0, roll: 0, mesh: m, alive: true, hp: spec.hp, maxHp: spec.hp,
-    ammo: WEAPONS.map(w => w.ammo), weapon: 0, stock: [], armed: 0, reload: 2, reloadMax: 2, lastHitBy: null, moving: 0,
+    ammo: (spec.foot ? FOOT_W : WEAPONS).map(w => w.ammo), weapon: 0, stock: [], armed: 0, reload: 2, reloadMax: 2, lastHitBy: null, moving: 0,
     ai2: {planAt: rnd(.5, 2), moveAt: rnd(2, 6), goal: null},
     recoil: 0, base: new THREE.Vector3(), stats: {shots: 0, hits: 0, dmg: 0, kills: 0, taken: 0}, mem: {target: null, tries: 0}, plan: null, deb: null, burnT: 0, smokeAcc: 0,
     drv: {th: 0, st: 0}, tgt: null};
@@ -2123,7 +2472,7 @@ function clearBattle() {
   sprites.forEach(s => scene.remove(s.obj)); sprites = [];
   fireP.clear(); smokeP.clear(); chipP.clear(); flights.forEach(f => f.planes.forEach(p => scene.remove(p))); flights = [];
   banner = null; feed = []; pops = []; spot = null; impacts = []; reels = []; result = null; winner = -1; roundPay = null; camHold = null; followShell = null; lastShot = null; myShell = null; pip.hold = null; pip.on = false;
-  carveLog = []; bLog = []; pkLog = []; evq = []; chatOpen = false; aimDots.visible = false; state = 'idle';
+  clearC4(); carveLog = []; bLog = []; pkLog = []; evq = []; chatOpen = false; aimDots.visible = false; state = 'idle';
 }
 function nameTanks() {
   const seen = {};
@@ -2156,7 +2505,8 @@ function hideScreens() {
 
 function startOffline() {
   audioInit();
-  const seats = [{spec: setup.tank, name: myName || TANKS[setup.tank].name, cos: profile.equip, ai: false}];
+  const ash = setup.ashton && setup.foes === 3;
+  const seats = [{spec: ash ? -1 : setup.tank, name: myName || (ash ? 'ASHTON' : TANKS[setup.tank].name), cos: profile.equip, ai: false}];
   const pool = shuffled([...TANKS.keys()]);
   for (let i = 0; i < setup.foes; i++) seats.push({spec: pool[i], name: TANKS[pool[i]].name, cos: {...COS_DEFAULT, rider: pick(COSMETICS.rider).id}, ai: true});
   createBattle({map: setup.map, seed: (Math.random() * 1e9) | 0, lvl: setup.lvl, seats});
@@ -2168,7 +2518,7 @@ function startOffline() {
 // ================================================================ battle flow (host / offline): real-time, no turns
 function startFight() {
   state = 'battle'; stateT = 0;
-  for (const t of tanks) { t.reload = t.reloadMax = t.ai ? rnd(2.5, 4.5) : 2; startReel(t, true); }   // everyone opens a free supply crate
+  for (const t of tanks) { t.reload = t.reloadMax = t.ai ? rnd(2.5, 4.5) : 2; if (!t.spec.foot) startReel(t, true); }   // everyone opens a free supply crate
   emit({t: 'start'});
 }
 // knocked out offline: Enter ends the battle now instead of watching it play out
@@ -2185,6 +2535,7 @@ function checkOver() {
 // landing a hit on someone else spins the supply wheel (one spin at a time per tank; CPUs win one at their skill's odds)
 function onHit(by) {
   if (!by || !by.alive || state !== 'battle') return;
+  if (by.spec.foot) return;   // Ashton carries his own kit: no supply spins
   if (by.ai) { if (by.stock.length < STOCK_MAX && Math.random() < cpuL().combo * .6) { const it = award(by); emit({t: 'feed', s: by.name + ' gets ' + SPEC[it].name, c: by.color}); } return; }
   if (!reels.some(r => r.seat === by.i)) startReel(by, false);
 }
@@ -2195,7 +2546,7 @@ function muzzleOf(t, yaw, elev, still) {
   return {x: t.base.x + fx * gp.x + fx * ce * gl, y: t.base.y + gp.y + se * gl, z: t.base.z + fz * gp.x + fz * ce * gl, dx: fx * ce, dy: se, dz: fz * ce};
 }
 function newShell(t, w, yaw, elev, power) {
-  const m = muzzleOf(t, yaw, elev, true), v = shotSpeed(power) * (t.spec.vk || 1);   // shells always leave from the gun at rest, so the sight's prediction is exact
+  const m = muzzleOf(t, yaw, elev, true), v = w.sp || shotSpeed(power) * (t.spec.vk || 1);   // shells always leave from the gun at rest, so the sight's prediction is exact
   return {x: m.x, y: m.y, z: m.z, ox: m.x, oy: m.y, oz: m.z, vx: m.dx * v, vy: m.dy * v, vz: m.dz * v, w, owner: t, bore: w.bore || 0, bored: false, under: false,
     bounces: w.bounces || 0, t: 0, clear: false, dead: false, split: false, mesh: null, whistled: false, trail: 0};
 }
@@ -2208,7 +2559,7 @@ function advance(s, dt) {
     if (s.y > groundAt(s.x, s.z) + .3) { s.under = false; return 'emerge'; }
     if (s.bore <= 0) return 'boom';
   } else {
-    s.vy -= G * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
+    s.vy -= G * (s.w.gk ?? 1) * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
     const g = groundAt(s.x, s.z);
     if (s.y <= g) {
       if (s.w.kind === 'drill' && !s.bored) { s.bored = true; s.under = true; return 'enter'; }
@@ -2240,7 +2591,7 @@ let aimImpact = null, aimPath = [];
 function predictImpact() {
   const t = player; aimPath = []; aimImpact = null;
   if (!(t && t.alive && mode === 'game')) return;
-  const s = newShell(t, weaponOf(t).kind === 'drill' ? WEAPONS[3] : WEAPONS[0], t.yaw, t.elev, POWER);
+  const w0 = weaponOf(t), s = newShell(t, t.spec.foot ? w0 : w0.kind === 'drill' ? WEAPONS[3] : WEAPONS[0], t.yaw, t.elev, POWER);
   let since = 0, px = s.x, py = s.y, pz = s.z;
   for (let i = 0; i < 2400; i++) {
     const r = advance(s, DT);
@@ -2274,7 +2625,19 @@ function fire(t) {
   if (t === player) { myShell = shells.find(s => s.id === sid); if (settings.shellCam || keys.v) followShell = myShell; }
   if (t.ai) t.plan = null;
 }
-function fireFx(t) {
+function footFireFx(t, wname) {   // Ashton: the rocket's launch flash and back-blast, or a C4 charge thrown
+  const m = muzzleOf(t, t.yaw, t.elev), own = t === player;
+  if (wname === 'C4') { sfx.tick(600); if (own) camKick = .25; return; }
+  for (let i = 0; i < 6; i++) puffFire(m.x + m.dx * i * .2, m.y + m.dy * i * .2, m.z + m.dz * i * .2, {vx: m.dx * rnd(4, 12), vy: m.dy * rnd(4, 12), vz: m.dz * rnd(4, 12), drag: 8, life: rnd(.08, .16), s0: 1, s1: 1.6});
+  const bx = m.x - m.dx * 1.4, by = m.y - m.dy * 1.4, bz = m.z - m.dz * 1.4;   // back-blast out of the rear of the tube
+  for (let i = 0; i < 10; i++) puffFire(bx, by, bz, {vx: -m.dx * rnd(10, 22) + rnd(-2, 2), vy: -m.dy * rnd(10, 22) + rnd(-1, 2), vz: -m.dz * rnd(10, 22) + rnd(-2, 2), drag: 7, life: rnd(.1, .22), s0: 1, s1: 2});
+  for (let i = 0; i < 14; i++) puffSmoke(bx, by, bz, {vx: -m.dx * rnd(4, 14) + rnd(-2, 2), vy: rnd(.5, 2.5), vz: -m.dz * rnd(4, 14) + rnd(-2, 2), drag: 1.8, life: rnd(1.5, 3), s0: 1, s1: rnd(4, 7), g: .62, a: .5});
+  sfx.rpg(Math.hypot(t.x - camera.position.x, t.z - camera.position.z));
+  t.recoil = .4;
+  if (own) { camKick = .6; shotPunch = .5; camShake = Math.max(camShake, .3); }
+}
+function fireFx(t, wname) {
+  if (t.spec.foot) { footFireFx(t, wname); return; }
   const m = muzzleOf(t, t.yaw, t.elev);
   for (let i = 0; i < 10; i++) puffFire(m.x + m.dx * i * .5, m.y + m.dy * i * .5, m.z + m.dz * i * .5, {vx: m.dx * rnd(8, 30), vy: m.dy * rnd(8, 30), vz: m.dz * rnd(8, 30), drag: 6, life: rnd(.12, .25), s0: 2.4 - i * .15, s1: 3});
   for (let i = 0; i < 12; i++) puffSmoke(m.x, m.y, m.z, {vx: m.dx * rnd(3, 14) + rnd(-2, 2), vy: m.dy * rnd(3, 14) + rnd(0, 2), vz: m.dz * rnd(3, 14) + rnd(-2, 2), drag: 1.6, life: rnd(2, 3.5), s0: 1.5, s1: rnd(5, 8), g: .55, a: .5});
@@ -2337,6 +2700,7 @@ function explode(s, x, y, z, direct, solid) {
   const w = s.w, o = s.owner;
   if (w.kind === 'teleport') { teleport(o, x, z); return; }
   if (w.kind === 'orbital') { startOrbital(x, z, o, w); return; }
+  if (w.kind === 'c4') { plantC4(s, x, y, z, direct); return; }
   blast(x, y, z, w.r, w.dmg, o, direct, w.kind, solid);
   emit({t: 'spot', i: o.i, x: r2(x), z: r2(z), d: direct ? direct.i : -1});
 }
@@ -2412,6 +2776,12 @@ function kill(t, by) {
 }
 function killVisual(t, boom, quiet) {
   t.alive = false; t.hp = 0;
+  if (t.mesh.foot) {   // Ashton goes down: no burning wreck, just dust and a body
+    if (!quiet) { pops.push({x: t.x, y: t.y + 3, z: t.z, s: 'ASHTON DOWN', c: '#ff8a5c', t: 0, big: true});
+      for (let i = 0; i < 12; i++) puffSmoke(t.x, t.y + .6, t.z, {vx: rnd(-3, 3), vy: rnd(1, 4), vz: rnd(-3, 3), life: 2, s0: 1, s1: 4, g: .5, a: .5}); }
+    for (const m of t.mesh.mats) m.color.multiplyScalar(.6);
+    t.burnT = 0; return;
+  }
   if (!quiet) {
     pops.push({x: t.x, y: t.y + t.mesh.top + 4, z: t.z, s: 'DESTROYED', c: '#ff8a5c', t: 0, big: true});
     explosionFx(t.x, t.y + 2, t.z, 16, 'kill');
@@ -2426,9 +2796,17 @@ function killVisual(t, boom, quiet) {
 }
 
 // ================================================================ supply wheel (spins on a hit; it plays while you keep fighting)
-function award(t, id) { id = id || pick(SPECIALS).id; if (t.stock.length < STOCK_MAX) t.stock.push(id); return id; }
+// the REPAIR prize isn't a shell: it patches the hull up by 50 the moment the wheel lands on it
+const REPAIR_HP = 50;
+function repairTank(t) {
+  if (!t.alive) return;
+  const d = Math.min(REPAIR_HP, t.maxHp - t.hp); t.hp += d;
+  emit({t: 'heal', i: t.i, d});
+}
+const wheelPool = t => SPECIALS.filter(s => s.id !== 'repair' || t.hp < t.maxHp);   // no repairs on a full hull
+function award(t, id) { id = id || pick(wheelPool(t)).id; if (id === 'repair') { repairTank(t); return id; } if (t.stock.length < STOCK_MAX) t.stock.push(id); return id; }
 function startReel(t, free) {
-  const target = pick(SPECIALS).id;
+  const target = pick(wheelPool(t)).id;
   if (t.ai) { award(t, target); return; }
   if (t.stock.length >= STOCK_MAX) return;
   const strip = []; for (let i = 0; i < 26; i++) strip.push(pick(SPECIALS).id); strip.push(target, pick(SPECIALS).id, pick(SPECIALS).id);
@@ -2458,7 +2836,7 @@ function aiPlan(t) {
   t.weapon = 0;
   const usable = t.stock.map((id, i) => [id, i]).filter(([id]) => id !== 'teleport' && !(id === 'nuke' && Math.hypot(tg.x - t.x, tg.z - t.z) < 70));
   if (usable.length && Math.random() < L.spend) { const [, i] = pick(usable); t.weapon = 'S'; t.armed = i; }
-  else if (t.ammo[1] > 0 && Math.random() < .35) t.weapon = 1;
+  else if (!t.spec.foot && t.ammo[1] > 0 && Math.random() < .35) t.weapon = 1;
   else if (t.ammo[2] > 0 && Math.random() < .3) t.weapon = 2;
   let sol = solve(t, tg, weaponOf(t));
   if (sol.err > 18 && L.drill && t.ammo[3] > 0 && t.weapon !== 'S') { const s2 = solve(t, tg, WEAPONS[3]); if (s2.err < sol.err - 6) { sol = s2; t.weapon = 3; } }
@@ -2552,6 +2930,15 @@ function tankPhysics(t, dt, sim) {
 }
 function syncTank(t, dt) {
   const m = t.mesh;
+  if (m.foot) {   // Ashton stands upright and faces where he aims; knocked down, he lies flat
+    t.hullYaw = t.yaw; t.roll = 0; t.pitch = t.alive ? 0 : -1.45;
+    m.hull.position.set(t.x, t.y, t.z); m.hull.rotation.set(t.roll, t.hullYaw, t.pitch, 'YZX'); m.hull.updateMatrixWorld(true);
+    t.base.copy(m.mount).applyMatrix4(m.hull.matrixWorld);
+    m.turret.position.copy(t.base); m.turret.rotation.set(0, t.yaw, t.pitch, 'YZX');
+    const run = t.moving && t.alive ? Math.sin(worldTime * 11 + t.i) * .05 : 0; m.turret.position.y += Math.abs(run);   // a bob as he runs
+    m.gun.rotation.z = t.alive ? t.elev * D2R : 0; m.gun.position.x = .08 - t.recoil * .25;
+    return;
+  }
   m.hull.position.set(t.x, t.y, t.z); m.hull.rotation.set(t.roll, t.hullYaw, t.pitch, 'YZX'); m.hull.updateMatrixWorld(true);
   t.base.copy(m.mount).applyMatrix4(m.hull.matrixWorld);
   if (t.deb && !t.deb.rest) {
@@ -2568,7 +2955,22 @@ function syncTank(t, dt) {
   if (m.flag) m.flag.rotation.y = Math.PI + Math.sin(worldTime * 2.6 + t.i) * .35 + (t.hullYaw - t.yaw) * 0;
 }
 let engineLevel = 0, traverseRate = 0;
+function footMove(t, dt, thr, str) {   // Ashton runs where he looks: W/S forward and back, A/D sidestep
+  t.hullYaw = t.yaw;
+  if (!t.alive || (!thr && !str)) { t.moving = 0; return; }
+  const [fx, fz] = fwd(t.yaw), [lx, lz] = fwd(t.yaw + Math.PI / 2);
+  let mx = fx * thr + lx * str, mz = fz * thr + lz * str; const l = Math.hypot(mx, mz) || 1, sp = t.spec.speed * dt * (thr < 0 ? .7 : 1);
+  mx = mx / l * sp; mz = mz / l * sp;
+  const nx = t.x + mx, nz = t.z + mz, g0 = groundAt(t.x, t.z), g1 = groundAt(nx, nz);
+  t.moving = 1;
+  if (Math.abs(nx) > PLAY || Math.abs(nz) > PLAY || g1 - g0 > sp * 2.2) return;   // too steep to climb
+  for (const o of tanks) if (o !== t && o.alive && inTank(o, nx, g1 + 1, nz, .25)) return;
+  let hit = false;
+  if (solidTop > -1e8) solidsNear(nx, nz, .3, o => { if (o.y1 > g1 + .6 && o.y0 < g1 + 1.7 && o.kind !== 'rubble') hit = true; });
+  if (!hit) { t.x = nx; t.z = nz; }
+}
 function drive(t, dt, thr, str) {
+  if (t.spec.foot) { footMove(t, dt, thr, str); return; }
   if (!t.alive || (!thr && !str)) { t.moving = 0; return; }
   const sp = speedOf(t.spec);
   t.moving = Math.max(Math.abs(thr), Math.abs(str) * .6);
@@ -2659,7 +3061,9 @@ function applyEvent(e) {
     case 'fire': { const t = T(e.i); if (!t) break;
       if (t !== player) { t.yaw = e.y; t.elev = e.e; }
       else lastShot = {rng: aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null, elev: e.e, brg: bearingOf(e.y), w: e.w, res: null, x: t.x, z: t.z};
-      fireFx(t); break; }
+      fireFx(t, e.w); break; }
+    case 'c4': case 'c4x': c4Event(e); break;
+    case 'heal': { const t = T(e.i); if (!t) break; pops.push({x: t.x, y: t.y + t.mesh.top + 2, z: t.z, s: '+' + e.d + ' REPAIRED', c: '#86efac', t: 0}); if (t === player) { sfx.prize(); sfx.clank(); feedMsg('Hull repaired +' + e.d, '#86efac'); } break; }
     case 'hurt': { const t = T(e.i); if (!t) break; pops.push({x: t.x, y: t.y + t.mesh.top + 2, z: t.z, s: '-' + e.d, c: e.f ? '#d6c99c' : '#ffb199', t: 0}); if (t === player) { if (e.d >= 15 && worldTime - riderHitAt > 6 && t.hp > 0) { riderHitAt = worldTime; riderSay(t.hp / t.maxHp < .3 && !riderLowSaid ? (riderLowSaid = true, 'low') : 'hit'); } dmgFlash = Math.min(1, .45 + e.d / 60); camShake = Math.max(camShake, .8); } break; }
     case 'kill': { const t = T(e.i); if (t) killVisual(t, e.b); if (t && t === player) riderSay('lose', true); if (e.by === mySeat && e.i !== mySeat && player && player.alive) riderSay('kill', true); break; }
     case 'feed': feedMsg(e.s, e.c); break;
@@ -2717,7 +3121,7 @@ function hostRoom(np) {
   if (!netReady()) { netMsg = 'Online play needs the PeerJS library. Check your internet connection.'; renderOnline(); return; }
   audioInit();
   net = {role: 'host', code: genCode(), conns: [], status: 'opening', peer: null, pids: [myPid, null, null, null], dropped: [false, false, false, false]};
-  lobby = {np, map: setup.map, lvl: setup.lvl, seats: [{k: 'host', ...myPick()}, ...[1, 2, 3].slice(0, np - 1).map(() => ({k: 'open'}))]};
+  lobby = {np, map: setup.map, lvl: setup.lvl, ashton: -1, seats: [{k: 'host', ...myPick()}, ...[1, 2, 3].slice(0, np - 1).map(() => ({k: 'open'}))]};
   netMsg = '';
   let peer;
   try { peer = new Peer(PEER_PREFIX + net.code); } catch (e) { leaveRoom('Could not start networking.'); return; }
@@ -2798,13 +3202,16 @@ function hostData(conn, d) {
 function cleanChat(s) { return String(s).replace(/[^\x20-\x7E]/g, '').trim().slice(0, 40); }
 function bcastLobby() { bcast({t: 'lobby', lb: lobby}); renderOnline(); }
 const allReady = () => !lobby || lobby.seats.every(s => s.k !== 'human' || s.r);   // every joined player has pressed READY
+// Ashton mode: only in a full room of four people, and only one Ashton, chosen by the host
+const ashtonOK = () => !!lobby && lobby.seats.length === 4 && lobby.seats.every(s => s.k !== 'open');
+const ashtonSeat = () => ashtonOK() && lobby.ashton >= 0 && lobby.ashton < lobby.seats.length ? lobby.ashton : -1;
 function hostStart() {
   if (!net || net.role !== 'host' || net.status !== 'ready' || !allReady()) return;
   audioInit();
   const pool = shuffled([...TANKS.keys()]);
   const seats = lobby.seats.map((s, i) => s.k === 'open'
     ? {spec: pool[i], name: TANKS[pool[i]].name, cos: {...COS_DEFAULT, rider: pick(COSMETICS.rider).id}, ai: true}
-    : {spec: s.s, name: s.n || 'PLAYER ' + (i + 1), cos: s.c, ai: false, remote: i !== 0});
+    : {spec: i === ashtonSeat() ? -1 : s.s, name: s.n || 'PLAYER ' + (i + 1), cos: s.c, ai: false, remote: i !== 0});
   net.dropped = [false, false, false, false];
   createBattle({map: lobby.map, seed: (Math.random() * 1e9) | 0, lvl: lobby.lvl, seats});
   emit({t: 'feed', s: 'ONLINE BATTLE ON ' + mapDef.name, c: '#d6c99c'});
@@ -3106,7 +3513,7 @@ function step(dt) {
   else if (net && net.role === 'host' && evq.length > 40) bcast(snapMsg());
   if (AC && engine) {
     const now = AC.currentTime;
-    engine.g.gain.setTargetAtTime(mode === 'game' ? .05 + engineLevel * .16 : 0, now, .15);
+    engine.g.gain.setTargetAtTime(mode === 'game' && !(player && player.spec.foot) ? .05 + engineLevel * .16 : 0, now, .15);
     engine.o1.frequency.setTargetAtTime(38 + engineLevel * 26, now, .3); engine.o2.frequency.setTargetAtTime(41.5 + engineLevel * 28, now, .3);
     whine.g.gain.setTargetAtTime(clamp(traverseRate * .05, 0, .05), now, .05);
     whine.o.frequency.setTargetAtTime(170 + clamp(traverseRate, 0, 3) * 60, now, .05);
@@ -3124,6 +3531,7 @@ function hostStep(dt) {
   let acc = dt;
   while (acc > 1e-6) { const h = Math.min(DT, acc); stepShells(h); acc -= h; }
   stepPending(dt);
+  stepC4(dt);
   stepReels(dt);
   checkOver();
 }
@@ -3136,7 +3544,8 @@ function clientStep(dt) {
     if (t !== player) { t.yaw += wrapA(g.yaw - t.yaw) * k; t.elev += (g.elev - t.elev) * k; if (t.reload > 0) t.reload = Math.max(0, t.reload - dt); }
     driveFx(t, dt, t.moving);
   }
-  for (const s of shells) { if (!s.under) s.vy -= G * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt; }
+  for (const s of shells) { if (!s.under) s.vy -= G * (s.w.gk ?? 1) * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt; }
+  stepC4(dt);
   for (const r of reels) { r.t += dt; reelTicks(r); if (r.t >= r.dur) r.hold += dt; }
   sendInputs();
 }
@@ -3170,7 +3579,7 @@ function gunLay(dt) {
   let want = aimPitch;
   // third person: the camera sits above and behind, so aim the gun at whatever is under the crosshair rather than parallel to the view
   if (thirdView() && zoom <= .5 && tpAim) { const pv = t.base.y + t.mesh.gp.y, hd = Math.max(1, Math.hypot(tpAim.x - t.base.x, tpAim.z - t.base.z) - t.mesh.gp.x); want = Math.atan2(tpAim.y - pv, hd) / D2R; }
-  if (zoom > .5) { const e = gunElevFor(t, aimPitch, zeroRange, arcPref); zeroOut = e == null; want = e == null ? 45 : e; } else zeroOut = false;
+  if (zoom > .5 && !t.spec.foot) { const e = gunElevFor(t, aimPitch, zeroRange, arcPref); zeroOut = e == null; want = e == null ? 45 : e; } else zeroOut = false;
   want = clamp(want, ELEV_MIN, ELEV_MAX);
   t.elev += clamp(want - t.elev, -120 * dt, 120 * dt);   // fast enough to feel locked to the mouse
 }
@@ -3270,6 +3679,7 @@ function speakTTS(s, rider, force) {
   } catch (e) {}
 }
 function riderSay(kind, force) {
+  if (player && player.spec.foot) return;   // no rider on foot
   if (!force && riderMsg && riderMsg.t < 1.2) return;
   const rd = myRider(), own = rd.lines[kind] || [];
   const all = [...own, ...own, ...RIDER_LINES[kind]], pool = all.filter(s => s !== riderLast), s = pick(pool.length ? pool : all);   // her own lines come up twice as often
@@ -3379,6 +3789,7 @@ function makeRider(nation, rd) {
   return g;
 }
 function seatRider(t) {   // on the rear deck, facing out over the left track
+  if (t && t.spec.foot) return;
   if (!t || t.mesh.rider) return;
   const m = t.spec.m3, r = makeRider(t.spec.nation, cosItem('rider', t.cos && t.cos.rider)), hullTop = Math.max(...m.hull.map(p => p[1]));
   r.position.set(-m.L * .28, hullTop, -(m.hullW / 2 - .32)); r.rotation.y = Math.PI / 2;
@@ -3422,7 +3833,7 @@ function drawRider() {
   const m = riderMsg, a = Math.min(1, m.t * 6, (m.dur - m.t) * 3), w = Math.min(560, W - 40);
   hx.font = `600 19px ${FONT.body}`; const tw = hx.measureText('“' + m.s + '”').width;
   hx.font = `12px ${FONT.data}`; const nw = hx.measureText(m.name).width + 26;
-  const bw = Math.min(w, tw + nw + 20), x = W / 2 - bw / 2, y = 96;
+  const bw = Math.min(w, tw + nw + 20), x = W / 2 - bw / 2, y = 150;
   hx.globalAlpha = Math.max(0, a);
   hx.fillStyle = 'rgba(14,16,11,.84)'; hx.fillRect(x, y, bw, 40); hx.fillStyle = '#e6b44c'; hx.fillRect(x, y, 4, 40);
   txt(m.name, x + 14, y + 25, 12, '#e6b44c', 'left', 'data');
@@ -3452,7 +3863,7 @@ function stepFly(dt) {
 let myShell = null;
 const pipCam = new THREE.PerspectiveCamera(55, 1.6, .5, 4200);
 const pip = {on: false, hold: null, ok: false, x: 0, y: 0, w: 0, h: 0};
-function pipRect() { const w = Math.round(clamp(W * .24, 220, 340)), h = Math.round(w * .62); return {x: 16, y: Hh - 92 - 12 - h, w, h}; }
+function pipRect() { const w = Math.round(clamp(W * .36, 320, 560)), h = Math.round(w * .6); return {x: 16, y: Hh - 92 - 12 - h, w, h}; }
 function renderPip(dt) {
   pip.on = false;
   if (mode !== 'game' || followShell || camHold || zoom > .5) { pip.ok = false; return; }
@@ -3630,7 +4041,7 @@ function drawHUD() {
   if (zoom > .02 && !inShellCam) drawOptic();   // the scope grows in over the plain crosshair
   if (!inShellCam && t.alive) aimNote();
   drawTags(); drawPops(); drawCompass(); drawRoster(); drawRadar(); drawPanel(); drawHealth(); drawLastShot(); drawPipFrame(); drawRider(); drawFeed(); drawSpot(); drawBanner(); drawHints();
-  if (fly.on && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt(t.alive ? 'SPECTATOR' : 'DESTROYED · SPECTATING', W / 2, 92, 18, t.alive ? '#e6b44c' : '#e0573a', 'center', 'display'); txt('WASD fly · E / Space up · Q down · Shift fast · ' + (t.alive ? 'F back to your tank' : net ? 'watching to the end' : 'ENTER for results'), W / 2, 112, 12, '#e9dfb9', 'center', 'data'); hx.shadowBlur = 0; }
+  if (fly.on && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt(t.alive ? 'SPECTATOR' : 'DESTROYED · SPECTATING', W / 2, 160, 18, t.alive ? '#e6b44c' : '#e0573a', 'center', 'display'); txt('WASD fly · E / Space up · Q down · Shift fast · ' + (t.alive ? 'F back to your tank' : net ? 'watching to the end' : 'ENTER for results'), W / 2, 180, 12, '#e9dfb9', 'center', 'data'); hx.shadowBlur = 0; }
   if (myReel()) drawReel(myReel());
   if (chatOpen) drawChat();
   if (net && net.role === 'client' && net.re) { hx.fillStyle = 'rgba(6,7,5,.7)'; hx.fillRect(0, Hh / 2 - 40, W, 80); txt('CONNECTION LOST · RECONNECTING…', W / 2, Hh / 2 + 6, 26, '#e6b44c', 'center', 'display'); txt('Esc to give up', W / 2, Hh / 2 + 28, 13, '#d6c99c', 'center', 'data'); }
@@ -3661,7 +4072,7 @@ function aimNote() {
   const zoomed = zoom > .5, x = W / 2 + (zoomed ? 40 : 22), y = Hh / 2 - (zoomed ? 8 : 6);
   if (zeroOut) txt('OUT OF RANGE', W / 2, Hh / 2 + 34, 13, '#f0a28f', 'center', 'data');
   hx.shadowBlur = 0;
-  if (!zoomed) return;
+  if (!zoomed || t.spec.foot) return;   // the RPG has no range ladder: it flies nearly flat
   const e0 = gunElevFor(t, aimPitch, zeroRange, arcPref); if (e0 == null) return;
   const f = (Hh / 2) / Math.tan(camera.fov * D2R / 2), cx = W / 2, cy = Hh / 2;
   hx.strokeStyle = 'rgba(242,230,184,.95)'; hx.lineWidth = 1.6; hx.shadowColor = 'rgba(0,0,0,.95)'; hx.shadowBlur = 3;
@@ -3776,7 +4187,7 @@ function drawPops() {
 function drawCompass() {
   const w = Math.min(560, W - 560), cx = W / 2, y = 14, h = 34;
   if (w < 200) return;
-  const brg = bearingOf(player.yaw), span = 120, ppd = w / span;
+  const brg = bearingOf(fly.on ? fly.yaw : player.yaw), span = 120, ppd = w / span;
   panel(cx - w / 2, y, w, h);
   hx.save(); hx.beginPath(); hx.rect(cx - w / 2, y, w, h); hx.clip();
   for (let b = Math.floor((brg - span / 2) / 5) * 5; b <= brg + span / 2; b += 5) {
@@ -3794,8 +4205,38 @@ function drawCompass() {
     hx.fill();
   }
   hx.restore();
-  hx.fillStyle = '#e6b44c'; hx.beginPath(); hx.moveTo(cx, y + h + 1); hx.lineTo(cx - 6, y + h + 9); hx.lineTo(cx + 6, y + h + 9); hx.fill();
-  txt(String(Math.round(brg) % 360).padStart(3, '0') + '°', cx, y + h + 24, 15, '#f2e6b8', 'center', 'data');
+  drawCompassRose(cx, y + h + 48, 38, brg);
+}
+// a round compass under the tape: the card turns as you turn, so your heading is always at the top (the lubber mark),
+// with N / E / S / W, a red north needle and the enemy tanks as coloured pips round the rim
+function drawCompassRose(cx, cy, R, brg) {
+  hx.save();
+  hx.fillStyle = 'rgba(14,16,11,.72)'; hx.beginPath(); hx.arc(cx, cy, R + 4, 0, TAU); hx.fill();
+  hx.strokeStyle = 'rgba(214,201,156,.45)'; hx.lineWidth = 1.5; hx.beginPath(); hx.arc(cx, cy, R + 4, 0, TAU); hx.stroke();
+  hx.translate(cx, cy); hx.rotate(-brg * D2R);   // the card: bearing b sits at angle (b - heading) from the top
+  for (let b = 0; b < 360; b += 10) {
+    const a = b * D2R - Math.PI / 2, major = b % 90 === 0, mid = b % 30 === 0, r0 = R - (major ? 9 : mid ? 6 : 3);
+    hx.strokeStyle = major ? 'rgba(230,180,76,.95)' : 'rgba(214,201,156,.6)'; hx.lineWidth = major ? 2 : 1;
+    hx.beginPath(); hx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); hx.lineTo(Math.cos(a) * R, Math.sin(a) * R); hx.stroke();
+  }
+  hx.textBaseline = 'middle';
+  for (const [b, lab] of [[0, 'N'], [90, 'E'], [180, 'S'], [270, 'W']]) {   // letters stay upright as the card turns
+    const a = b * D2R - Math.PI / 2, r = R - 17;
+    hx.save(); hx.translate(Math.cos(a) * r, Math.sin(a) * r); hx.rotate(brg * D2R);
+    txt(lab, 0, 0, b === 0 ? 14 : 12, b === 0 ? '#ff6a4a' : '#e9dfb9', 'center', 'data'); hx.restore();
+  }
+  hx.fillStyle = '#d6492f'; hx.beginPath(); hx.moveTo(0, -R + 26); hx.lineTo(-3.5, -4); hx.lineTo(3.5, -4); hx.closePath(); hx.fill();   // north needle
+  hx.fillStyle = 'rgba(214,201,156,.55)'; hx.beginPath(); hx.moveTo(0, R - 26); hx.lineTo(-3.5, 4); hx.lineTo(3.5, 4); hx.closePath(); hx.fill();
+  for (const t of tanks) {   // enemies on the rim
+    if (t === player || !t.alive) continue;
+    const b = bearingOf(Math.atan2(-(t.z - player.z), t.x - player.x)), a = b * D2R - Math.PI / 2;
+    hx.fillStyle = t.color; hx.strokeStyle = 'rgba(0,0,0,.7)'; hx.lineWidth = 1;
+    hx.beginPath(); hx.arc(Math.cos(a) * (R + 1), Math.sin(a) * (R + 1), 4, 0, TAU); hx.fill(); hx.stroke();
+  }
+  hx.restore();
+  hx.fillStyle = '#e6b44c'; hx.beginPath(); hx.moveTo(cx, cy - R - 2); hx.lineTo(cx - 6, cy - R - 11); hx.lineTo(cx + 6, cy - R - 11); hx.fill();   // lubber mark: your heading
+  hx.fillStyle = 'rgba(14,16,11,.85)'; hx.fillRect(cx - 21, cy - 9, 42, 18);
+  hx.textBaseline = 'middle'; txt(String(Math.round(brg) % 360).padStart(3, '0') + '°', cx, cy + 1, 13, '#f2e6b8', 'center', 'data'); hx.textBaseline = 'alphabetic';
 }
 function drawRoster() {
   const x = 16, y0 = 14, w = 210, rh = 34;
@@ -3874,17 +4315,17 @@ function drawPanel() {
   const lf = t.reloadMax > 0 ? 1 - t.reload / t.reloadMax : 1;
   txt('LOAD', 28, y + 64, 11, '#8f8869', 'left', 'data'); bar(56, y + 57, 140, 7, lf, t.reload > 0 ? '#e0573a' : '#e6b44c');
   txt(t.reload > 0 ? t.reload.toFixed(1) + 's' : 'READY', 254, y + 64, 12, t.reload > 0 ? '#f0a28f' : '#e6b44c', 'right', 'data');
-  const sw = 92, n = 5, cw = sw * n + 8, cx0 = W / 2 - cw / 2;
+  const WL = t.spec.foot ? FOOT_W : WEAPONS, sw = 92, n = t.spec.foot ? WL.length : 5, cw = sw * n + 8, cx0 = W / 2 - cw / 2;   // Ashton: RPG and C4, no supply crate
   panel(cx0, y, cw, h);
   const myTurn = t.alive && state === 'battle';
-  for (let i = 0; i < 4; i++) {
-    const w = WEAPONS[i], x = cx0 + 4 + i * sw, sel = t.weapon === i, empty = t.ammo[i] <= 0;
+  for (let i = 0; i < WL.length; i++) {
+    const w = WL[i], x = cx0 + 4 + i * sw, sel = t.weapon === i, empty = t.ammo[i] <= 0;
     if (sel) { hx.fillStyle = 'rgba(230,180,76,.16)'; hx.fillRect(x, y + 4, sw - 4, h - 8); hx.fillStyle = w.col; hx.fillRect(x, y + h - 7, sw - 4, 3); }
     txt(String(i + 1), x + 8, y + 20, 12, sel ? '#e6b44c' : '#8f8869', 'left', 'data');
     txt(w.short, x + (sw - 4) / 2, y + 44, 15, empty ? '#5d5949' : sel ? '#f2e6b8' : '#d6c99c', 'center', 'display');
     txt(w.ammo === Infinity ? '∞' : '×' + t.ammo[i], x + (sw - 4) / 2, y + 62, 12, empty ? '#5d5949' : '#8f8869', 'center', 'data');
   }
-  { const x = cx0 + 4 + 4 * sw, sel = t.weapon === 'S', sp = sel ? SPEC[t.stock[t.armed]] : SPEC[t.stock[0]];
+  if (!t.spec.foot) { const x = cx0 + 4 + 4 * sw, sel = t.weapon === 'S', sp = sel ? SPEC[t.stock[t.armed]] : SPEC[t.stock[0]];
     if (sel && sp) { hx.fillStyle = 'rgba(230,180,76,.16)'; hx.fillRect(x, y + 4, sw - 4, h - 8); hx.fillStyle = sp.col; hx.fillRect(x, y + h - 7, sw - 4, 3); }
     txt('Q', x + 8, y + 20, 12, sel ? '#e6b44c' : '#8f8869', 'left', 'data');
     txt('SUPPLY', x + sw - 10, y + 20, 10, '#8f8869', 'right', 'data');
@@ -3947,7 +4388,8 @@ function drawLastShot() {
 function drawHints() {
   if (zoom > .5) return;   // the scope carries its own readouts
   let s = '';
-  if (state === 'battle' && player.alive) s = 'CLICK fire · R lase · Z sight · H 3rd person · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
+  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · CLICK fire · 1 RPG · 2 C4 (sticks to tanks, 4 s fuse) · H 3rd person';
+  else if (state === 'battle' && player.alive) s = 'CLICK fire · R lase · Z sight · H 3rd person · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
   if (!s) return;
   hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 5;
@@ -3982,7 +4424,7 @@ function drawBanner() {
 }
 // the supply wheel for your own spins: a compact strip on the left, so it never blocks the fight
 function drawReel(r) {
-  const w = 300, h = 112, x = 16, y = Math.max(14 + 10 + tanks.length * 34 + 16, Hh / 2 - h / 2);
+  const w = 300, h = 112, x = 16, y = 14 + 10 + tanks.length * 34 + 12;   // under the roster, clear of the bigger shell cam
   panel(x, y, w, h);
   txt(r.free ? 'SUPPLY CRATE' : 'HIT! SUPPLY SPIN', x + w / 2, y + 22, 18, '#e6b44c', 'center', 'display', '700');
   const pos = reelPos(r), iw = 110, cx0 = x + w / 2, cy = y + 64;
@@ -3999,7 +4441,7 @@ function drawReel(r) {
   }
   hx.restore();
   hx.strokeStyle = '#e6b44c'; hx.lineWidth = 2; hx.strokeRect(cx0 - iw / 2 + 3, y + 34, iw - 6, 58);
-  if (r.t >= r.dur && SPEC[r.target]) txt('+ ' + SPEC[r.target].name + ' · Q to arm', x + w / 2, y + h - 4, 11, '#e9dfb9', 'center', 'data');
+  if (r.t >= r.dur && SPEC[r.target]) txt(r.target === 'repair' ? '+ HULL REPAIRED · +' + REPAIR_HP + ' HP' : '+ ' + SPEC[r.target].name + ' · Q to arm', x + w / 2, y + h - 4, 11, '#e9dfb9', 'center', 'data');
 }
 
 // ================================================================ DOM: menu tabs, VS CPU, online lobby, store
@@ -4132,6 +4574,8 @@ function renderMenu() {
   [1, 2, 3].forEach(n => fr.appendChild(optBtn(String(n), '', setup.foes === n, () => { setup.foes = n; save('ironrain3d.setup', setup); renderMenu(); })));
   const lr = $('lvlRow'); lr.innerHTML = '';
   CPU_LEVELS.forEach((l, i) => lr.appendChild(optBtn(l.name, '', setup.lvl === i, () => { setup.lvl = i; save('ironrain3d.setup', setup); renderMenu(); }, l.color)));
+  const ar = $('ashRow'); ar.innerHTML = ''; const ashOn = setup.ashton && setup.foes === 3;   // Ashton offline: only in a 4-tank battle
+  [[false, 'TANK'], [true, 'ASHTON · ON FOOT']].forEach(([v, lab]) => { const b = optBtn(lab, '', ashOn === v, () => { setup.ashton = v; if (v) setup.foes = 3; save('ironrain3d.setup', setup); renderMenu(); }); ar.appendChild(b); });
   if (activeTab === 'online') renderOnline();
 }
 $('deploy').addEventListener('click', () => { if (net) { netMsg = 'Leave the online room first.'; showTab('online'); return; } startOffline(); });
@@ -4159,8 +4603,13 @@ function renderOnline() {
     const me = i === mySeat, open = s.k === 'open';
     const nm = open ? 'OPEN SEAT' : (s.n || 'PLAYER ' + (i + 1)) + (me ? ' (YOU)' : '');
     const st = open ? 'CPU IF EMPTY' : s.k === 'host' ? 'HOST' : s.r ? '<span style="color:var(--green)">READY</span>' : 'NOT READY';
-    return `<div class="seat${open ? ' open' : ''}"><i class="sw" style="background:${SEAT_COLORS[i]}"></i><span class="nm">${nm}</span><span class="tk">${open ? '' : TANKS[s.s] ? TANKS[s.s].name : ''}</span><span class="st">${st}</span></div>`;
+    const ash = ashtonSeat() === i, tk = open ? '' : ash ? '<span style="color:#ffb347">ASHTON · ON FOOT</span>' : TANKS[s.s] ? TANKS[s.s].name : '';
+    const btn = host && !open && ashtonOK() ? `<button class="ashBtn${ash ? ' on' : ''}" data-seat="${i}" title="Make this player Ashton: on foot with an RPG and C4">${ash ? 'ASHTON ✓' : 'ASHTON'}</button>` : '';
+    return `<div class="seat${open ? ' open' : ''}"><i class="sw" style="background:${SEAT_COLORS[i]}"></i><span class="nm">${nm}</span><span class="tk">${tk}</span><span class="st">${btn}${st}</span></div>`;
   }).join('');
+  $('seatList').querySelectorAll('.ashBtn').forEach(b => b.addEventListener('click', () => {   // host: one player per game can be Ashton
+    const i = +b.dataset.seat; lobby.ashton = lobby.ashton === i ? -1 : i; sfx.tick(lobby.ashton === i ? 1300 : 800); bcastLobby();
+  }));
   tankGrid($('lobbyTanks'), null); renderPlate();
   $('hostOpts').hidden = false;
   const lm = $('lobbyMaps'); lm.innerHTML = '';
@@ -4391,7 +4840,7 @@ requestAnimationFrame(frame);
   }).catch(() => {});
 })();
 // test hook
-window.__ir = {get state() { return state; }, get tanks() { return tanks; }, get player() { return player; }, get shells() { return shells; }, get net() { return net; }, get lobby() { return lobby; },
+window.__ir = {get blds() { return blds; }, get layout() { return layout; }, get props() { return props; }, get state() { return state; }, get tanks() { return tanks; }, get player() { return player; }, get shells() { return shells; }, get net() { return net; }, get lobby() { return lobby; },
   step, render, fire, startOffline, setup, solve, groundAt, explosionFx, deathFx, hostRoom, joinRoom, hostStart, showTab, get followShell() { return followShell; }, get camHold() { return camHold; }, camera, get aimImpact() { return aimImpact; }, get zero() { return zeroRange; }, setZero: r => { zeroRange = r; }, setPitch: v => { aimPitch = v; }, frameMs: ms => { lastDt = ms / 1000; if (lastDt > 1 / 40) { step(lastDt / 2); step(lastDt / 2); } else step(lastDt); render(); }, get zoom() { return zoom; }, get menuTank() { return menuTank; }, renderer, scene};
 </script>
 </html>
