@@ -35,6 +35,7 @@ All from Sketchfab, licensed under [CC BY 4.0](https://creativecommons.org/licen
 |---|---|---|
 | Ashton | [AMERICAN SOLDIER RIGGED](https://sketchfab.com/3d-models/american-soldier-rigged-5b1967e7f83547be8a1c3ae656ab1ad4) | RedVeil studio |
 | RPG-7 | [RPG 7 ( Free Model )](https://sketchfab.com/3d-models/rpg-7-free-model-99c0af8a1803490a86edc48cd3bfc700) | javadbayat |
+| C4 charge | [Makeshift C-4 Explosive](https://sketchfab.com/3d-models/b72abe326c5d4bc5affe67e41edb88ad) | lion.gelders |
 
 ### Buildings
 

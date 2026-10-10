@@ -325,6 +325,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <h4>Ashton</h4>
 <p class="cr">Ashton · <a href="https://sketchfab.com/3d-models/american-soldier-rigged-5b1967e7f83547be8a1c3ae656ab1ad4" target="_blank" rel="noopener">AMERICAN SOLDIER RIGGED</a> · RedVeil studio</p>
 <p class="cr">RPG-7 · <a href="https://sketchfab.com/3d-models/rpg-7-free-model-99c0af8a1803490a86edc48cd3bfc700" target="_blank" rel="noopener">RPG 7 ( Free Model )</a> · javadbayat</p>
+<p class="cr">C4 charge · <a href="https://sketchfab.com/3d-models/b72abe326c5d4bc5affe67e41edb88ad" target="_blank" rel="noopener">Makeshift C-4 Explosive</a> · lion.gelders</p>
 <h4>Buildings</h4>
 <p class="cr">autumn.glb · <a href="https://sketchfab.com/3d-models/52772448c62348e0a4951b51758d5587" target="_blank" rel="noopener">Autumn House</a> · Zhenya</p>
 <p class="cr">forest.glb · <a href="https://sketchfab.com/3d-models/fd2b1fa1e7a1484bb59f987fdb9c5533" target="_blank" rel="noopener">Autumn forest wooden house</a> · Johan Pindeville</p>
@@ -409,7 +410,7 @@ const TANKS = [
   {name:'KV-1', role:'1941 · Soviet heavy', era:'ww2', model:'kv1', nation:'SU', armor:90, speed:35, gun:'76.2 mm ZiS-5', cal:76, round:'BR-350A', mv:662, kg:6.3, rof:6, weight:45, crew:5, L:6.75, W:3.32,
    elev:[-5, 25], trav:12, erate:6, cfg:{turret:{y:1.75, x:.35, rx:1.45, rz:1.35}, gun:{r:.2}}},
   {name:'T-34', role:'T-34/76 1943 · Soviet medium', era:'ww2', model:'t34', nation:'SU', armor:90, speed:53, gun:'76.2 mm F-34', cal:76, round:'BR-350A', mv:662, kg:6.3, rof:6, weight:30.9, crew:4, L:6.68, W:3.0,
-   elev:[-5, 30], trav:25, erate:8, cfg:{turret:{y:1.55, x:.6, rx:1.35, rz:1.25}, gun:{r:.18}}},
+   elev:[-5, 30], trav:25, erate:8, cfg:{turret:{y:1.55, x:.6, rx:1.35, rz:1.25}, gun:{r:.18}, names:{turret: /Turret_Plate|Details_Turret|Turret_Details/i, gun: /Turret_Barrel/i, hullOnly: true, within: true}}},
   {name:'TIGER I', role:'German heavy', era:'ww2', model:'tiger', nation:'DE', armor:100, speed:45, gun:'8.8 cm KwK 36', cal:88, round:'PzGr. 39', mv:773, kg:10.2, rof:6, weight:57, crew:5, L:6.32, W:3.56,
    elev:[-8, 15], trav:8, erate:5, cfg:{turret:{y:1.85, x:-.05, rx:1.6, rz:1.55}, gun:{r:.22}, names:{turret: /Turret|Hatch/i, gun: /Cannon_Low|TigerGun/i}}},
   {name:'STUG IV', role:'German assault gun · casemate', era:'ww2', model:'stug4', nation:'DE', armor:80, speed:38, gun:'7.5 cm StuK 40 L/48', cal:75, round:'PzGr. 39', mv:790, kg:6.8, rof:8, weight:23, crew:4, L:5.93, W:2.95,
@@ -2407,7 +2408,11 @@ function prepTank(root, spec) {
       if (in0) out.push(P0); if (in0 !== in1) out.push(mix(P0, P1, d0 / (d0 - d1))); } return out; };
     for (let i = 0; i < p.count / 3; i++) {
       const V = [vert(i * 3), vert(i * 3 + 1), vert(i * 3 + 2)];
-      if (named != null && named >= 0) { V.forEach(q => put(named, q)); continue; }
+      if (named != null && named >= 0) {   // names.within: a mesh named as turret that also carries hull plates keeps only what's over the turret ring
+        let to = named;
+        if (to === 1 && C.names.within) { const cx = (V[0][yA][0] + V[1][yA][0] + V[2][yA][0]) / 3, cz = (V[0][yA][2] + V[1][yA][2] + V[2][yA][2]) / 3; if (((cx - T.x) / T.rx) ** 2 + (cz / T.rz) ** 2 > 1) to = 0; }
+        V.forEach(q => put(to, q)); continue;
+      }
       A.fromBufferAttribute(p, i * 3); B.fromBufferAttribute(p, i * 3 + 1); D.fromBufferAttribute(p, i * 3 + 2);
       const cx = (A.x + B.x + D.x) / 3, cy = (A.y + B.y + D.y) / 3, cz = (A.z + B.z + D.z) / 3;
       const along = (cx - piv.x) * dirG.x + (cy - piv.y) * dirG.y, off = Math.hypot(cx - piv.x - dirG.x * along, cy - piv.y - dirG.y * along, cz - tip.z);
@@ -2476,8 +2481,9 @@ function makeModelTank(sp, cos) {
   if (tb) for (const s of [-1, 1]) { const em = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), emMat), sz = Math.min(.75, (tb.max.y - tb.min.y) * .6);
     em.scale.set(sz, sz, 1); em.position.set((tb.min.x + tb.max.x) * .5 - .1, (tb.min.y + tb.max.y) * .5, s * (s > 0 ? tb.max.z : -tb.min.z) + s * .01); em.rotation.y = s > 0 ? 0 : Math.PI; turret.add(em); }
   let flag = null;
-  const an = cyl(.015, .025, 2.6, mats[0] || emMat, 4), ax = -tpl.L * .38, az = -tpl.W * .33;
-  an.material = new THREE.MeshStandardMaterial({color: 0x24251f}); mats.push(an.material); an.position.set(ax, tpl.deck + 1.3, az); hull.add(an);
+  const mast = cos.flag !== 'none' ? 2.6 : 1.2;   // a flag mast, or with no flag just a short radio whip
+  const an = cyl(.015, .025, mast, mats[0] || emMat, 4), ax = -tpl.L * .38, az = -tpl.W * .33;
+  an.material = new THREE.MeshStandardMaterial({color: 0x24251f}); mats.push(an.material); an.position.set(ax, tpl.deck + mast / 2, az); hull.add(an);
   if (cos.flag !== 'none') {
     const fg = new THREE.PlaneGeometry(1.4, .88, 6, 1); fg.translate(-.7, -.44, 0);
     flag = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({map: flagTex(cos.flag), transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .9}));
@@ -2635,7 +2641,7 @@ function spawnPoints(n, rand) {
 
 // ================================================================ ASHTON: one player on foot (online, 4 players, the host picks who)
 // He runs (WASD strafes, the body turns with the mouse) and carries an RPG (unlimited, 7.5 s reload, 50 damage) and three
-// C4 charges (150 damage): thrown, they stick to whatever they land on, ground or tank, and go off after a short fuse.
+// C4 charges (150 damage): planted by hand on a tank within reach, they ride along with it and go off after 10 seconds.
 // spec index -1 means Ashton everywhere a seat names its tank.
 const ASHTON = {name: 'ASHTON', role: 'On foot · RPG and C4', foot: true, nation: 'US', hp: 100, atk: 100, vk: 1, range: 350, rel: 1, speed: 5.5, w: .7, elev: [-45, 60], trav: 400, erate: 200};
 const FOOT_W = [
@@ -2643,14 +2649,17 @@ const FOOT_W = [
   {key: 'c4', name: 'C4', short: 'C4', r: 9, dmg: 150, n: 1, ammo: 3, col: '#d8d0a0', kind: 'c4', gk: 1, sp: 15},
 ];
 FOOT_W.forEach(w => { ALLW[w.key] = w; });
-RELOAD.rpg = 7.5; RELOAD.c4 = 1.5;
-const C4_FUSE = 4;
+RELOAD.rpg = 7.5; RELOAD.c4 = 1.6;
+// C4 is planted by hand, not thrown: on a tank within reach he stands and presses it onto the armour, otherwise he crouches
+// and sets it on the ground; it goes off on a 10 second timer, there is no detonator
+const C4_FUSE = 10, PLANT_T = 2.1, PLANT_AT = 1.05, PLANT_REACH = 2.2;
 const specOf = i => i === -1 ? ASHTON : TANKS[i] || TANKS[0];
 // ---- Ashton's models (see CREDITS.md): the rigged soldier and the RPG-7, loaded once and copied per battle
 let infTpl = null, infWait = null;
 function loadInfantry() {
   if (infTpl) return Promise.resolve(infTpl);
   if (!gltfLoader || !THREE.SkeletonUtils) return Promise.reject(new Error('loader missing'));
+  if (!c4Tpl) gltfLoader.load('assets/infantry/c4.glb', g => { c4Tpl = prepC4(g.scene); }, undefined, () => {});   // the charge; the built-in one stands in until it's here
   return infWait = infWait || Promise.all(['soldier', 'rpg7'].map(n => new Promise((ok, bad) => gltfLoader.load('assets/infantry/' + n + '.glb', g => ok(g.scene), undefined, bad))))
     .then(([sol, rpg]) => (infTpl = {sol: prepSoldier(sol), rpg: prepRPG(rpg)}));
 }
@@ -2705,8 +2714,13 @@ function prepRPG(root) {
   if (pl.length) { const pb = new THREE.Box3().setFromPoints(pl), tx = trg.length ? new THREE.Box3().setFromPoints(trg).getCenter(new THREE.Vector3()).x : pb.max.x;
     const low = pl.filter(p => p.y < pb.min.y + .06 && Math.abs(p.x - tx) < .07);
     if (low.length) { const lb = new THREE.Box3().setFromPoints(low); grip = lb.getCenter(new THREE.Vector3()); } }   // the middle of the grip the hand closes round
+  // the left hand: the RPG-7's second pistol grip, just behind the trigger grip, the way gunners hold it (both hands under
+  // the middle of the tube, a hand's width apart); the old spot far forward on the tube is the fallback
+  let fore = new THREE.Vector3(.46, axisY - .05, axisZ);
+  const rear = pl.filter(p => p.x < grip.x - .08);
+  if (rear.length) { const rb = new THREE.Box3().setFromPoints(rear), low = rear.filter(p => p.y < rb.min.y + .05); if (low.length) fore = new THREE.Box3().setFromPoints(low).getCenter(new THREE.Vector3()); }
   const rmid = rk ? new THREE.Box3().setFromObject(rk).getCenter(new THREE.Vector3()) : new THREE.Vector3(.7, axisY, axisZ);   // where the left hand holds a fresh rocket
-  return {g: w, rocket: rk ? rk.name : null, grip, fore: new THREE.Vector3(.46, axisY - .05, axisZ), axisY, rmid};
+  return {g: w, rocket: rk ? rk.name : null, grip, fore, axisY, rmid};
 }
 // ---- building models (see CREDITS.md). Each piece is one building, normalised to stand on y = 0, centred, with its
 // plan size; maps pick pieces by kind (house / store / barn / shed) and style, and fit them to the layout's plots.
@@ -2794,10 +2808,24 @@ function poseSoldier(t, m, dt) {
   for (const [sd, ph] of [['Left', 0], ['Right', Math.PI]]) {
     const hip = B[sd + 'UpLeg'], knee = B[sd + 'Leg'], foot = B[sd + 'Foot']; if (!hip || !knee || !foot) continue;
     const H = m.turret.worldToLocal(hip.getWorldPosition(new THREE.Vector3())), ll = hip.getWorldPosition(new THREE.Vector3()).distanceTo(knee.getWorldPosition(new THREE.Vector3())) + knee.getWorldPosition(new THREE.Vector3()).distanceTo(foot.getWorldPosition(new THREE.Vector3()));
-    const a = m.stride + ph, k = m.runK;
-    reach2(hip, knee, foot, W(H.x + Math.sin(a) * .36 * k, H.y - ll * (1 - .07 * k) + Math.max(0, -Math.cos(a)) * .16 * k, H.z), dirW(1, 0, 0));
+    // planting on a tank the left foot steps in; crouched, the left foot is forward and the right knee nearly down
+    const a = m.stride + ph, k = m.runK, sk = (m.plantK || 0) - (m.crouchK || 0), ck = m.crouchK || 0;
+    reach2(hip, knee, foot, W(H.x + Math.sin(a) * .36 * k + (sd === 'Left' ? .22 * sk + .3 * ck : -.22 * ck), H.y - ll * (1 - .07 * k) + Math.max(0, -Math.cos(a)) * .16 * k + (m.crouch || 0) + (sd === 'Right' ? .06 * ck : 0), H.z), dirW(1, 0, 0));
   }
   if (!t.alive) return;
+  const sk = (m.plantK || 0) - (m.crouchK || 0), ck = m.crouchK || 0;   // a slight lean in toward the plate, or over the charge on the ground
+  if (sk + ck > 0) for (const [bn, a1, a2] of [['Spine', .2, .55], ['Spine1', .12, .35], ['Neck', 0, -.3]]) if (B[bn]) rotWorld(B[bn], dirW(0, 0, 1), -(a1 * sk + a2 * ck));
+  // planting C4: the RPG goes onto his back, slung diagonally across it, so both hands are free for the charge
+  const stow = m.stowK || 0;
+  if (stow > 0 && B.Spine2 && B.Neck) {
+    const S = B.Spine2.getWorldPosition(new THREE.Vector3()), N = B.Neck.getWorldPosition(new THREE.Vector3()), up = N.clone().sub(S).normalize();
+    const bk = dirW(-1, 0, 0); bk.addScaledVector(up, -bk.dot(up)).normalize();
+    const d = up.clone().multiplyScalar(.8).addScaledVector(dirW(0, 0, 1), .6).normalize();   // muzzle up over his right shoulder
+    const pos = m.turret.worldToLocal(S.clone().addScaledVector(bk, .2).addScaledVector(up, .06).addScaledVector(d, -.1));
+    const tq = m.turret.getWorldQuaternion(new THREE.Quaternion()).invert(), dl = d.clone().applyQuaternion(tq);
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), dl);
+    m.gun.position.lerp(pos, stow); m.gun.quaternion.slerp(q, stow);
+  }
   m.gun.updateMatrixWorld(true);
   const G = (x, y, z) => m.gun.localToWorld(new THREE.Vector3(x, y, z));
   // the wrist goes just behind and above the grip, then the hand is turned so the fingers wrap down and round it
@@ -2805,10 +2833,28 @@ function poseSoldier(t, m, dt) {
   let fo = infTpl.rpg.fore;
   if (m.round && m.round.visible && (m.round.position.x > .02 || m.round.position.y < -.02)) {   // reloading: the left hand carries the fresh rocket into the muzzle
     const rm = infTpl.rpg.rmid, rp = m.round.position; fo = new THREE.Vector3(rm.x + rp.x - .08, rm.y + rp.y - .02, rm.z + rp.z); }
-  if (B.RightArm && B.RightForeArm && B.RightHand) { reach2(B.RightArm, B.RightForeArm, B.RightHand, G(gr.x - .075, gr.y + .035, gr.z + .025), dirW(-.3, -1, .7));
-    if (fing('Right')) aimBone(B.RightHand, fing('Right').getWorldPosition(new THREE.Vector3()), G(gr.x + .03, gr.y - .005, gr.z)); }
-  if (B.LeftArm && B.LeftForeArm && B.LeftHand) { reach2(B.LeftArm, B.LeftForeArm, B.LeftHand, G(fo.x - .07, fo.y - .02, fo.z - .05), dirW(0, -1, -.6));
-    if (fing('Left')) aimBone(B.LeftHand, fing('Left').getWorldPosition(new THREE.Vector3()), G(fo.x + .03, fo.y - .03, fo.z + .02)); }
+  // with the RPG away the hands hold the charge in front of his chest, then carry it to the plate or down to the ground
+  const pp = m.plantP == null ? 1 : m.plantP, hk = m.plantAt ? sstep(.12, .35, pp) * (1 - sstep(.6, .85, pp)) : 0, hold = sstep(.25, 1, stow);
+  const fwdW = dirW(1, 0, 0), sideW = dirW(0, 0, 1);
+  let C = W(.38, 1.05, 0);   // the charge's centre, at his chest (this frame drops with the crouch)
+  if (hk > 0) { const P = m.plantAt.clone(); if (m.crouchK) P.y += .1; else P.addScaledVector(fwdW, -.1); C.lerp(P, hk); }
+  const handT = sd => C.clone().addScaledVector(sideW, sd === 'Left' ? -.11 : .11).addScaledVector(fwdW, -.05);
+  const handAim = sd => C.clone().addScaledVector(sideW, sd === 'Left' ? -.02 : .02).addScaledVector(fwdW, .04).add(new THREE.Vector3(0, -.05, 0));
+  if (B.RightArm && B.RightForeArm && B.RightHand) {
+    const T = G(gr.x - .075, gr.y + .035, gr.z + .025).lerp(handT('Right'), hold), aim = G(gr.x + .03, gr.y - .005, gr.z).lerp(handAim('Right'), hold);
+    reach2(B.RightArm, B.RightForeArm, B.RightHand, T, dirW(-.3, -1, .7).lerp(dirW(0, -1, 1), hold).normalize());
+    if (fing('Right')) aimBone(B.RightHand, fing('Right').getWorldPosition(new THREE.Vector3()), aim); }
+  if (B.LeftArm && B.LeftForeArm && B.LeftHand) {
+    const T = G(fo.x - .075, fo.y + .035, fo.z - .025).lerp(handT('Left'), hold), aim = G(fo.x + .03, fo.y - .005, fo.z).lerp(handAim('Left'), hold);   // wrapped round the rear grip like the right hand on the trigger grip
+    reach2(B.LeftArm, B.LeftForeArm, B.LeftHand, T, dirW(0, -1, -.6).lerp(dirW(0, -1, -1), hold).normalize());
+    if (fing('Left')) aimBone(B.LeftHand, fing('Left').getWorldPosition(new THREE.Vector3()), aim);
+  }
+  if (!m.c4h || (c4Tpl && !m.c4h.userData.real)) { if (m.c4h) m.turret.remove(m.c4h); m.c4h = makeC4Mesh(); m.c4h.scale.setScalar(1.4); m.turret.add(m.c4h); }   // the charge between his hands until it's planted
+  m.c4h.visible = hold > .5 && pp < PLANT_AT / PLANT_T;
+  if (m.c4h.visible && B.LeftHand && B.RightHand) {
+    const mid = B.LeftHand.getWorldPosition(new THREE.Vector3()).add(B.RightHand.getWorldPosition(new THREE.Vector3())).multiplyScalar(.5).addScaledVector(fwdW, .05).add(new THREE.Vector3(0, -.09, 0));
+    m.c4h.position.copy(m.turret.worldToLocal(mid)); m.c4h.rotation.set(0, Math.PI / 2, 0);   // lengthways across his hands
+  }
   // close both hands round what they hold
   const curl = new THREE.Quaternion();
   for (const sd of ['Left', 'Right']) for (const f of ['Index', 'Middle', 'Ring', 'Pinky']) for (const k of [1, 2, 3]) { const b = B[sd + 'Hand' + f + k]; if (b) b.quaternion.multiply(curl.setFromAxisAngle(_zAxis, k === 1 ? .9 : 1.1)); }
@@ -2897,11 +2943,75 @@ function makeRPG7() {
 }
 // C4 charges: stuck to the ground or to a tank (and carried with it), beeping until they go off
 let c4s = [], c4Id = 1;
-const c4Geo = new THREE.BoxGeometry(.3, .14, .2), c4Mat = new THREE.MeshStandardMaterial({color: 0xcfc59a, roughness: .8});
-function plantC4(s, x, y, z, direct) {   // host
-  const o = {t: 'c4', id: c4Id++, o: s.owner.i, ti: direct ? direct.i : -1, x: r2(x), y: r2(y), z: r2(z)};
+// the charge: four taped blocks of plastic explosive with a timer, its wires and a red light on top; lies along x, base at y = 0
+const c4Parts = (() => {
+  const M = (c, r = .8, e) => new THREE.MeshStandardMaterial({color: c, roughness: r, emissive: e || 0});
+  return {brick: new THREE.BoxGeometry(.14, .05, .09), tape: new THREE.BoxGeometry(.012, .104, .19), timer: new THREE.BoxGeometry(.1, .032, .065),
+    face: new THREE.PlaneGeometry(.06, .022), wire: new THREE.CylinderGeometry(.004, .004, .1, 4), led: new THREE.SphereGeometry(.011, 6, 4),
+    m: {brick: M(0xd8cfa6, .9), tape: M(0x2a2a26, .6), timer: M(0x1d1f1c, .5), face: new THREE.MeshBasicMaterial({color: 0x7cff6a}), red: M(0xb3261e, .5), blue: M(0x2348a8, .5)}};
+})();
+// the C4 model (see CREDITS.md): three taped sticks with a phone as the trigger. Laid flat, longest side along x, 0.3 m
+// long, centred, base at y = 0; its little light becomes the blinking LED
+let c4Tpl = null;
+function prepC4(root) {
+  fixModelMats(root); root.updateMatrixWorld(true);
+  const g = new THREE.Group(), turns = [[0, 0, 0], [0, 0, Math.PI / 2], [Math.PI / 2, 0, 0], [0, Math.PI / 2, 0], [Math.PI / 2, 0, Math.PI / 2], [0, Math.PI / 2, Math.PI / 2]];
+  const best = turns.map(r => { root.rotation.set(...r); root.updateMatrixWorld(true); return {r, s: new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3())}; })
+    .sort((a, b) => Math.round((a.s.y - b.s.y) * 1e4) || b.s.x - a.s.x)[0];   // thinnest side up, longest along x
+  root.rotation.set(...best.r); root.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(root), s = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3()), k = .3 / s.x;
+  root.position.set(-c.x * k, -b.min.y * k, -c.z * k); root.scale.multiplyScalar(k); g.add(root);
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; if (/Light/i.test(o.name) || /Light/i.test(o.parent && o.parent.name)) o.userData.isLed = true; } });
+  return g;
+}
+function makeC4Mesh() {
+  if (c4Tpl) {
+    const g = c4Tpl.clone(true); let led = null;
+    g.traverse(o => { if (o.isMesh && o.userData.isLed) { o.material = new THREE.MeshBasicMaterial({color: 0xff2a1a}); led = o; } });
+    if (!led) { led = new THREE.Mesh(c4Parts.led, new THREE.MeshBasicMaterial({color: 0xff2a1a})); led.position.set(0, .06, 0); g.add(led); }
+    g.userData.led = led; g.userData.real = true; return g;
+  }
+  const P = c4Parts, g = new THREE.Group(), add = (geo, mat, x, y, z, rx = 0, rz = 0) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx, 0, rz); o.castShadow = true; g.add(o); return o; };
+  for (const x of [-.072, .072]) for (const y of [.026, .078]) add(P.brick, P.m.brick, x, y, 0);
+  for (const x of [-.11, -.03, .03, .11]) add(P.tape, P.m.tape, x, .052, 0);
+  add(P.timer, P.m.timer, 0, .12, 0);
+  add(P.face, P.m.face, 0, .1365, .006, -Math.PI / 2);
+  add(P.wire, P.m.red, -.065, .112, .02, 0, Math.PI / 2.4); add(P.wire, P.m.blue, .065, .112, -.02, 0, -Math.PI / 2.4);
+  const led = add(P.led, new THREE.MeshBasicMaterial({color: 0xff2a1a}), .035, .14, -.02);
+  g.userData.led = led;
+  return g;
+}
+function plantC4(s, x, y, z, direct, ry = 0, side = 0) {   // host
+  const o = {t: 'c4', id: c4Id++, o: s.owner.i, ti: direct ? direct.i : -1, x: r2(x), y: r2(y), z: r2(z), ry: r2(ry), sd: side};
   if (direct) { const [lx, ly, lz] = tankLocal(direct, x, y, z); o.l = [r2(lx), r2(clamp(ly, .3, direct.mesh.top)), r2(lz)]; }
   emit(o);
+}
+// where a charge would go: the nearest point of a tank's armour within arm's reach in front of him, at about waist height
+// (on a side plate it stands against the armour, facing out); with no tank close, the ground just in front of him
+function c4Target(t) {
+  const [fx, fz] = fwd(t.yaw), hx = t.x + fx * .5, hz = t.z + fz * .5, hy = t.y + 1;
+  let best = null, bd = PLANT_REACH;
+  for (const o of tanks) if (o !== t && o.alive && !o.spec.foot) { const d = boxDist(o, hx, hy, hz); if (d < bd) { bd = d; best = o; } }
+  if (!best) { const gx = t.x + fx * .7, gz = t.z + fz * .7; return {ti: -1, p: [r2(gx), r2(groundAt(gx, gz)), r2(gz)], ry: r3(t.yaw), sd: 0}; }
+  const m = best.mesh; let [lx, ly, lz] = tankLocal(best, hx, hy, hz);
+  const ox = Math.abs(lx) - m.L / 2, oz = Math.abs(lz) - m.W / 2;
+  lx = clamp(lx, -m.L / 2, m.L / 2); lz = clamp(lz, -m.W / 2, m.W / 2); ly = clamp(ly, .5, m.top * .75);
+  let sd = 0, ry = 0;
+  if (ox > 0 && ox >= oz) { sd = 1; ry = lx > 0 ? 0 : Math.PI; } else if (oz > 0) { sd = 1; ry = lz > 0 ? -Math.PI / 2 : Math.PI / 2; }
+  else ly = m.top;   // he's right over the hull: on the deck
+  return {ti: best.i, l: [r2(lx), r2(ly), r2(lz)], ry: r2(ry), sd};
+}
+function c4TargetPos(p) {   // a target's world point, following its tank
+  if (p.ti < 0) return new THREE.Vector3(p.p[0], p.p[1], p.p[2]);
+  const o = tanks[p.ti]; if (!o) return null;
+  const co = Math.cos(o.hullYaw), si = Math.sin(o.hullYaw), [lx, ly, lz] = p.l;
+  return new THREE.Vector3(o.x + lx * co + lz * si, o.y + ly, o.z - lx * si + lz * co);
+}
+function plantNow(t) {   // host, as his hand gets there
+  if (t.plantTgt && t.plantTgt.ti < 0) { const [x, y, z] = t.plantTgt.p; plantC4({owner: t}, x, y, z, null, t.plantTgt.ry, 0); return; }
+  const p = t.plantTgt, o = p && tanks[p.ti], P = p && c4TargetPos(p);
+  if (!o || !o.alive || !P) { if (t.ammo[1] !== Infinity) t.ammo[1]++; return; }   // the tank is gone: he keeps the charge
+  plantC4({owner: t}, P.x, P.y, P.z, o, p.ry, p.sd);
 }
 function c4Pos(c) {
   const t = c.ti >= 0 ? tanks[c.ti] : null;
@@ -2911,10 +3021,11 @@ function c4Pos(c) {
 function stepC4(dt) {
   for (const c of c4s) {
     c4Pos(c); c.fuse -= dt;
-    c.mesh.position.set(c.x, c.y + .07, c.z);
-    const on = Math.sin(c.fuse * (c.fuse < 1.5 ? 40 : 14)) > 0;   // the light blinks faster as it's about to go
+    const tk = c.ti >= 0 ? tanks[c.ti] : null;
+    c.mesh.position.set(c.x, c.y, c.z); c.mesh.rotation.set(0, (tk ? tk.hullYaw : 0) + c.ry, c.sd ? -Math.PI / 2 : 0, 'YXZ');   // on a side plate: base against the armour
+    const fast = c.fuse < 3, on = Math.sin(c.fuse * (c.fuse < 1.5 ? 40 : fast ? 22 : 9)) > 0;   // the light blinks faster as it's about to go
     c.led.material.color.setHex(on ? 0xff2a1a : 0x3a0a08);
-    if ((c.beep -= dt) <= 0) { c.beep = c.fuse < 1.5 ? .15 : .5; if (Math.hypot(c.x - camera.position.x, c.z - camera.position.z) < 60) sfx.tick(c.fuse < 1.5 ? 2200 : 1700); }
+    if ((c.beep -= dt) <= 0) { c.beep = c.fuse < 1.5 ? .12 : fast ? .3 : 1; if (Math.hypot(c.x - camera.position.x, c.z - camera.position.z) < 60) sfx.tick(c.fuse < 1.5 ? 2200 : 1700); }
     if (auth() && c.fuse <= 0 && !c.gone) {
       c.gone = true; const w = FOOT_W[1], o = tanks[c.o], tgt = c.ti >= 0 && tanks[c.ti] && tanks[c.ti].alive ? tanks[c.ti] : null;
       emit({t: 'c4x', id: c.id});
@@ -2925,9 +3036,8 @@ function stepC4(dt) {
 }
 function c4Event(e) {
   if (e.t === 'c4') {
-    const mesh = new THREE.Mesh(c4Geo, c4Mat), led = new THREE.Mesh(new THREE.SphereGeometry(.035, 6, 4), new THREE.MeshBasicMaterial({color: 0xff2a1a}));
-    led.position.set(0, .09, 0); mesh.add(led); mesh.castShadow = true; scene.add(mesh);
-    c4s.push(c4Pos({id: e.id, o: e.o, ti: e.ti, l: e.l, x: e.x, y: e.y, z: e.z, fuse: C4_FUSE, beep: 0, mesh, led})); sfx.clank();
+    const mesh = makeC4Mesh(); mesh.scale.setScalar(1.4); scene.add(mesh);   // a touch bigger than life so you can find it
+    c4s.push(c4Pos({id: e.id, o: e.o, ti: e.ti, l: e.l, x: e.x, y: e.y, z: e.z, ry: e.ry || 0, sd: e.sd || 0, fuse: C4_FUSE, beep: 0, mesh, led: mesh.userData.led})); sfx.clank();
   } else {
     const c = c4s.find(q => q.id === e.id); if (c) { scene.remove(c.mesh); c4s.splice(c4s.indexOf(c), 1); }
   }
@@ -3100,12 +3210,16 @@ const shellGeo = new THREE.SphereGeometry(.32, 8, 6);
 function shellMesh(w) { const m = new THREE.Mesh(shellGeo, new THREE.MeshBasicMaterial({color: w.col, fog: false})); scene.add(m); return m; }
 function fire(t) {
   if (!canFire(t)) return;
-  const w = weaponOf(t), p = POWER;
+  const w = weaponOf(t), p = POWER, ct = w.kind === 'c4' && c4Target(t);
   const base = t.weapon === 'S' ? RELOAD.special : RELOAD[w.key] || 4;
   t.reload = t.reloadMax = base * t.spec.rel * (t.ai ? CPU_RELOAD[battleLvl] || 1.5 : 1);   // the real rate of fire sets the reload
   if (t.weapon === 'S') { t.stock.splice(t.armed, 1); t.weapon = 0; t.armed = 0; }
   else if (t.ammo[t.weapon] !== Infinity) { t.ammo[t.weapon]--; if (t.ammo[t.weapon] <= 0) t.weapon = 0; }
   t.stats.shots++;
+  if (w.kind === 'c4') {   // planted by hand: the reach plays everywhere from the event, the host sticks the charge on as the hand gets there
+    t.plantDue = PLANT_AT; emit({t: 'fire', i: t.i, y: r3(t.yaw), e: r2(t.elev), p, w: w.name, pt: ct});
+    if (t.ai) t.plan = null; return;
+  }
   const list = [];
   if (w.n === 3) for (const o of [-1, 0, 1]) list.push([t.yaw + o * w.spreadYaw * D2R, t.elev]);
   else if (w.n === 7) for (let k = -3; k <= 3; k++) list.push([t.yaw, t.elev + k * w.spreadElev]);
@@ -3118,7 +3232,7 @@ function fire(t) {
 }
 function footFireFx(t, wname) {   // Ashton: the rocket's launch flash and back-blast, or a C4 charge thrown
   const m = muzzleOf(t, t.yaw, t.elev), own = t === player;
-  if (wname === 'C4') { sfx.tick(600); if (own) camKick = .25; return; }
+  if (wname === 'C4') { t.plantT = PLANT_T; sfx.tick(600); return; }   // the plant (see syncTank / poseSoldier)
   for (let i = 0; i < 6; i++) puffFire(m.x + m.dx * i * .2, m.y + m.dy * i * .2, m.z + m.dz * i * .2, {vx: m.dx * rnd(4, 12), vy: m.dy * rnd(4, 12), vz: m.dz * rnd(4, 12), drag: 8, life: rnd(.08, .16), s0: 1, s1: 1.6});
   const bx = m.x - m.dx * 1.4, by = m.y - m.dy * 1.4, bz = m.z - m.dz * 1.4;   // back-blast out of the rear of the tube
   for (let i = 0; i < 10; i++) puffFire(bx, by, bz, {vx: -m.dx * rnd(10, 22) + rnd(-2, 2), vy: -m.dy * rnd(10, 22) + rnd(-1, 2), vz: -m.dz * rnd(10, 22) + rnd(-2, 2), drag: 7, life: rnd(.1, .22), s0: 1, s1: 2});
@@ -3428,7 +3542,8 @@ function syncTank(t, dt) {
     t.base.copy(m.mount).applyMatrix4(m.hull.matrixWorld);
     m.turret.position.copy(t.base); m.turret.rotation.set(0, t.yaw, t.pitch, 'YZX');
     const run = t.moving && t.alive ? Math.sin(worldTime * 11 + t.i) * .05 : 0; m.turret.position.y += Math.abs(run);   // a bob as he runs
-    m.gun.rotation.z = t.alive ? t.elev * D2R : 0; m.gun.position.x = .08 - t.recoil * .25;
+    if (!m.gunHome) m.gunHome = m.gun.position.clone();
+    m.gun.rotation.set(0, 0, t.alive ? t.elev * D2R : 0); m.gun.position.copy(m.gunHome); m.gun.position.x -= t.recoil * .25;
     // reloading the RPG: lower the launcher, a fresh rocket comes up from the pack and slides into the muzzle, shoulder it again
     if (t.lastW === 'RPG' && t.reload > 0 && t.reloadMax > 0 && t.alive) {
       const p = 1 - t.reload / t.reloadMax, tilt = sstep(0, .12, p) * (1 - sstep(.86, 1, p)), ins = sstep(.3, .72, p);
@@ -3436,7 +3551,14 @@ function syncTank(t, dt) {
       m.round.visible = p > .26;
       m.round.position.set((1 - ins) * .3, (1 - ins) * .06 - (1 - sstep(.26, .4, p)) * .25, 0);   // comes up in his left hand, then slides into the muzzle
     } else { m.round.visible = true; m.round.position.set(0, 0, 0); }
-    if (m.bones) { const r = m.turret.position.y; m.turret.position.y = t.base.y; poseSoldier(t, m, dt); m.turret.position.y = r; }   // the model's own run cycle replaces the bob
+    // planting C4: he slings the RPG on his back and takes the charge in both hands. On a tank he stands and presses it onto the
+    // armour; on the ground he drops into a crouch and sets it down in front of him. Then the RPG comes back to his shoulder.
+    if (!auth() && t.plantT > 0) t.plantT = Math.max(0, t.plantT - dt);
+    const pp = t.plantT > 0 && t.alive ? 1 - t.plantT / PLANT_T : 1;
+    m.plantK = sstep(.1, .35, pp) * (1 - sstep(.65, .9, pp)); m.stowK = sstep(0, .16, pp) * (1 - sstep(.84, 1, pp)); m.plantP = pp; m.plantAt = m.plantK > 0 && t.plantTgt ? c4TargetPos(t.plantTgt) : null;
+    m.crouchK = m.plantAt && t.plantTgt.ti < 0 ? m.plantK : 0; m.crouch = .68 * m.crouchK;
+    m.turret.position.y -= m.crouch;
+    if (m.bones) { const r = m.turret.position.y; m.turret.position.y = t.base.y - m.crouch; poseSoldier(t, m, dt); m.turret.position.y = r; }   // the model's own run cycle replaces the bob
     return;
   }
   m.hull.position.set(t.x, t.y, t.z); m.hull.rotation.set(t.roll, t.hullYaw, t.pitch, 'YZX'); m.hull.updateMatrixWorld(true);
@@ -3457,7 +3579,7 @@ function syncTank(t, dt) {
 let engineLevel = 0, traverseRate = 0;
 function footMove(t, dt, thr, str) {   // Ashton runs where he looks: W/S forward and back, A/D sidestep
   t.hullYaw = t.yaw;
-  if (!t.alive || (!thr && !str)) { t.moving = 0; return; }
+  if (!t.alive || (!thr && !str) || t.plantT > 0) { t.moving = 0; return; }   // he stays put while he plants a charge
   const [fx, fz] = fwd(t.yaw), [lx, lz] = fwd(t.yaw + Math.PI / 2);
   let mx = fx * thr + lx * str, mz = fz * thr + lz * str; const l = Math.hypot(mx, mz) || 1, sp = t.spec.speed * dt * (thr < 0 ? .7 : 1);
   mx = mx / l * sp; mz = mz / l * sp;
@@ -3560,7 +3682,8 @@ function applyEvent(e) {
     }
     case 'fire': { const t = T(e.i); if (!t) break;
       t.lastW = e.w; if (t !== player) { t.yaw = e.y; t.elev = e.e; }
-      else lastShot = {rng: aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null, elev: e.e, brg: bearingOf(e.y), w: e.w, res: null, x: t.x, z: t.z};
+      if (e.pt) t.plantTgt = e.pt;
+      else if (e.w !== 'C4') lastShot = {rng: aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null, elev: e.e, brg: bearingOf(e.y), w: e.w, res: null, x: t.x, z: t.z};
       fireFx(t, e.w); break; }
     case 'c4': case 'c4x': c4Event(e); break;
     case 'heal': { const t = T(e.i); if (!t) break; pops.push({x: t.x, y: t.y + t.mesh.top + 2, z: t.z, s: '+' + e.d + ' REPAIRED', c: '#86efac', t: 0}); if (t === player) { sfx.prize(); sfx.clank(); feedMsg('Hull repaired +' + e.d, '#86efac'); } break; }
@@ -4032,6 +4155,8 @@ function hostStep(dt) {
   for (const t of tanks) {
     if (!t.alive) continue;
     if (t.reload > 0) { t.reload = Math.max(0, t.reload - dt); if (t.reload === 0 && t === player) sfx.clank(); }
+    if (t.plantT > 0) t.plantT = Math.max(0, t.plantT - dt);
+    if (t.plantDue > 0 && (t.plantDue -= dt) <= 0) plantNow(t);
     if (t.ai) aiThink(t, dt);
     drive(t, dt, t.drv.th, t.drv.st); driveFx(t, dt, t.drv.th);
   }
@@ -4589,7 +4714,7 @@ function updateCamera(dt) {
   } else {
     const [fx, fz] = fwd(t.yaw);
     const e = m.eye, base = t.deb ? (t.deb.p || t.base) : t.base;
-    let px = base.x + fx * e.x - fz * e.z, py = base.y + e.y + (t.deb ? 1.5 : 0), pz = base.z + fz * e.x + fx * e.z;
+    let px = base.x + fx * e.x - fz * e.z, py = base.y + e.y + (t.deb ? 1.5 : 0) - (m.crouch || 0), pz = base.z + fz * e.x + fx * e.z;
     if (zoom > .5 && !m.foot) { px = base.x + fx * (m.gp.x + .3); py = base.y + m.gp.y + .45; pz = base.z + fz * (m.gp.x + .3); }   // the sight sits on the gun's trunnion (no recoil)
     // smooth the eye point: the hull rocks on the terrain at the 60 Hz sim rate, and through a x4 sight that reads as shaking
     const tp = thirdView() && zoom <= .5;
@@ -4608,7 +4733,7 @@ function updateCamera(dt) {
     // where you were aiming (the gun itself never moves off your aim), so the sight jumps but never drifts.
     const kk = camKick * camKick, kick = kk * (zoom > .5 ? .55 : 3.2), side = Math.sin(camKick * 9) * kk * (zoom > .5 ? .12 : .6);
     if (zoom < .5) { camera.position.x -= fx * kk * .35; camera.position.z -= fz * kk * .35; camera.position.y += kk * .08; }
-    camera.rotation.set((aimPitch + kick) * D2R, (zoom > .5 ? t.yaw : viewYaw) - Math.PI / 2 + side * D2R, side * .02, 'YXZ');
+    camera.rotation.set((aimPitch + kick - (m.plantK || 0) * Math.max(0, aimPitch + (m.crouchK ? 45 : 25))) * D2R, (zoom > .5 ? t.yaw : viewYaw) - Math.PI / 2 + side * D2R, side * .02, 'YXZ');
     if (zoom < .5) fovTarget += shotPunch * shotPunch * 7;   // a punch of the field of view with the blast
     if (tp) tpAim = castAim();
   }
@@ -4620,7 +4745,9 @@ function updateCamera(dt) {
   if (camera.fov !== fovTarget) { camera.fov = Math.abs(camera.fov - fovTarget) < .05 ? fovTarget : camera.fov + (fovTarget - camera.fov) * (1 - Math.exp(-dt * 12)); camera.updateProjectionMatrix(); }
   const own = zoom < .5 || !!followShell || !!camHold || spectating;
   m.turret.visible = own || !!t.deb; m.hull.visible = own || !!t.deb;
-  if (m.foot && t.alive && !spectating && !followShell && !camHold && !thirdView()) m.turret.visible = m.hull.visible = false;   // Ashton's own body would fill the view from inside his head
+  if (m.foot) { const fp = t.alive && !spectating && !followShell && !camHold && !thirdView();
+    if (m.bones && m.bones.Head) { m.bones.Head.scale.setScalar(fp ? .001 : 1); m.turret.visible = m.hull.visible = true; }   // first person: his arms and the RPG in view, his own head shrunk away
+    else if (fp) m.turret.visible = m.hull.visible = false; }
   m.gun.visible = !(zoom < .5 && !thirdView() && !followShell && !camHold && !spectating && !t.deb && t.elev > 28);   // a steep barrel would stand right across your view
 }
 function placeSun() {
@@ -5134,7 +5261,7 @@ function drawLastShot() {
 function drawHints() {
   if (zoom > .5) return;   // the scope carries its own readouts
   let s = '';
-  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · CLICK fire · 1 RPG · 2 C4 (sticks to tanks, 4 s fuse)';
+  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · CLICK fire · 1 RPG · 2 C4 (planted on a tank in reach, or on the ground · 10 s timer)';
   else if (state === 'battle' && player.alive) s = 'CLICK fire · R lase · Z sight · H 3rd person · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
   if (!s) return;
