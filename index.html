@@ -113,6 +113,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-
 .sdetail b{font-family:var(--f-display);font-size:22px;font-weight:400;display:block}
 .sdetail span{font-size:14px;color:var(--dim)}
 .sdetail .deploy{font-size:20px;padding:9px 18px}
+.vrow{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.vrow label{font-family:var(--f-data);font-size:11px;letter-spacing:.2em;color:var(--dim)}
+.vrow select{flex:1 1 200px;min-width:0;background:rgba(214,201,156,.06);color:#e9dfb9;border:1px solid var(--line);padding:7px 8px;font-family:var(--f-body);font-size:15px}
+.vrow .btn{font-size:15px;padding:7px 12px}
+.vrow .fine{flex:1 1 100%}
 
 /* menu pieces: folder tabs, silhouette tank cards, relief-map battlefield cards, segmented pickers */
 .tabs{gap:0;border-bottom:1px solid var(--line)}
@@ -292,7 +297,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-09.8';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-09.9';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -499,24 +504,24 @@ const COSMETICS = {
   // tank riders: who sits on your rear deck and shouts at the enemy. Look, voice and signature lines differ.
   rider: [
     {id:'vera', name:'SGT. VERA', price:0, sw:'#c8302a', tag:'Tank helmet, goggles and a swimsuit in your nation\'s colours.',
-     look:{skin:0xe0b092, hair:0x6a3a22, style:'rolls', suit:'nation', hat:'helmet', acc:'goggles'}, voice:{langs:['en-us'], pitch:1.2, rate:1.1}, lines:{}},
+     look:{skin:0xe0b092, hair:0x6a3a22, style:'rolls', suit:'nation', hat:'helmet', acc:'goggles'}, voice:{langs:['en-us'], pitch:1.15, rate:1.05}, lines:{}},
     {id:'rosie', name:'RIVETER ROSIE', price:300, sw:'#d0332b', tag:'Polka dots, a red bandana and a rivet gun\'s worth of attitude.',
-     look:{skin:0xe8b898, hair:0x8a3b1c, style:'bob', suit:0xd0332b, pattern:'dots', hat:'scarf', acc:'none'}, voice:{langs:['en-us'], pitch:.95, rate:1.08},
+     look:{skin:0xe8b898, hair:0x8a3b1c, style:'bob', suit:0xd0332b, pattern:'dots', hat:'scarf', acc:'none'}, voice:{langs:['en-us'], pitch:.72, rate:1.18},
      lines:{kill:['We can do it! We just did!', 'Riveted!', 'Back to the assembly line with you!', 'Built it, broke it!'], start:['Sleeves up, let\'s get to work!']}},
     {id:'betty', name:'BOMBSHELL BETTY', price:450, sw:'#f2efe6', tag:'Platinum curls, sunglasses and a garrison cap at a jaunty angle.',
-     look:{skin:0xf0c6a8, hair:0xf2dfa0, style:'rolls', suit:0xf2efe6, suit2:0xc8302a, pattern:'trim', hat:'garrison', acc:'sunglasses'}, voice:{langs:['en-us'], pitch:1.55, rate:.92},
+     look:{skin:0xf0c6a8, hair:0xf2dfa0, style:'rolls', suit:0xf2efe6, suit2:0xc8302a, pattern:'trim', hat:'garrison', acc:'sunglasses'}, voice:{langs:['en-us'], pitch:1.75, rate:.84},
      lines:{kill:['Bombs away, darling!', 'Kiss that one goodbye!', 'Wasn\'t even trying, sugar.', 'Ooh, that one\'s going in my scrapbook!'], start:['Don\'t smudge my lipstick, boys.']}},
     {id:'katya', name:'SNIPER KATYA', price:500, sw:'#2f5aa0', tag:'A long braid, a striped swimsuit and a pilotka with a red star.',
-     look:{skin:0xe6bca0, hair:0x2a1c14, style:'braid', suit:0xf2f2f2, suit2:0x2f5aa0, pattern:'stripes', hat:'pilotka', acc:'none'}, voice:{langs:['ru', 'pl', 'en-gb'], pitch:1.05, rate:1.0},
+     look:{skin:0xe6bca0, hair:0x2a1c14, style:'braid', suit:0xf2f2f2, suit2:0x2f5aa0, pattern:'stripes', hat:'pilotka', acc:'none'}, voice:{langs:['ru', 'pl', 'en-gb'], pitch:.88, rate:.9},
      lines:{kill:['Do svidaniya, comrade!', 'For the motherland!', 'One shot. One tank.', 'Too slow, tovarishch!'], start:['I count. You shoot.']}},
     {id:'lili', name:'LILI MARLENE', price:650, sw:'#151517', tag:'Long blonde waves, a black swimsuit and a beret, singing under the lantern.',
-     look:{skin:0xf0c8ae, hair:0xe3c27a, style:'long', suit:0x151517, hat:'beret', hatCol:0x7a1d22, acc:'none'}, voice:{langs:['de', 'en-gb'], pitch:1.1, rate:.9},
+     look:{skin:0xf0c8ae, hair:0xe3c27a, style:'long', suit:0x151517, hat:'beret', hatCol:0x7a1d22, acc:'none'}, voice:{langs:['de', 'en-gb'], pitch:1.0, rate:.78},
      lines:{kill:['Auf Wiedersehen, Liebling!', 'Under the lantern... boom.', 'Wunderbar!', 'Gute Nacht!'], start:['Shall we dance, darling?']}},
     {id:'scarlett', name:'SCARLETT', price:800, sw:'#1f7a4a', tag:'Auburn hair with a flower, an emerald swimsuit and a sailor cap.',
-     look:{skin:0xf2c4a6, hair:0x9a3b1f, style:'long', suit:0x1f7a4a, hat:'sailor', acc:'flower'}, voice:{langs:['en-gb', 'en-ie', 'en-au'], pitch:1.3, rate:1.04},
+     look:{skin:0xf2c4a6, hair:0x9a3b1f, style:'long', suit:0x1f7a4a, hat:'sailor', acc:'flower'}, voice:{langs:['en-gb', 'en-ie', 'en-au'], pitch:1.45, rate:1.14},
      lines:{kill:['Frankly, my dear... you\'re scrap.', 'Fiddle-dee-dee, another one!', 'Anchors aweigh!', 'Tomorrow is another day. Not for you.'], start:['Ahoy, boys. Let\'s make waves.']}},
     {id:'dolores', name:'DOLORES "DYNAMITE"', price:1200, sw:'#d4a72c', tag:'Jet-black hair, a gold swimsuit, a hibiscus and dark glasses.',
-     look:{skin:0xc58c64, hair:0x141010, style:'long', suit:0xd4a72c, hat:'none', acc:'both'}, voice:{langs:['es', 'it', 'pt'], pitch:1.2, rate:1.12},
+     look:{skin:0xc58c64, hair:0x141010, style:'long', suit:0xd4a72c, hat:'none', acc:'both'}, voice:{langs:['es', 'it', 'pt'], pitch:1.28, rate:1.3},
      lines:{kill:['¡Adiós, amigo!', '¡Olé!', 'Dynamite, baby!', '¡Hasta nunca!'], start:['Light the fuse, cariño.']}},
   ],
 };
@@ -2536,30 +2541,36 @@ let riderMsg = null, riderLast = '', riderHitAt = -99, riderLowSaid = false, rid
 const FEMALE_V = /female|woman|zira|aria|jenny|michelle|samantha|victoria|karen|moira|tessa|susan|hazel|libby|sonia|maisie|emily|hedda|katja|amala|helena|laura|elvira|irina|svetlana|dariya|paulina|monica|elsa|isabella|clara|denise|julie|zuzana|google/i;
 const MALE_V = /\bmale\b|david|mark|george|james|daniel|alex\b|fred|pablo|stefan|guy|ryan|thomas|pavel|diego|jorge|raul|conrad|ravi|richard|sean/i;
 let voiceCache = {};
-if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { voiceCache = {}; };
+if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { voiceCache = {}; if (mode === 'menu' && !document.getElementById('tab-store').hidden && storeCat === 'rider') renderStore(); };   // voices arrive late in some browsers
 function riderVoice(rd) {
+  const vs = speechSynthesis.getVoices(); if (!vs.length) return null;
+  const chosen = loadVoiceMap()[rd.id];   // picked by hand in the store
+  if (chosen) { const v = vs.find(v => v.voiceURI === chosen); if (v) return v; }
   if (voiceCache[rd.id] !== undefined) return voiceCache[rd.id];
-  const vs = speechSynthesis.getVoices().filter(v => !MALE_V.test(v.name)), lang = v => v.lang.replace('_', '-').toLowerCase();
-  const rank = v => (FEMALE_V.test(v.name) ? 0 : 1);
+  const lang = v => v.lang.replace('_', '-').toLowerCase(), fem = vs.filter(v => !MALE_V.test(v.name)), rank = v => (FEMALE_V.test(v.name) ? 0 : 1);
   let pick = null;
-  for (const want of rd.voice.langs) {
-    const c = vs.filter(v => lang(v).startsWith(want)).sort((a, b) => rank(a) - rank(b));
+  for (const want of rd.voice.langs) {   // her accent first (German for Lili, Russian for Katya...)
+    const c = fem.filter(v => lang(v).startsWith(want)).sort((a, b) => rank(a) - rank(b));
     if (!c.length) continue;
-    // riders sharing a language take different voices from it, in store order
     const sharers = COSMETICS.rider.filter(r => r.voice.langs[0] === want), k = Math.max(0, sharers.indexOf(rd));
-    pick = c[k % c.length]; break;
+    if (k < c.length) { pick = c[k]; break; }   // only if there are enough voices in her language to go round
   }
-  if (!pick) { const en = vs.filter(v => lang(v).startsWith('en')).sort((a, b) => rank(a) - rank(b)); pick = en.length ? en[COSMETICS.rider.indexOf(rd) % en.length] : null; }
-  if (vs.length) voiceCache[rd.id] = pick;
-  return pick;
+  if (!pick) {   // otherwise spread the riders over every voice there is, female voices first, so they don't all share one
+    const pool = [...fem.sort((a, b) => rank(a) - rank(b)), ...vs.filter(v => MALE_V.test(v.name))];
+    pick = pool[COSMETICS.rider.indexOf(rd) % pool.length];
+  }
+  return voiceCache[rd.id] = pick;
 }
-function speak(s, rider) {
-  if (!settings.voice || !window.speechSynthesis || settings.vol <= 0) return;
+function loadVoiceMap() { try { return JSON.parse(localStorage.getItem('ironrain3d.voices') || '{}') || {}; } catch (e) { return {}; } }
+function saveVoiceMap(m) { try { localStorage.setItem('ironrain3d.voices', JSON.stringify(m)); } catch (e) {} }
+function speak(s, rider, force) {
+  if (!window.speechSynthesis || (!force && (!settings.voice || settings.vol <= 0))) return;
   try {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(s), v = riderVoice(rider);
     if (v) { u.voice = v; u.lang = v.lang; }
-    u.rate = rider.voice.rate; u.pitch = rider.voice.pitch; u.volume = clamp(settings.vol * 1.2, 0, 1);
+    const lift = v && MALE_V.test(v.name) ? .45 : 0;   // a deeper voice is pitched up to suit her
+    u.rate = rider.voice.rate; u.pitch = clamp(rider.voice.pitch + lift, .1, 2); u.volume = clamp(Math.max(settings.vol, force ? .5 : 0) * 1.2, 0, 1);
     speechSynthesis.speak(u);
   } catch (e) {}
 }
@@ -3461,6 +3472,17 @@ function renderStore() {
       sfx.cash(); buyArmed = false; previewCos = null; menuTankSwap(); pickChanged(); renderStore();
     }); }
   d.appendChild(btn);
+  if (storeCat === 'rider' && window.speechSynthesis) {   // pick which installed voice she speaks with
+    const vs = speechSynthesis.getVoices(), cur = loadVoiceMap()[it.id] || '', esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+    const auto = riderVoice(it), w = document.createElement('div'); w.className = 'vrow';
+    w.innerHTML = `<label for="voiceSel">VOICE</label><select id="voiceSel"><option value="">Automatic${auto ? ' · ' + esc(auto.name.replace(/^Microsoft |^Google /, '')) : ''}</option>` +
+      vs.map(v => `<option value="${esc(v.voiceURI)}">${esc(v.name.replace(/^Microsoft |^Google /, ''))} · ${esc(v.lang)}</option>`).join('') + `</select><button class="btn" id="voiceTest">TEST VOICE</button>` +
+      (vs.length < 5 ? `<p class="fine">Only ${vs.length} voice${vs.length === 1 ? ' is' : 's are'} installed, so riders also differ by pitch and speed. Add more under Windows Settings › Time &amp; language › Speech, or play in Chrome or Edge, which bring their own.</p>` : '');
+    d.appendChild(w);
+    const sel = w.querySelector('#voiceSel'); sel.value = cur;
+    sel.addEventListener('change', () => { const mp = loadVoiceMap(); if (sel.value) mp[it.id] = sel.value; else delete mp[it.id]; saveVoiceMap(mp); voiceCache = {}; speak((it.lines.start || RIDER_LINES.start)[0], it, true); });
+    w.querySelector('#voiceTest').addEventListener('click', () => speak(pick([...(it.lines.kill || []), ...RIDER_LINES.kill.slice(0, 4)]), it, true));
+  }
 }
 function preview(cat, id) {
   if (cat === 'trail') { previewCos = null; menuTankSwap(); previewTrail(id); return; }
