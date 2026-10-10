@@ -297,7 +297,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-10.2';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-10.3';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2635,7 +2635,7 @@ function applyEvent(e) {
     case 'say': { const t = T(e.i); if (t) { feedMsg((t.name) + ': ' + e.s, t.color); sfx.chat(); } break; }
     case 'over': winner = e.w; state = 'over'; overT = 0; if (net ? winner === mySeat : player && player.alive) riderSay('win', true);
       if (net) showBanner(winner === mySeat ? 'VICTORY' : winner >= 0 ? tanks[winner].name + ' WINS' : 'DRAW', winner === mySeat ? 'Last tank standing' : 'Battle over', winner >= 0 ? tanks[winner].color : '#d6c99c', 3);
-      else showBanner(player.alive ? 'VICTORY' : 'KNOCKED OUT', player.alive ? 'Last tank standing' : 'Your tank is out of action', player.alive ? '#e6b44c' : '#e0573a', 3);
+      else showBanner(player.alive ? 'VICTORY' : 'DESTROYED', player.alive ? 'Last tank standing' : 'Your tank has been destroyed', player.alive ? '#e6b44c' : '#e0573a', 3);
       break;
   }
 }
@@ -3551,7 +3551,7 @@ function drawHUD() {
   if (zoom > .02 && !inShellCam) drawOptic();   // the scope grows in over the plain crosshair
   if (!inShellCam && t.alive) aimNote();
   drawTags(); drawPops(); drawCompass(); drawRoster(); drawRadar(); drawPanel(); drawHealth(); drawLastShot(); drawPipFrame(); drawRider(); drawFeed(); drawSpot(); drawBanner(); drawHints();
-  if (fly.on && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt(t.alive ? 'SPECTATOR' : 'KNOCKED OUT · SPECTATING', W / 2, 92, 18, t.alive ? '#e6b44c' : '#e0573a', 'center', 'display'); txt('WASD fly · E / Space up · Q down · Shift fast · ' + (t.alive ? 'F back to your tank' : net ? 'watching to the end' : 'ENTER for results'), W / 2, 112, 12, '#e9dfb9', 'center', 'data'); hx.shadowBlur = 0; }
+  if (fly.on && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt(t.alive ? 'SPECTATOR' : 'DESTROYED · SPECTATING', W / 2, 92, 18, t.alive ? '#e6b44c' : '#e0573a', 'center', 'display'); txt('WASD fly · E / Space up · Q down · Shift fast · ' + (t.alive ? 'F back to your tank' : net ? 'watching to the end' : 'ENTER for results'), W / 2, 112, 12, '#e9dfb9', 'center', 'data'); hx.shadowBlur = 0; }
   if (myReel()) drawReel(myReel());
   if (chatOpen) drawChat();
   if (net && net.role === 'client' && net.re) { hx.fillStyle = 'rgba(6,7,5,.7)'; hx.fillRect(0, Hh / 2 - 40, W, 80); txt('CONNECTION LOST · RECONNECTING…', W / 2, Hh / 2 + 6, 26, '#e6b44c', 'center', 'display'); txt('Esc to give up', W / 2, Hh / 2 + 28, 13, '#d6c99c', 'center', 'data'); }
@@ -3672,7 +3672,7 @@ function drawTags() {
     const p = toScreen(t.x, t.y + t.mesh.top + 2.2, t.z); if (!p) continue;
     const d = Math.hypot(t.x - player.x, t.z - player.z), cur = false;
     hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 4;
-    txt(t.alive ? t.name : t.name + ' · KO', p.x, p.y - 12, 14, t.alive ? t.color : '#8f8869', 'center', 'body', '700');
+    txt(t.alive ? t.name : t.name + ' · DESTROYED', p.x, p.y - 12, 14, t.alive ? t.color : '#8f8869', 'center', 'body', '700');
     if (t.alive) { hx.shadowBlur = 0; bar(p.x - 24, p.y - 7, 48, 4, t.hp / t.maxHp, hpCol(t.hp / t.maxHp), 'rgba(0,0,0,.55)'); hx.shadowBlur = 4;
       if (t !== player) txt(Math.round(d) + ' m', p.x, p.y + 9, 11, 'rgba(230,220,190,.85)', 'center', 'data'); }
     if (cur && t !== player) { hx.fillStyle = t.color; hx.beginPath(); hx.moveTo(p.x, p.y - 28); hx.lineTo(p.x - 6, p.y - 36); hx.lineTo(p.x + 6, p.y - 36); hx.fill(); }
@@ -4231,7 +4231,7 @@ function showEnd() {
   if (document.pointerLockElement) document.exitPointerLock();
   payRound();
   const won = net ? winner === mySeat : player.alive;
-  $('endTitle').textContent = won ? 'VICTORY' : net && winner >= 0 ? tanks[winner].name + ' WINS' : net ? 'DRAW' : 'KNOCKED OUT';
+  $('endTitle').textContent = won ? 'VICTORY' : net && winner >= 0 ? tanks[winner].name + ' WINS' : net ? 'DRAW' : 'DESTROYED';
   $('endTitle').style.color = won ? 'var(--brass)' : 'var(--red)';
   $('endSub').textContent = 'AFTER-ACTION REPORT · ' + mapDef.name + (net ? ' · ONLINE' : ' · ' + CPU_LEVELS[battleLvl].name + ' CPU');
   const p = roundPay || {total: 0, hits: 0, kills: 0, won: false};
