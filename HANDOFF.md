@@ -2,7 +2,10 @@
 
 This branch holds the downloaded and processed assets for the next big Iron Rain 3D update, plus the plan. Work on this branch and merge to `main` when it plays well. `main` (the live GitHub Pages site) is still build 2026-10-10.7.
 
-## PC session log (2026-10-10 evening, newest last; kept up to date as work lands)
+## PC session log (2026-10-10 evening, newest last)
+
+**Cloud session: start with the Queue at the end of this section.** The original model downloads exist only on the PC
+(`%TEMP%\ir3d\in\`), so any re-pack has to be done there.
 
 Test harness on the PC: serve `repo/` and open **`/index.html`** (the bare `/` path served an empty page there). Debug helpers live in the
 browser's localStorage (`__dbg`; `eval(localStorage.getItem('__dbg')); await __boot()`): `__rot(name, turretYaw, camYaw, camEl, dist, colours)`
