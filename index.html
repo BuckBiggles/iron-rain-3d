@@ -2376,7 +2376,13 @@ function loadTankModel(spec) {
   return modelWait[spec.model] = modelWait[spec.model] || new Promise((ok, bad) => {
     if (!gltfLoader) { bad(new Error('GLTFLoader missing')); return; }
     gltfLoader.load('assets/tanks/' + spec.model + '.glb', g => {
-      try { const tpl = prepTank(g.scene, spec); modelTpl[spec.model] = tpl; spec.m3.hull = [[0, tpl.deck]]; spec.m3.hullW = tpl.W * .86; silCache[TANKS.indexOf(spec)] = null; ok(tpl);
+      try { const tpl = prepTank(g.scene, spec);
+        // these exports are often marked fully metallic, which renders near-black without reflections: make them painted steel
+        const seen = new Set(); for (const q of [...tpl.parts.hull, ...tpl.parts.turret, ...tpl.parts.gun]) { const m = q.mat; if (seen.has(m)) continue; seen.add(m);
+          if (m.metalness != null) { m.metalness = Math.min(m.metalness, .2); m.metalnessMap = null; m.roughness = Math.max(m.roughness, .6); }
+          m.vertexTangents = false;
+          for (const tx of [m.map, m.emissiveMap]) if (tx && tx.encoding !== THREE.LinearEncoding) { tx.encoding = THREE.LinearEncoding; tx.needsUpdate = true; }   // the game renders in linear colour, like its own canvas textures   // the tangents were dropped when the model was cut (normal maps use screen-space tangents instead)
+          if (m.color && m.map) m.color.multiplyScalar(1.15); m.needsUpdate = true; } modelTpl[spec.model] = tpl; spec.m3.hull = [[0, tpl.deck]]; spec.m3.hullW = tpl.W * .86; silCache[TANKS.indexOf(spec)] = null; ok(tpl);
         clearTimeout(loadTankModel.t); loadTankModel.t = setTimeout(() => { if (mode === 'menu') { tankGrid($('tankGrid'), $('tankStats')); if (net && lobby) renderOnline(); } }, 150); }
       catch (e) { bad(e); }
     }, undefined, bad);
@@ -4622,7 +4628,9 @@ function drawPanel() {
   panel(16, y, 250, h);
   hx.font = `22px ${FONT.display}`; let nm = t.name; while (hx.measureText(nm).width > 130 && nm.length > 3) nm = nm.slice(0, -1);
   txt(nm, 28, y + 26, 22, t.alive ? '#e9dfb9' : '#8f8869', 'left', 'display');
-  txt(t.spec.name === t.name ? t.spec.role.toUpperCase() : t.spec.name, 254, y + 24, 11, '#8f8869', 'right', 'data');
+  { let sub = t.spec.name === t.name ? t.spec.role.toUpperCase() : t.spec.name; hx.font = `11px ${FONT.data}`; const room = 226 - Math.min(130, hx.measureText(nm).width + 0) - 12;
+    hx.font = `22px ${FONT.display}`; const used = hx.measureText(nm).width; hx.font = `11px ${FONT.data}`; while (hx.measureText(sub).width > 226 - used - 10 && sub.length > 3) sub = sub.slice(0, -2) + '…';
+    txt(sub, 254, y + 24, 11, '#8f8869', 'right', 'data'); }
   txt('HP', 28, y + 46, 11, '#8f8869', 'left', 'data'); bar(56, y + 39, 140, 7, t.hp / t.maxHp, hpCol(t.hp / t.maxHp)); txt(Math.max(0, t.hp) + '/' + t.maxHp, 254, y + 46, 12, '#e9dfb9', 'right', 'data');
   const lf = t.reloadMax > 0 ? 1 - t.reload / t.reloadMax : 1;
   txt('LOAD', 28, y + 64, 11, '#8f8869', 'left', 'data'); bar(56, y + 57, 140, 7, lf, t.reload > 0 ? '#e0573a' : '#e6b44c');
