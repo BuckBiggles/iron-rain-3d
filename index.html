@@ -410,7 +410,7 @@ const TANKS = [
   {name:'KV-1', role:'1941 · Soviet heavy', era:'ww2', model:'kv1', nation:'SU', armor:90, speed:35, gun:'76.2 mm ZiS-5', cal:76, round:'BR-350A', mv:662, kg:6.3, rof:6, weight:45, crew:5, L:6.75, W:3.32,
    elev:[-5, 25], trav:12, erate:6, cfg:{turret:{y:1.75, x:.35, rx:1.45, rz:1.35}, gun:{r:.2}}},
   {name:'T-34', role:'T-34/76 1943 · Soviet medium', era:'ww2', model:'t34', nation:'SU', armor:90, speed:53, gun:'76.2 mm F-34', cal:76, round:'BR-350A', mv:662, kg:6.3, rof:6, weight:30.9, crew:4, L:6.68, W:3.0,
-   elev:[-5, 30], trav:25, erate:8, cfg:{turret:{y:1.55, x:.6, rx:1.35, rz:1.25}, gun:{r:.18}, names:{turret: /Turret_Plate|Details_Turret|Turret_Details/i, gun: /Turret_Barrel/i, hullOnly: true, within: true}}},
+   elev:[-5, 30], trav:25, erate:8, cfg:{turret:{y:1.55, x:.6, rx:1.35, rz:1.25}, gun:{r:.18}, names:{turret: /Turret_Plate|Details_Turret|Turret_Details/i, gun: /Turret_Barrel/i, hullOnly: true, within: true, grab: 1.0, grabMax: 3}}},
   {name:'TIGER I', role:'German heavy', era:'ww2', model:'tiger', nation:'DE', armor:100, speed:45, gun:'8.8 cm KwK 36', cal:88, round:'PzGr. 39', mv:773, kg:10.2, rof:6, weight:57, crew:5, L:6.32, W:3.56,
    elev:[-8, 15], trav:8, erate:5, cfg:{turret:{y:1.85, x:-.05, rx:1.6, rz:1.55}, gun:{r:.22}, names:{turret: /TigerTurret/, gun: /TigerCannon/, hullOnly: true}}},
   {name:'STUG IV', role:'German assault gun · casemate', era:'ww2', model:'stug4', nation:'DE', armor:80, speed:38, gun:'7.5 cm StuK 40 L/48', cal:75, round:'PzGr. 39', mv:790, kg:6.8, rof:8, weight:23, crew:4, L:5.93, W:2.95,
@@ -2415,7 +2415,7 @@ function prepTank(root, spec) {
         let to = named;
         if (to === 2 && C.names.within && (V[0][yA][1] + V[1][yA][1] + V[2][yA][1]) / 3 < T.y - (T.tol || .25)) to = 0;   // a low "gun" piece is the hull machine gun
         if (to === 1 && C.names.within) { const cx = (V[0][yA][0] + V[1][yA][0] + V[2][yA][0]) / 3, cy = (V[0][yA][1] + V[1][yA][1] + V[2][yA][1]) / 3, cz = (V[0][yA][2] + V[1][yA][2] + V[2][yA][2]) / 3; if (((cx - T.x) / T.rx) ** 2 + (cz / T.rz) ** 2 > 1 || cy < T.y - (T.tol || .25)) to = 0; }
-        if (to === 0 && C.names.grab) { const cx = (V[0][yA][0] + V[1][yA][0] + V[2][yA][0]) / 3, cy = Math.min(V[0][yA][1], V[1][yA][1], V[2][yA][1]), cz = (V[0][yA][2] + V[1][yA][2] + V[2][yA][2]) / 3, g = C.names.grab, ed = (a, b) => Math.hypot(V[a][yA][0] - V[b][yA][0], V[a][yA][1] - V[b][yA][1], V[a][yA][2] - V[b][yA][2]); if (cy > T.y + .05 && Math.max(ed(0, 1), ed(1, 2), ed(2, 0)) < .5 && ((cx - T.x) / (T.rx * g)) ** 2 + (cz / (T.rz * g)) ** 2 < 1) to = 1; }   // names.grab: hull-mesh pieces wholly above the ring, over the turret, go with it
+        if (to === 0 && C.names.grab) { const cx = (V[0][yA][0] + V[1][yA][0] + V[2][yA][0]) / 3, cy = Math.min(V[0][yA][1], V[1][yA][1], V[2][yA][1]), cz = (V[0][yA][2] + V[1][yA][2] + V[2][yA][2]) / 3, g = C.names.grab, ed = (a, b) => Math.hypot(V[a][yA][0] - V[b][yA][0], V[a][yA][1] - V[b][yA][1], V[a][yA][2] - V[b][yA][2]); if (cy > T.y + .05 && Math.max(ed(0, 1), ed(1, 2), ed(2, 0)) < (C.names.grabMax || .5) && ((cx - T.x) / (T.rx * g)) ** 2 + (cz / (T.rz * g)) ** 2 < 1) to = 1; }   // names.grab: hull-mesh pieces wholly above the ring, over the turret, go with it
         V.forEach(q => put(to, q)); continue;
       }
       A.fromBufferAttribute(p, i * 3); B.fromBufferAttribute(p, i * 3 + 1); D.fromBufferAttribute(p, i * 3 + 2);

@@ -38,8 +38,19 @@ In progress (tank models, user: "clean up the tank models, they are wrong", "bro
   **Challenger 2** (cut 1.65) and **KF51** (`cuts` 2.05 / 1.68) still need tuning: use `__top` + `__side` to read the outline and the
   turret's underside height, then `__rot` to check. T-90M: a few hull bits still turn with its turret.
 
+**All 13 tank models re-packed** (user, on seeing the result: "whatever you did to the abrams do that to every tank, the shape looks great"):
+the old packs were simplified with gltfpack's aggressive mode, which tore the UV seams, so the camo was smeared into streaks and the
+shapes were shard-like. They are now `gltfpack -si 0.5 -tw -tl 1024 -kn -noq -cc` from the original downloads (kept on the PC in
+`%TEMP%\ir3d\in\`), no `-sa`. `assets/tanks` went from ~30 MB to 54 MB (Sherman 10.8 MB, Abrams 7.2 MB, T-34 7.6 MB; drop those to
+`-tl 512` or `-si 0.35` if loading is slow). Checked after the re-pack: Abrams (crisp camo, correct split), T-34, Merkava, T-90M look right
+with real materials. The splits use metres, so the configs still apply, but **re-check every tank with `__rot` after the re-pack**.
+- T-34 now also has `names.grab: 1.0, grabMax: 3` (its mantlet is in `Body_Main`); one sloped plate by the turret's rear right still
+  stays on the hull.
+
 Queue (user requests not done yet, in order):
-1. Finish the tank splits above, then "make them look good" generally (check each with real materials).
+1. Finish the tank splits above (Challenger 2, KF51, T-90M; re-check all after the re-pack), then **"fix the camo"** (user's words, said
+   right after the re-pack: confirm the smeared camo is gone on every tank with real textures, and look at the store camo cosmetics,
+   which multiply a single tint over the whole textured model in `makeModelTank` (`tint`), probably the thing that looks wrong now).
 2. Verify each tank's aiming numbers (`elev`, `trav`, `erate`, `arc`) against sources (user: "research how each tank aims and act accordingly").
 3. Rider must sit **on** the deck, not above or inside it (`seatRider` / `tpl.deck`; check every tank).
 4. RPG reload animation: base it on real RPG-7 reload footage, may be inspired by Call of Duty's but not a copy (user's words).
