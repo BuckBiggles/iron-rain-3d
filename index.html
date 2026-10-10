@@ -280,6 +280,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
           <b>1 – 4 · Q</b><span>Pick a shell · arm a supply-drop special</span>
           <b>V · C</b><span>Ride with your shell · always follow your shells</span>
           <b>F</b><span>Spectator: leave the tank and fly around (WASD, E/Space up, Q down, Shift fast)</span>
+          <b>H</b><span>Third-person view: the camera sits behind your tank (the crosshair still shows where the gun points)</span>
           <b>T · ESC · [ ]</b><span>Chat (online) · menu · mouse sensitivity</span>
         </div>
       </section>
@@ -316,7 +317,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-10.4';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-10.5';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -338,7 +339,7 @@ function load(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); retur
 function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 const cleanName = s => String(s || '').toUpperCase().replace(/[^A-Z0-9 \-.]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14);
 
-const settings = load('ironrain3d.settings', {vol: .7, sens: 1, zsens: 1, shellCam: false, invert: false, shadows: true, voice: true});
+const settings = load('ironrain3d.settings', {vol: .7, sens: 1, zsens: 1, shellCam: false, invert: false, shadows: true, voice: true, thirdP: false});
 if (settings.v !== 2) { settings.v = 2; settings.shellCam = false; save('ironrain3d.settings', settings); }   // real-time now: the shell camera starts off
 const setup = load('ironrain3d.setup', {tank: 0, map: 0, foes: 2, lvl: 1, seats: 2});
 let myName = (() => { try { return cleanName(localStorage.getItem('ironrain3d.name') || localStorage.getItem('ironrain.name') || ''); } catch (e) { return ''; } })();
@@ -3015,6 +3016,7 @@ addEventListener('keydown', e => {
   if (e.repeat) return;
   audioInit();
   if (k === 'f' && player) { if (fly.on) exitFly(); else enterFly(); return; }
+  if (k === 'h' && !fly.on) { settings.thirdP = !settings.thirdP; save('ironrain3d.settings', settings); sfx.tick(settings.thirdP ? 1000 : 800); feedMsg(settings.thirdP ? 'Third-person view (H for the gunner\'s seat)' : 'Gunner\'s seat view', '#d6c99c'); return; }
   if (fly.on) {   // flying: WASD/E/Q/Space move the camera, so tank controls are off
     if (k === 'enter' && !net && player && !player.alive && state === 'battle') endOfflineNow();
     if (state === 'over' && overT > 2.5 && k === 'enter') showEnd();
@@ -3166,6 +3168,8 @@ function gunLay(dt) {
   if (!t || !t.alive || mode !== 'game' || state !== 'battle') return;
   // in the normal view the gun simply points where you look; only the gunsight applies the zero (superelevation)
   let want = aimPitch;
+  // third person: the camera sits above and behind, so aim the gun at whatever is under the crosshair rather than parallel to the view
+  if (thirdView() && zoom <= .5 && tpAim) { const pv = t.base.y + t.mesh.gp.y, hd = Math.max(1, Math.hypot(tpAim.x - t.base.x, tpAim.z - t.base.z) - t.mesh.gp.x); want = Math.atan2(tpAim.y - pv, hd) / D2R; }
   if (zoom > .5) { const e = gunElevFor(t, aimPitch, zeroRange, arcPref); zeroOut = e == null; want = e == null ? 45 : e; } else zeroOut = false;
   want = clamp(want, ELEV_MIN, ELEV_MAX);
   t.elev += clamp(want - t.elev, -120 * dt, 120 * dt);   // fast enough to feel locked to the mouse
@@ -3478,7 +3482,22 @@ function renderPip(dt) {
   aimDots.visible = dots; hitDot.visible = hd; if (own) { own.hull.visible = hv; own.turret.visible = tv; own.gun.visible = gv; }
   pip.on = true;
 }
+// third-person view (H): what the crosshair is on, so the gun can be aimed at it from below the camera
+const thirdView = () => !!(settings.thirdP && player && player.alive && !player.deb);
+let tpAim = null;
+function castAim() {
+  const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+  const o = camera.position, start = Math.hypot(o.x - player.x, o.z - player.z) + 2;   // start past your own tank
+  for (let d = start; d < 1600; d += d < 150 ? 1 : 3) {
+    const x = o.x + dir.x * d, y = o.y + dir.y * d, z = o.z + dir.z * d;
+    if (Math.abs(x) > HALF || Math.abs(z) > HALF || y > 900) return null;
+    if (y < groundAt(x, z)) return {x, y, z};
+    for (const t of tanks) if (t !== player && t.alive && inTank(t, x, y, z, .2)) return {x, y, z};
+  }
+  return null;
+}
 function updateCamera(dt) {
+  tpAim = null;
   if (mode === 'menu') return;
   const t = player; if (!t) return;
   const m = t.mesh;
@@ -3506,8 +3525,14 @@ function updateCamera(dt) {
     let px = base.x + fx * e.x - fz * e.z, py = base.y + e.y + (t.deb ? 1.5 : 0), pz = base.z + fz * e.x + fx * e.z;
     if (zoom > .5) { px = base.x + fx * (m.gp.x + .3); py = base.y + m.gp.y + .45; pz = base.z + fz * (m.gp.x + .3); }   // the sight sits on the gun's trunnion (no recoil)
     // smooth the eye point: the hull rocks on the terrain at the 60 Hz sim rate, and through a x4 sight that reads as shaking
+    const tp = thirdView() && zoom <= .5;
+    if (tp) {   // third person: orbit behind and above the turret along your aim, swinging higher as you look down
+      const cp = Math.cos(aimPitch * D2R), sp = Math.sin(aimPitch * D2R), dist = 8 + m.L * 1.1;
+      px = base.x - fx * cp * dist; pz = base.z - fz * cp * dist; py = base.y + m.top + 2.8 - sp * dist * .75;
+      py = Math.max(py, groundAt(px, pz) + 1.2);
+    }
     if (!camEye.ok || Math.hypot(px - camEye.x, py - camEye.y, pz - camEye.z) > 4) camEye = {x: px, y: py, z: pz, ok: true};
-    const ke = zoom > .5 ? 1 : 1 - Math.exp(-dt * 30);   // in the sight the eye is locked to the gun: no easing, no drift
+    const ke = zoom > .5 || tp ? 1 : 1 - Math.exp(-dt * 30);   // in the sight the eye is locked to the gun: no easing, no drift
     camEye.x += (px - camEye.x) * ke; camEye.y += (py - camEye.y) * ke; camEye.z += (pz - camEye.z) * ke;
     camera.position.set(camEye.x, camEye.y, camEye.z);
     // free look: the mouse moves the line of sight; gunLay() keeps the gun on it, zeroed for zeroRange
@@ -3517,6 +3542,7 @@ function updateCamera(dt) {
     if (zoom < .5) { camera.position.x -= fx * kk * .35; camera.position.z -= fz * kk * .35; camera.position.y += kk * .08; }
     camera.rotation.set((aimPitch + kick) * D2R, t.yaw - Math.PI / 2 + side * D2R, side * .02, 'YXZ');
     if (zoom < .5) fovTarget += shotPunch * shotPunch * 7;   // a punch of the field of view with the blast
+    if (tp) tpAim = castAim();
   }
   if (camShake > 0 && zoom <= .5) {   // no shake at all in the x4 sight: magnified, it read as the view drifting in and out
     const a = camShake * camShake * (camera.fov / 70) * (zoom > .5 ? .35 : 1);
@@ -3526,7 +3552,7 @@ function updateCamera(dt) {
   if (camera.fov !== fovTarget) { camera.fov = Math.abs(camera.fov - fovTarget) < .05 ? fovTarget : camera.fov + (fovTarget - camera.fov) * (1 - Math.exp(-dt * 12)); camera.updateProjectionMatrix(); }
   const own = zoom < .5 || !!followShell || !!camHold || spectating;
   m.turret.visible = own || !!t.deb; m.hull.visible = own || !!t.deb;
-  m.gun.visible = !(zoom < .5 && !followShell && !camHold && !spectating && !t.deb && t.elev > 28);   // a steep barrel would stand right across your view
+  m.gun.visible = !(zoom < .5 && !thirdView() && !followShell && !camHold && !spectating && !t.deb && t.elev > 28);   // a steep barrel would stand right across your view
 }
 function placeSun() {
   const c = camera.position, [fx, fz] = mode === 'game' && player ? fwd(player.yaw) : [0, 0];
@@ -3921,7 +3947,7 @@ function drawLastShot() {
 function drawHints() {
   if (zoom > .5) return;   // the scope carries its own readouts
   let s = '';
-  if (state === 'battle' && player.alive) s = 'CLICK fire · WHEEL zero · R lase · Z sight · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
+  if (state === 'battle' && player.alive) s = 'CLICK fire · R lase · Z sight · H 3rd person · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
   if (!s) return;
   hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 5;
@@ -4229,6 +4255,7 @@ const SET_ROWS = [
   {k: 'vol',   label: 'VOLUME', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%'},
   {k: 'invert',   label: 'INVERT MOUSE Y', check: true},
   {k: 'shellCam', label: 'ALWAYS FOLLOW MY SHELLS (C)', check: true},
+  {k: 'thirdP',   label: 'THIRD-PERSON VIEW (H)', check: true},
   {k: 'shadows',  label: 'SHADOWS', check: true},
   {k: 'voice',    label: 'RIDER VOICE (SGT. VERA)', check: true},
 ];
