@@ -786,7 +786,7 @@ function setProp(p) {
   _o.updateMatrix(); p.mesh.setMatrixAt(p.idx, _o.matrix); p.mesh.instanceMatrix.needsUpdate = true;
 }
 function scatter(rand) {
-  props = []; resetCover(); clearBuildings(); fallers.length = 0;
+  props = []; resetCover(); clearBuildings(); fallers.length = 0; buildModelBuilding.used = null;   // same picks for everyone in the room
   if (!wallMesh.material.map) { wallMesh.material.map = btex('stone'); wallMesh.material.needsUpdate = true; }
   rockMesh.material.color.setHex(theme.rock).multiplyScalar(.9);
   shrubMesh.material.color.setHex(theme.veg);
@@ -1234,6 +1234,7 @@ function houseParts(B, o, r) {
   return rh;
 }
 function buildBuilding(b, r) {
+  if ((b.type === 'house' || b.type === 'barn' || b.type === 'shed') && buildModelBuilding(b, r)) return;   // a real model where one suits the map
   const B = builder(), g = groundAt(b.x, b.z); let top = b.h, sols = [];
   const S = (lx, lz, hw, hd, y1, kind = 'bld') => { const c = Math.cos(b.ry), s = Math.sin(b.ry); sols.push(boxSolid(b.x + lx * c + lz * s, b.z - lx * s + lz * c, hw, hd, b.ry, g - 3, g + y1, kind, {bld: b})); };
   if (b.type === 'house') { const rh = houseParts(B, b, r); top = b.h + rh; S(0, 0, b.w / 2, b.d / 2, b.h + rh * .6); b.chimney = [b.w * .28, b.h + rh * .45 + 2.4, -b.d * .18]; }
@@ -1285,7 +1286,7 @@ function buildBuilding(b, r) {
 }
 let blds = [], bfires = [], bLog = [], pkLog = [];
 function clearBuildings() {
-  for (const b of blds) { for (const o of [b.group, b.rubble]) if (o) { scene.remove(o); o.traverse(m => { if (m.geometry) m.geometry.dispose(); }); } }
+  for (const b of blds) { for (const o of [b.group, b.rubble]) if (o) { scene.remove(o); if (!(o === b.group && b.shared)) o.traverse(m => { if (m.geometry) m.geometry.dispose(); }); } }   // model buildings share their geometry
   blds = []; bfires = [];
 }
 // a building that has taken enough hits caves in: walls and roof drop into a smoking heap that still gives low cover
@@ -2652,6 +2653,65 @@ function prepRPG(root) {
   const rmid = rk ? new THREE.Box3().setFromObject(rk).getCenter(new THREE.Vector3()) : new THREE.Vector3(.7, axisY, axisZ);   // where the left hand holds a fresh rocket
   return {g: w, rocket: rk ? rk.name : null, grip, fore: new THREE.Vector3(.46, axisY - .05, axisZ), axisY, rmid};
 }
+// ---- building models (see CREDITS.md). Each piece is one building, normalised to stand on y = 0, centred, with its
+// plan size; maps pick pieces by kind (house / store / barn / shed) and style, and fit them to the layout's plots.
+// Churches, chapels and ruins stay code-built.
+const MAP_STYLE = {'ROLLING HILLS': 'euro', 'NORMANDY': 'euro', 'MOUNTAIN PASS': 'alpine', 'HIGHLAND TORS': 'alpine', 'STEPPE': 'russian', 'BADLANDS': 'american', 'THE GORGE': 'american'};
+const BLD_RULES = [   // file, which meshes make up each piece, kind, styles
+  {f: 'autumn', pieces: [{name: 'autumn', keep: /House|Garage|polySurface19[789]_House|polySurface213_House/}], kind: 'house', styles: ['euro', 'american']},
+  {f: 'medieval', kind: 'house', styles: ['euro']},
+  {f: 'farmwood', kind: 'house', styles: ['euro', 'russian']},
+  {f: 'forest', pieces: [{name: 'forest', keep: /polySurface3467|TRAPPEN/}], kind: 'house', styles: ['alpine']},
+  {f: 'log', pieces: [1, 2, 3, 4].map(i => ({name: 'log' + i, keep: new RegExp('^House_' + i + '_')})), kind: 'house', styles: ['alpine', 'russian']},
+  {f: 'village', drop: /Terrain/, kind: 'house', styles: ['russian', 'alpine']},
+  {f: 'farmpoor', kind: 'shed', styles: ['russian', 'alpine', 'euro']},
+  {f: 'barn', kind: 'barn', styles: ['euro', 'alpine', 'russian', 'american']},
+  {f: 'rural', byNode: true, kindOf: n => /Quonset/.test(n) ? 'barn' : /Trailer|Unmobile/.test(n) ? 'shed' : /Store|Diner/.test(n) ? 'store' : 'house', styles: ['american']},
+];
+let bldTpl = null, bldWait = null;
+function loadBuildings() {
+  if (bldTpl) return Promise.resolve(bldTpl);
+  if (!gltfLoader) return Promise.reject(new Error('loader missing'));
+  return bldWait = bldWait || Promise.all(BLD_RULES.map(R => new Promise((ok, bad) => gltfLoader.load('assets/buildings/' + R.f + '.glb', g => ok([R, g.scene]), undefined, bad))))
+    .then(list => { const out = [];
+      for (const [R, root] of list) { fixModelMats(root); root.updateMatrixWorld(true);
+        const meshes = []; root.traverse(o => { if (o.isMesh && !(R.drop && R.drop.test(o.name))) meshes.push(o); });
+        const add = (name, ms, kind) => { if (ms.length) { const p = bldPiece(ms); if (p) out.push(Object.assign(p, {name, kind, styles: R.styles})); } };
+        if (R.byNode) { const rn = root.getObjectByName('RootNode') || root; for (const ch of rn.children) { const ms = []; ch.traverse(o => { if (o.isMesh) ms.push(o); }); add(ch.name, ms, R.kindOf(ch.name)); } }
+        else if (R.pieces) for (const P of R.pieces) add(P.name, meshes.filter(o => P.keep.test(o.name)), R.kind);
+        else add(R.f, meshes, R.kind); }
+      return bldTpl = out; });
+}
+function bldPiece(meshes) {   // copy the meshes with their world transforms baked in, then stand the group on y = 0, centred
+  const g = new THREE.Group();
+  for (const o of meshes) { const c = new THREE.Mesh(o.geometry, o.material); o.matrixWorld.decompose(c.position, c.quaternion, c.scale); c.castShadow = c.receiveShadow = true; g.add(c); }
+  g.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(g), s = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
+  if (!(s.x > 0 && s.z > 0 && s.y > 0)) return null;
+  for (const ch of g.children) { ch.position.x -= c.x; ch.position.y -= b.min.y; ch.position.z -= c.z; }
+  return {g, w: s.x, d: s.z, h: s.y};
+}
+// build a layout plot (house / barn / shed) from a model; false if none suits this map
+function buildModelBuilding(b, r) {
+  const style = MAP_STYLE[mapDef.name] || 'euro', kinds = b.type === 'barn' ? ['barn'] : b.type === 'shed' ? ['shed', 'barn'] : ['house', 'store'];
+  const pool = (bldTpl || []).filter(p => kinds.includes(p.kind) && p.styles.includes(style)); if (!pool.length) return false;
+  const asp = Math.max(b.w, b.d) / Math.min(b.w, b.d);   // prefer models whose plan is the plot's shape, with some variety
+  const used = buildModelBuilding.used = buildModelBuilding.used && buildModelBuilding.used.map === mapDef ? buildModelBuilding.used : {map: mapDef};   // spread the models around the map
+  const p = pool.map(q => ({q, k: Math.abs(Math.log(Math.max(q.w, q.d) / Math.min(q.w, q.d) / asp)) * .5 + r() * .8 + (used[q.name] || 0) * .7})).sort((a, c) => a.k - c.k)[0].q;
+  used[p.name] = (used[p.name] || 0) + 1;
+  const rot = (p.w >= p.d) === (b.w >= b.d) ? 0 : Math.PI / 2, pw = rot ? p.d : p.w, pd = rot ? p.w : p.d;
+  // a believable height for the kind of building (the models come in all sorts of units), but never much bigger than the
+  // plot: a little longer along the road is fine, deeper toward it is not
+  const tall = {house: 8.5, store: 7, barn: 8, shed: 4.5}[p.kind] || 7, s = Math.min(tall / p.h, b.w * 1.6 / pw, b.d * 1.15 / pd);
+  b.w = pw * s; b.d = pd * s;
+  const g = groundAt(b.x, b.z), grp = new THREE.Group(), inner = p.g.clone(true);
+  inner.rotation.y = rot + (r() < .5 ? 0 : Math.PI); inner.scale.setScalar(s); grp.add(inner);
+  grp.position.set(b.x, g, b.z); grp.rotation.y = b.ry; scene.add(grp);
+  b.group = grp; b.shared = true; b.g = g; b.top = p.h * s; b.dead = false; b.chimney = null; b.model = p.name;
+  b.sols = [boxSolid(b.x, b.z, pw * s / 2, pd * s / 2, b.ry, g - 3, g + b.top * .85, 'bld', {bld: b})];
+  b.hp = b.maxHp = {house: 220, barn: 160, shed: 90}[b.type] || 200;
+  return true;
+}
 // two-bone reach (shoulder-elbow-hand, hip-knee-foot): bend toward `pole`, put the end on `T` (world space)
 const _iv = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()], _iq = [new THREE.Quaternion(), new THREE.Quaternion(), new THREE.Quaternion()];
 const _zAxis = new THREE.Vector3(0, 0, 1);   // the soldier rig's fingers bend about their own z axis
@@ -2871,9 +2931,9 @@ function hideScreens() {
 // load the models a battle needs (a moment on first use, then cached) before building it
 function needModels(specIdx, go) {
   const all = specIdx.map(specOf), specs = all.filter(sp => !sp.foot), foot = all.some(sp => sp.foot);
-  if (specs.every(tplReady) && (!foot || infTpl)) { go(); return; }
+  if (specs.every(tplReady) && (!foot || infTpl) && bldTpl) { go(); return; }
   $('loading').hidden = false; $('loadingMsg').textContent = 'Bringing the tanks up…';
-  Promise.all([loadTankModels(specs), foot ? loadInfantry().catch(() => null) : null]).then(() => { $('loading').hidden = true; go(); },   // Ashton falls back to the built-in soldier if his models fail
+  Promise.all([loadTankModels(specs), foot ? loadInfantry().catch(() => null) : null, loadBuildings().catch(() => null)]).then(() => { $('loading').hidden = true; go(); },   // Ashton falls back to the built-in soldier if his models fail
     e => { $('loadingMsg').textContent = 'A tank model could not be loaded (' + (e && e.message || 'network') + '). Check your connection and try again.'; setTimeout(() => { $('loading').hidden = true; }, 4000); });
 }
 function startOffline() {
