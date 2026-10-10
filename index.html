@@ -2534,7 +2534,7 @@ function makeModelTank(sp, cos) {
     em.scale.set(sz, sz, 1); em.position.set((tb.min.x + tb.max.x) * .5 - .1, (tb.min.y + tb.max.y) * .5, s * (s > 0 ? tb.max.z : -tb.min.z) + s * .01); em.rotation.y = s > 0 ? 0 : Math.PI; turret.add(em); }
   let flag = null;
   const mast = cos.flag !== 'none' ? 2.6 : 1.2;   // a flag mast, or with no flag just a short radio whip
-  const an = cyl(.015, .025, mast, mats[0] || emMat, 4), ax = -tpl.L * .38, az = -tpl.W * .33;
+  const an = cyl(.015, .025, mast, mats[0] || emMat, 4), ax = -tpl.L * .38, az = tpl.W * .33;   // on the right, clear of the rider
   an.material = new THREE.MeshStandardMaterial({color: 0x24251f}); mats.push(an.material); an.position.set(ax, tpl.deck + mast / 2, az); hull.add(an);
   if (cos.flag !== 'none') {
     const fg = new THREE.PlaneGeometry(1.4, .88, 6, 1); fg.translate(-.7, -.44, 0);
@@ -4619,11 +4619,58 @@ function animateRiderModel(r, dt) {
   else if (u.hairK > 0) arm('r', [-.02, .74, .14], [0, -1, 1]);
   else arm('r', [.22, .16, .16], [0, -1, .6]);
 }
+// where the rider sits on a real model: a height map of the hull (and the turret's swing circle) is searched for a spot
+// where her seat is flat, nothing of the tank is inside her body or over her head, and her legs hang over the side into
+// open air. The rear deck on the left is tried first, as near the turret as fits, then the right side
+function riderSeat(tpl, sp) {
+  if (!tpl) return null;
+  if (tpl.seat) return tpl.seat;
+  const C = .05, x0 = -tpl.L / 2 - .6, z0 = -tpl.W / 2 - .9, nx = Math.ceil((tpl.L + 1.2) / C), nz = Math.ceil((tpl.W + 1.8) / C);
+  const hm = new Float32Array(nx * nz).fill(-1), a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), q = new THREE.Vector3();
+  const mark = v => { if (v.y < .45) return; const i = Math.floor((v.x - x0) / C), k = Math.floor((v.z - z0) / C); if (i >= 0 && i < nx && k >= 0 && k < nz && v.y > hm[i * nz + k]) hm[i * nz + k] = v.y; };
+  const raster = (geo, off) => { const p = geo.attributes.position, ix = geo.index, n = ix ? ix.count : p.count;
+    for (let t = 0; t < n; t += 3) {
+      const get = (v, j) => v.fromBufferAttribute(p, ix ? ix.getX(t + j) : t + j).add(off);
+      get(a, 0); get(b, 1); get(c, 2);
+      const m = Math.ceil(Math.max(a.distanceTo(b), b.distanceTo(c), c.distanceTo(a)) / (C * .7));
+      for (let u = 0; u <= m; u++) for (let v = 0; u + v <= m; v++) { const w = m ? 1 / m : 0; q.copy(a).multiplyScalar(1 - (u + v) * w).addScaledVector(b, u * w).addScaledVector(c, v * w); mark(q); }
+    } };
+  for (const p of tpl.parts.hull) raster(p.geo, new THREE.Vector3());
+  let R = 0; for (const p of tpl.parts.turret) { const ps = p.geo.attributes.position; for (let i = 0; i < ps.count; i++) R = Math.max(R, Math.hypot(ps.getX(i), ps.getZ(i))); raster(p.geo, tpl.mount); }
+  // the highest surface in a box of the hull frame; out of the map counts as open air
+  const hi = (xa, xb, za, zb) => { let h = -1; for (let i = Math.max(0, Math.floor((xa - x0) / C)); i <= Math.min(nx - 1, Math.floor((xb - x0) / C)); i++) for (let k = Math.max(0, Math.floor((za - z0) / C)); k <= Math.min(nz - 1, Math.floor((zb - z0) / C)); k++) h = Math.max(h, hm[i * nz + k]); return h; };
+  const lo = (xa, xb, za, zb) => { let h = 99; for (let i = Math.floor((xa - x0) / C); i <= Math.floor((xb - x0) / C); i++) for (let k = Math.floor((za - z0) / C); k <= Math.floor((zb - z0) / C); k++) h = Math.min(h, i >= 0 && i < nx && k >= 0 && k < nz ? hm[i * nz + k] : -1); return h; };
+  const clearOfTurret = (x, za, zb) => R === 0 || Math.min(...[za, zb].flatMap(zz => [x - .25, x + .25].map(xx => Math.hypot(xx - tpl.mount.x, zz)))) > R + .15;
+  // s = -1 for the left side (she faces -z), 1 for the right; z is her hips, the body goes inboard, the legs outboard
+  const tryAt = (x, z, s, strict) => {
+    const zin = (d1, d2) => s < 0 ? [z + d1, z + d2] : [z - d2, z - d1];
+    const [ba, bb] = zin(-.02, .22), seat = hi(x - .16, x + .16, ba, bb);
+    if (seat < .6 || seat > tpl.top || lo(x - .16, x + .16, ba, bb) < seat - .14) return null;           // a flat seat under her
+    const [ta, tb] = zin(-.02, .42); if (hi(x - .24, x + .24, ta, tb) > seat + .05) return null;          // nothing in her body or above it
+    if (!clearOfTurret(x, ta, tb)) return null;
+    const [ka, kb] = zin(-.3, -.05), [fa, fb] = zin(-.62, -.3);                                            // thighs over the edge, then the calves
+    if (hi(x - .2, x + .2, ka, kb) > seat - (strict ? .06 : -.02) || hi(x - .2, x + .2, fa, fb) > seat - (strict ? .45 : .2)) return null;
+    return {x, y: seat, z, s};
+  };
+  let best = null;
+  for (const strict of [true, false]) for (const s of [-1, 1]) {
+    for (let x = tpl.L / 2 - .5; x > -tpl.L / 2 + .25 && !best; x -= .05) {
+      if (x > tpl.mount.x - R * .6 && x > 0) continue;   // the rear half of the tank (or behind a casemate)
+      for (let zz = tpl.W / 2 + .3; zz > .25 && !best; zz -= .05) best = tryAt(x, s * zz, s, strict);
+    }
+    if (best) break;
+  }
+  if (best) { best.y += .01; return tpl.seat = best; }
+  const x = -tpl.L / 2 + .45, z = -(tpl.W / 2 - .42);
+  return tpl.seat = {x, y: Math.max(tpl.deck, hi(x - .2, x + .2, z - .2, z + .2)), z, s: -1};
+}
 function seatRider(t) {   // on the rear deck, facing out over the left track
   if (t && t.spec.foot) return;
   if (!t || t.mesh.rider) return;
   const m = t.spec.m3, r = makeRider(t.spec.nation, cosItem('rider', t.cos && t.cos.rider)), hullTop = Math.max(...m.hull.map(p => p[1]));
-  r.position.set(-m.L * .28, hullTop, -(m.hullW / 2 - .32)); r.rotation.y = Math.PI / 2;
+  const seat = t.mesh.model ? riderSeat(modelTpl[t.spec.model], t.spec) : null;
+  if (seat) r.position.set(seat.x, seat.y, seat.z); else r.position.set(-m.L * .28, hullTop, -(m.hullW / 2 - .32));
+  r.rotation.y = seat && seat.s > 0 ? -Math.PI / 2 : Math.PI / 2;
   t.mesh.hull.add(r); t.mesh.rider = r;
 }
 // rider animation: idle breathing, glancing around and swinging her legs; a wave and a bounce for a kill, a flinch when
