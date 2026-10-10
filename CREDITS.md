@@ -48,6 +48,11 @@ All from Sketchfab, licensed under [CC BY 4.0](https://creativecommons.org/licen
 | village.glb | [Old vilage house_LOD_0](https://sketchfab.com/3d-models/065cb734d68446ec90e3b43da86a5530) | Nikolay Fedorov |
 | log.glb | [Asset medieval log building](https://sketchfab.com/3d-models/af38c38a25c14f979e094f6477d77316) | KIFIR |
 | farmwood.glb | [House Farm wood](https://sketchfab.com/3d-models/a9732b6c1c4249a08477de9fc53ee6ad) | Mehdi Shahsavan |
+| rural.glb | [Rural Buildings Set - Low Poly models](https://sketchfab.com/3d-models/51ab7e74bac347a89725f1d22b928edf) | Daniel Zhabotinsky |
+
+## Rider base body and hair (CC0, public domain)
+
+[Universal Base Characters](https://quaternius.itch.io/universal-base-characters) by [Quaternius](https://quaternius.com), released under [CC0](https://creativecommons.org/publicdomain/zero/1.0/): the female Superhero body (`assets/riders/base_female.glb`) and the long, buns and simple parted hairstyles and female eyebrows (`assets/riders/hair_*.glb`, `eyebrows_female.glb`).
 
 ## Textures and sky (CC0, public domain)
 

@@ -14,6 +14,12 @@ The cloud session can't reach Sketchfab, Poly Haven, itch.io, jsDelivr or cdnjs 
 - **Real aiming** (user request): each tank has `elev: [min, max]` (real depression/elevation), `trav` (turret deg/s), `erate` (elevation deg/s), `arc` (StuG IV: ±10° casemate). `slewGun()` carries the turret with the hull and lays it at those rates; the view (`viewYaw`) is free and the gun follows; the gunsight is locked to the gun. CPU uses the same limits (and pivots the StuG's hull); the host clamps clients. `solve()` only searches the gun's real elevation range.
 - CREDITS button in SETTINGS (`#credits`, built from `CREDITS.md`).
 
+**Added by the PC session:**
+- `assets/riders/base_female.glb`: Quaternius Universal Base Characters, female **Superhero** body (CC0), 15k triangles, rigged (69 nodes; UE-style bone names: `pelvis`, `spine_01..03`, `neck_01`, `Head`, `clavicle_l/r`, `upperarm_l`, `lowerarm_l`, `hand_l`, fingers, `thigh_l/r`, `calf_l/r`, `foot_l/r`, ...), meshes `Superhero_Female`, `Eyes`, `Eyebrows`. The free pack's skin texture is the darker tone only: tint or recolour the base colour per rider. No animation clip (pose the bones in code).
+- `assets/riders/hair_long.glb`, `hair_buns.glb`, `hair_simpleparted.glb`, `eyebrows_female.glb`: hair rigged to the `Head` bone (bind them to the body's skeleton, or parent them to the Head bone).
+- `assets/buildings/rural.glb`: the user's extra building pick, **Rural Buildings Set** by Daniel Zhabotinsky (CC BY): American countryside houses, a quonset hut, a trailer, a diner and more as separate meshes in one file (7.7k triangles). Split it into individual buildings by mesh/connected piece.
+- `CREDITS.md` updated for both.
+
 **Known issues / still to do (in this order):**
 1. **Ashton has no running animation** (user just asked): `makeSoldierMesh()` legs are static, so other players see him slide. Step 3 below (soldier.glb with the Mixamo skeleton) should animate the run by swinging the UpLeg/Leg bones with his speed (`footMove` sets his movement); until then, swing the code-built legs.
 2. Step 3 (Ashton models), step 4 (buildings), step 5 (terrain textures, sky), step 6 (new reticle): not started.
