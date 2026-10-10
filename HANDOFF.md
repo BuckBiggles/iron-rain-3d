@@ -1,6 +1,28 @@
 # Handoff: real models, eras, textures (branch `real-models`)
 
-This branch holds the downloaded and processed assets for the next big Iron Rain 3D update, plus the plan. **The game code on this branch is still the same as `main` (build 2026-10-10.7); none of the steps below are wired in yet.** Work on this branch and merge to `main` when it plays well.
+This branch holds the downloaded and processed assets for the next big Iron Rain 3D update, plus the plan. Work on this branch and merge to `main` when it plays well. `main` (the live GitHub Pages site) is still build 2026-10-10.7.
+
+## Status (updated by the cloud session, build 2026-10-10.8)
+
+The cloud session can't reach Sketchfab, Poly Haven, itch.io, jsDelivr or cdnjs (all blocked there), so **anything that needs a download has to be done on the PC**. It *can* fetch GitHub release files and npm packages.
+
+**Done on this branch (steps 1, 2 and the credits):**
+- `TANKS` is now 13 real tanks in two eras (`era: 'ww2' | 'modern'`), with the stats from the table below and the era scaling described there. `ERAS`, `eraTanks(era)`, `setEra()`; ERA picker on the VS CPU tab (`#eraRow`) and in the lobby (`#lobbyEra`, host only, `lobby.era`); CPU tanks come from the battle's era; stats bars compare within an era.
+- **Models**: `loadTankModel(spec)` loads `assets/tanks/<model>.glb` (GLTFLoader + MeshoptDecoder from jsDelivr, already in the page), `prepTank()` orients, scales to the real hull length (`spec.L`) and cuts hull / turret / gun, and `makeModelTank()` builds each tank from the cached template (shared geometry, cloned materials). Battles wait for their models (`needModels()`, a LOADING card); the menu preloads the selected era, then the other. Tank cards show silhouettes rendered from the models.
+- `prepTank` cutting, per tank in `spec.cfg`: `turret {x, y, rx, rz}` = footprint ellipse and ring height (metres, tank frame), `auto` = ring height from the hull roof, `names` = mesh-name rules, `pca` + `fwdFromGun` + `unshear` (Panzer IV: tilted and sheared node transform), `flip` (Sherman), `autoYaw` (Merkava: turret modelled turned ~20°), `casemate` (StuG IV), `clipAll` + `footprint` + `drop` (KF51, Abrams: hull and turret merged; cut along the ring plane under the turret roof's outline). Pieces are sorted as connected components; big merged pieces are clipped triangle by triangle.
+- Material fixes in `loadTankModel`: metalness capped (exports were fully metallic = black), `vertexTangents = false` (tangents are dropped when cutting), textures set to linear encoding (the game renders in linear).
+- **Real aiming** (user request): each tank has `elev: [min, max]` (real depression/elevation), `trav` (turret deg/s), `erate` (elevation deg/s), `arc` (StuG IV: ±10° casemate). `slewGun()` carries the turret with the hull and lays it at those rates; the view (`viewYaw`) is free and the gun follows; the gunsight is locked to the gun. CPU uses the same limits (and pivots the StuG's hull); the host clamps clients. `solve()` only searches the gun's real elevation range.
+- CREDITS button in SETTINGS (`#credits`, built from `CREDITS.md`).
+
+**Known issues / still to do (in this order):**
+1. **Ashton has no running animation** (user just asked): `makeSoldierMesh()` legs are static, so other players see him slide. Step 3 below (soldier.glb with the Mixamo skeleton) should animate the run by swinging the UpLeg/Leg bones with his speed (`footMove` sets his movement); until then, swing the code-built legs.
+2. Step 3 (Ashton models), step 4 (buildings), step 5 (terrain textures, sky), step 6 (new reticle): not started.
+3. **Riders** (user request): they want sexier pin-up riders, curvier, in skimpier swimwear (keep it non-explicit: bikinis and swimsuits, no nudity), **one free default plus the rest for the store**. Plan: download Quaternius *Universal Base Characters* (CC0, https://quaternius.itch.io/universal-base-characters), export the female "Superhero" body to `assets/riders/base_female.glb` (+ CREDITS.md line), then build each of the 7 riders (`COSMETICS.rider`) on it with her own outfit, hair, colours, hat and accessories, seated on the rear deck (`seatRider`, `animateRider`).
+4. **Rider voices** (user request: find more female voices): every line is pre-rendered per rider into `voices/<id>.mp3` (+ `VOICE_CLIPS` offsets in the page). The generator used Kokoro (`kokoro-onnx`, model files from github.com/thewh1teagle/kokoro-onnx releases) and Piper (voice files from github.com/rhasspy/piper releases v0.0.2). Other female voices available that way: Kokoro af_bella, af_sky, af_nova, af_river, af_jessica, af_aoede, af_kore, af_alloy, bf_isabella, bf_alice, bf_lily, ff_siwis, if_sara, pf_dora, and blends of two voices; Piper de-eva_k, de-ramona, uk-lada, en-us-amy, en-us-kathleen, en-gb-southern_english_female, fr-siwis. Next step was an audition page so the user can pick one per rider.
+5. Tank models: a few small hull pieces on the KF51 may still sit inside the turret footprint; check in game.
+6. Publishing: the claude.ai artifact copy is still the morning build; it needs `assets/` (~45 MB) uploaded as supporting files when this branch is merged.
+
+Test harness used by the cloud session: serve the repo (`python -m http.server`), open the page; `window.__ir` exposes `step`, `frameMs`, `startOffline`, `setup`, `tanks`, `player`. `loadTankModel`, `modelTpl`, `prepTank`, `slewGun` are globals.
 
 Everything in `assets/` is already slimmed for the web. Attribution for the CC BY models is in `CREDITS.md`, and the game must show credits (a CREDITS button on the menu that lists `CREDITS.md`'s content).
 
