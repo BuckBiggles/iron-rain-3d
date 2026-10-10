@@ -24,20 +24,35 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-
 .screen{position:fixed;inset:0;z-index:5}
 .screen[hidden],[hidden]{display:none!important}
 
-/* ---- menu */
-#menu{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,580px);gap:24px;padding:24px 28px;box-sizing:border-box;
-  background:linear-gradient(90deg,rgba(8,9,6,.82) 0%,rgba(8,9,6,.25) 45%,rgba(8,9,6,0) 60%)}
-.brand{align-self:end;display:flex;flex-direction:column;gap:10px;min-width:0;padding-bottom:8px}
-.eyebrow{font-family:var(--f-data);font-size:13px;letter-spacing:.22em;color:var(--brass)}
-.brand h1{font-family:var(--f-display);font-weight:700;font-size:clamp(56px,9vw,128px);line-height:.86;margin:0;letter-spacing:.02em;
-  color:#e9dfb9;text-shadow:0 3px 0 rgba(0,0,0,.55);text-wrap:balance}
-.brand h1 span{display:block;font-size:.42em;letter-spacing:.32em;color:var(--brass);margin-top:10px}
-.brand p{margin:0;font-size:19px;max-width:30em}
-.keys{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin-top:10px;font-size:15px;max-width:480px}
-.keys b{font-family:var(--f-data);font-weight:400;color:var(--brass);white-space:nowrap}
-.setup{align-self:center;background:var(--panel);border:1px solid var(--line);padding:16px 20px 20px;display:flex;flex-direction:column;gap:14px;
-  max-height:calc(100% - 4px);overflow:auto;box-sizing:border-box;min-width:0}
-.setup h2{font-family:var(--f-data);font-weight:400;font-size:12px;letter-spacing:.24em;color:var(--dim);margin:0 0 8px}
+/* ---- menu: your tank in a showroom on the left, a full-height field kit panel on the right */
+#menu{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,600px);box-sizing:border-box;
+  background:radial-gradient(ellipse 70% 80% at 32% 58%,rgba(6,7,5,0) 0%,rgba(6,7,5,.5) 80%),
+             linear-gradient(90deg,rgba(8,9,6,.72) 0%,rgba(8,9,6,.08) 34%,rgba(8,9,6,0) 60%)}
+#menu::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px)}
+.brand{display:flex;flex-direction:column;justify-content:space-between;gap:24px;padding:34px 40px 36px;min-width:0}
+.brand-top{display:flex;flex-direction:column;gap:12px;max-width:560px}
+.eyebrow{font-family:var(--f-data);font-size:12px;letter-spacing:.26em;color:var(--brass)}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:clamp(54px,7.4vw,112px);line-height:.84;margin:0;letter-spacing:.02em;
+  color:#ece2bd;text-shadow:0 3px 0 rgba(0,0,0,.6),0 0 40px rgba(0,0,0,.45);text-wrap:balance}
+.brand h1 span{display:inline-block;font-size:.38em;letter-spacing:.3em;color:#1a1709;background:var(--brass);padding:4px 6px 2px 12px;margin-left:12px;vertical-align:.95em;text-shadow:none}
+.brand p{margin:0;font-size:18px;line-height:1.35;max-width:30em;color:#d9cfa8;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.plate{align-self:flex-start;display:flex;flex-direction:column;gap:4px;padding:14px 18px 16px;min-width:min(420px,100%);box-sizing:border-box;
+  background:linear-gradient(180deg,rgba(14,16,11,.78),rgba(14,16,11,.6));border-left:4px solid var(--brass);backdrop-filter:blur(2px)}
+.plate-name{font-family:var(--f-display);font-size:clamp(40px,4.4vw,64px);line-height:.95;color:#ece2bd;letter-spacing:.03em}
+.plate-role{font-size:17px;color:var(--dim);letter-spacing:.04em}
+.plate-stats{display:flex;gap:22px;margin-top:10px;flex-wrap:wrap}
+.plate-stats div{display:flex;flex-direction:column}
+.plate-stats b{font-family:var(--f-data);font-weight:400;font-size:26px;color:var(--brass);font-variant-numeric:tabular-nums;line-height:1}
+.plate-stats small{font-size:.5em;color:var(--dim)}
+.plate-stats span{font-family:var(--f-data);font-size:10px;letter-spacing:.2em;color:var(--dim);margin-top:4px}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15px}
+.keys b{font-family:var(--f-data);font-weight:400;color:var(--brass);white-space:nowrap;font-size:13px;padding-top:2px}
+.setup{position:relative;height:100%;background:linear-gradient(180deg,rgba(24,28,18,.95),rgba(13,15,10,.97));border-left:1px solid var(--line);
+  border-top:3px solid var(--brass);box-shadow:-30px 0 60px rgba(0,0,0,.4);padding:18px 26px 24px;display:flex;flex-direction:column;gap:16px;
+  overflow:auto;box-sizing:border-box;min-width:0}
+.setup h2{font-family:var(--f-data);font-weight:400;font-size:11px;letter-spacing:.28em;color:var(--dim);margin:0 0 9px;display:flex;align-items:center;gap:10px}
+.setup h2::after{content:"";flex:1;height:1px;background:var(--line)}
 .head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .head label{display:flex;align-items:center;gap:8px;font-family:var(--f-data);font-size:12px;letter-spacing:.2em;color:var(--dim)}
 .head input,.joinrow input{font-family:var(--f-display);font-size:18px;letter-spacing:.06em;background:rgba(214,201,156,.06);border:1px solid var(--line);color:#e9dfb9;padding:5px 8px;width:170px;text-transform:uppercase}
@@ -99,6 +114,39 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-
 .sdetail span{font-size:14px;color:var(--dim)}
 .sdetail .deploy{font-size:20px;padding:9px 18px}
 
+/* menu pieces: folder tabs, silhouette tank cards, relief-map battlefield cards, segmented pickers */
+.tabs{gap:0;border-bottom:1px solid var(--line)}
+.tabs button{position:relative;font-size:18px;letter-spacing:.1em;padding:10px 6px 9px;border-bottom:0}
+.tabs button:hover{color:#e9dfb9}
+.tabs button[aria-selected="true"]{color:#ece2bd;background:linear-gradient(180deg,rgba(230,180,76,.12),rgba(230,180,76,0))}
+.tabs button[aria-selected="true"]::after{content:"";position:absolute;left:18%;right:18%;bottom:-1px;height:3px;background:var(--brass)}
+.head input{border-color:rgba(214,201,156,.3)}
+.money{font-size:24px;padding:2px 10px;border:1px solid rgba(230,180,76,.35);background:rgba(230,180,76,.06)}
+.tgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.tcard{display:flex;flex-direction:column;gap:2px;padding:8px 10px 9px;border:1px solid var(--line);background:rgba(214,201,156,.04);text-align:left;min-width:0}
+.tcard canvas{width:100%;height:34px;margin-bottom:4px;opacity:.75}
+.tcard .n{font-family:var(--f-display);font-size:17px;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e2d8b2}
+.tcard .r{font-family:var(--f-data);font-size:11px;color:var(--dim);white-space:nowrap}
+.tcard:hover{background:rgba(214,201,156,.1)}
+.tcard:hover canvas{opacity:1}
+.tcard[aria-pressed="true"]{border-color:var(--brass);background:linear-gradient(180deg,rgba(230,180,76,.18),rgba(230,180,76,.04))}
+.tcard[aria-pressed="true"] canvas{opacity:1}
+.mgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.mcard{position:relative;padding:0;border:1px solid var(--line);background:#111;aspect-ratio:3/2;overflow:hidden;max-width:100%}
+.mcard canvas{display:block;width:100%;height:100%;opacity:.8}
+.mcard .n{position:absolute;left:0;right:0;bottom:0;padding:12px 6px 5px;font-family:var(--f-display);font-size:13px;letter-spacing:.04em;color:#ece2bd;text-align:left;
+  background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.8));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcard:hover canvas{opacity:1}
+.mcard[aria-pressed="true"]{border-color:var(--brass);box-shadow:inset 0 0 0 2px var(--brass)}
+.mcard[aria-pressed="true"] canvas{opacity:1}
+.seg{display:flex;flex-wrap:nowrap;gap:0;border:1px solid var(--line)}
+.seg .opt{border:0;border-right:1px solid var(--line);flex:1 1 0;padding:9px 4px}
+.seg .opt:last-child{border-right:0}
+.seg .opt[aria-pressed="true"]{box-shadow:inset 0 -3px 0 var(--brass)}
+.deploy{position:relative;font-size:30px;padding:14px;letter-spacing:.16em;
+  background:repeating-linear-gradient(-45deg,rgba(0,0,0,.06) 0 10px,transparent 10px 20px),var(--brass)}
+@media (max-width:900px){.mgrid{grid-template-columns:repeat(3,minmax(0,1fr))}.plate{display:none}}
+
 /* ---- pause / results */
 .modal{display:grid;place-items:center;background:rgba(6,7,5,.62);padding:16px}
 .card{background:var(--panel);border:1px solid var(--line);padding:22px 24px;width:min(380px,100%);display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
@@ -137,18 +185,16 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 
 <div id="menu" class="screen">
   <div class="brand">
-    <div class="eyebrow">GUNNER'S SEAT · FIRST PERSON</div>
-    <h1>IRON RAIN<span>3D</span></h1>
-    <p>Real-time tank artillery from inside the turret. Every shot is a full charge: drive, range the target and lob it over the ridge before they reload.</p>
-    <div class="keys">
-      <b>MOUSE / ARROWS</b><span>Aim. The gun follows your crosshair, zeroed for the range shown beside it</span>
-      <b>WHEEL · R · X</b><span>Set the zero range · lase the target to set it · high lob over ridges</span>
-      <b>W A S D</b><span>Drive</span>
-      <b>RIGHT MOUSE · Z</b><span>Gunsight optic with rangefinder</span>
-      <b>1 – 4 · Q</b><span>Pick a shell · arm a supply-drop special</span>
-      <b>CLICK · SPACE</b><span>Fire, then wait out the reload</span>
-      <b>V · C</b><span>Hold to ride with your shell · always follow your shells (a small shell cam shows every shot)</span>
-      <b>T · ESC</b><span>Chat (online) · menu</span>
+    <div class="brand-top">
+      <div class="eyebrow">GUNNER'S SEAT · FIRST PERSON · REAL TIME</div>
+      <h1>IRON RAIN<span>3D</span></h1>
+      <p>Tank artillery from inside the turret. Every shot is a full charge: range the target, zero your sight and drop it on them before they reload.</p>
+    </div>
+    <div class="plate">
+      <div class="eyebrow">YOUR TANK</div>
+      <div class="plate-name" id="plateName">SHERMAN</div>
+      <div class="plate-role" id="plateRole">M4 · US medium</div>
+      <div class="plate-stats" id="plateStats"></div>
     </div>
   </div>
   <div class="setup">
@@ -165,10 +211,10 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 
     <div class="pane" id="tab-cpu">
       <section><h2>TANK</h2><div class="tgrid" id="tankGrid"></div><div class="stats" id="tankStats"></div></section>
-      <section><h2>BATTLEFIELD</h2><div class="row mapsel" id="mapRow"></div><p class="desc" id="mapDesc"></p></section>
+      <section><h2>BATTLEFIELD</h2><div class="mgrid" id="mapRow"></div><p class="desc" id="mapDesc"></p></section>
       <section class="pair">
-        <div><h2>OPPONENTS</h2><div class="row" id="foeRow"></div></div>
-        <div><h2>CPU SKILL</h2><div class="row" id="lvlRow"></div></div>
+        <div><h2>OPPONENTS</h2><div class="row seg" id="foeRow"></div></div>
+        <div><h2>CPU SKILL</h2><div class="row seg" id="lvlRow"></div></div>
       </section>
       <button class="deploy" id="deploy">DEPLOY</button>
       <p class="fine">Real-time free-for-all. Every hit on an enemy spins the supply wheel. Hits, kills and wins earn money for the store.</p>
@@ -189,15 +235,30 @@ td:first-child{font-family:var(--f-display);font-size:18px}
         <div class="seats" id="seatList"></div>
         <section><h2>YOUR TANK</h2><div class="tgrid" id="lobbyTanks"></div><div class="stats" id="lobbyStats"></div></section>
         <section id="hostOpts">
-          <h2>BATTLEFIELD</h2><div class="row mapsel" id="lobbyMaps"></div>
-          <h2 style="margin-top:12px">CPU SKILL · EMPTY SEATS</h2><div class="row" id="lobbyLvl"></div>
+          <h2>BATTLEFIELD</h2><div class="mgrid" id="lobbyMaps"></div>
+          <h2 style="margin-top:12px">CPU SKILL · EMPTY SEATS</h2><div class="row seg" id="lobbyLvl"></div>
         </section>
         <p class="desc" id="lobbyMsg"></p>
         <div class="btnrow"><button class="deploy" id="startBtn">START BATTLE</button><button class="btn warn" id="leaveBtn">LEAVE ROOM</button></div>
       </div>
     </div>
 
-    <div class="pane" id="tab-settings" hidden><div class="sets" id="menuSettings"></div><p class="fine">In battle: [ and ] change mouse sensitivity, Esc opens these settings.</p></div>
+    <div class="pane" id="tab-settings" hidden>
+      <section><h2>OPTIONS</h2><div class="sets" id="menuSettings"></div><p class="fine">In battle: [ and ] change mouse sensitivity, Esc opens these settings.</p></section>
+      <section><h2>CONTROLS</h2>
+        <div class="keys">
+          <b>MOUSE · ARROWS</b><span>Aim. The gun follows your crosshair, zeroed for the range shown beside it</span>
+          <b>CLICK · SPACE</b><span>Fire, then wait out the reload</span>
+          <b>W A S D</b><span>Drive</span>
+          <b>RIGHT MOUSE · Z</b><span>Gunsight with rangefinder · TAB switches x4 / x8</span>
+          <b>PGUP · PGDN · WHEEL</b><span>Zero the sight (Shift for 5 m steps)</span>
+          <b>R · X</b><span>Lase the target and zero to it · high lob over ridges</span>
+          <b>1 – 4 · Q</b><span>Pick a shell · arm a supply-drop special</span>
+          <b>V · C</b><span>Ride with your shell · always follow your shells</span>
+          <b>T · ESC · [ ]</b><span>Chat (online) · menu · mouse sensitivity</span>
+        </div>
+      </section>
+    </div>
     <div class="pane" id="tab-store" hidden>
       <div class="row" id="storeCats"></div>
       <div class="sgrid" id="storeGrid"></div>
@@ -230,7 +291,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-09.1';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-09.3';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -252,7 +313,7 @@ function load(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); retur
 function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 const cleanName = s => String(s || '').toUpperCase().replace(/[^A-Z0-9 \-.]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14);
 
-const settings = load('ironrain3d.settings', {vol: .7, sens: 1, zsens: 1, shellCam: false, invert: false, shadows: true});
+const settings = load('ironrain3d.settings', {vol: .7, sens: 1, zsens: 1, shellCam: false, invert: false, shadows: true, voice: true});
 if (settings.v !== 2) { settings.v = 2; settings.shellCam = false; save('ironrain3d.settings', settings); }   // real-time now: the shell camera starts off
 const setup = load('ironrain3d.setup', {tank: 0, map: 0, foes: 2, lvl: 1, seats: 2});
 let myName = (() => { try { return cleanName(localStorage.getItem('ironrain3d.name') || localStorage.getItem('ironrain.name') || ''); } catch (e) { return ''; } })();
@@ -289,6 +350,72 @@ const TANKS = [
    hull:[[-16,-12.5],[16,-12.5],[19,-14],[13,-21],[-15,-21],[-18,-15]],
    turret:[[-8,-21],[8,-21],[8,-26.5],[-8,-26.5]], gun:{len:23, w:3}, antennas:2},
 ];
+// ---- the real vehicles. Game stats come from these, so the tanks compare the way they did in 1944-45:
+//   armor = effective frontal armor (mm, slope included) -> hull points
+//   speed = road speed (km/h) -> driving speed; gun calibre and velocity -> damage per hit
+//   rof   = rounds per minute -> reload time; L x W -> how big a target the tank is
+// `m` describes the 3D model in metres (x forward, y up): hull side profile, turret plan, running gear and fittings.
+const REAL = {
+  'SHERMAN':  {nation:'US', armor:91,  speed:42, gun:'75 mm M3',        cal:75,  vel:1.00, rof:8,  weight:30.3, crew:5,
+    m:{L:5.9, W:2.62, hullW:2.62, hull:[[-2.85,.62],[2.5,.62],[2.95,.95],[2.95,1.12],[1.45,1.9],[-2.55,1.9],[-2.92,1.5]], slope:0, lower:{w:1.7, y0:.35, y1:.95},
+       run:{type:'vvss', bogies:[-1.55,-.05,1.45], r:.26}, sprocket:[2.5,.62,.33], idler:[-2.55,.33,.31], trackW:.42, trackTop:.95,
+       turret:{x:.15, plan:{ell:[1.05,1.3,1.0], flat:.86}, h:.9, taper:.8}, mantlet:{type:'rotor', w:.95, h:.55, d:.28},
+       gun:{len:2.9, r:.048, brake:0}, cupola:[-.55,-.4], extras:['hullMG','lights','spareTracks','deflector']}},
+  'T-34':     {nation:'SU', armor:90,  speed:55, gun:'85 mm ZiS-S-53',  cal:85,  vel:1.02, rof:6,  weight:32,   crew:5,
+    m:{L:6.1, W:3.0, hullW:3.0, hull:[[-3.0,.5],[2.65,.5],[3.05,.82],[1.6,1.55],[-2.55,1.55],[-3.0,.95]], slope:40, slopeY:.95, lower:{w:2.0, y0:.32, y1:.95},
+       run:{type:'christie', n:5, r:.42, x0:-2.25, x1:2.25}, sprocket:[-2.75,.5,.38], idler:[2.75,.5,.36], trackW:.5, trackTop:.93,
+       turret:{x:.45, plan:{ell:[1.15,1.35,1.1], flat:.9}, h:.72, taper:.72}, mantlet:{type:'round', w:.8, h:.5, d:.3},
+       gun:{len:4.3, r:.055, brake:0}, cupola:[-.6,.35], extras:['fuelTanks','hullMG','lights']}},
+  'TIGER I':  {nation:'DE', armor:100, speed:45, gun:'8.8 cm KwK 36',   cal:88,  vel:1.05, rof:6,  weight:57,   crew:5,
+    m:{L:6.32, W:3.56, hullW:3.56, hull:[[-3.15,.48],[2.95,.48],[3.25,.95],[3.0,1.02],[3.0,1.85],[-3.1,1.85],[-3.16,.95]], slope:0, lower:{w:1.9, y0:.3, y1:1.0},
+       run:{type:'interleaved', n:8, r:.4, x0:-2.45, x1:2.35}, sprocket:[2.85,.62,.38], idler:[-2.9,.55,.33], trackW:.72, trackTop:1.0,
+       turret:{x:-.05, plan:{ell:[1.0,1.35,1.45], flat:.92}, h:.9, taper:.96}, mantlet:{type:'box', w:1.55, h:.72, d:.3},
+       gun:{len:4.9, r:.065, brake:2}, cupola:[-.75,.55], extras:['smoke','turretBin','exhausts','hullMG','lights']}},
+  'PANTHER':  {nation:'DE', armor:140, speed:46, gun:'7.5 cm KwK 42',   cal:75,  vel:1.25, rof:6,  weight:44.8, crew:5,
+    m:{L:6.87, W:3.27, hullW:3.27, hull:[[-3.35,.55],[3.0,.55],[3.45,.78],[1.75,1.85],[-3.0,1.85],[-3.4,1.05]], slope:40, slopeY:1.0, lower:{w:1.95, y0:.32, y1:1.0},
+       run:{type:'interleaved', n:8, r:.43, x0:-2.6, x1:2.55}, sprocket:[3.0,.6,.4], idler:[-3.05,.55,.36], trackW:.66, trackTop:1.02,
+       turret:{x:-.35, plan:{poly:[[1.05,.62],[1.05,-.62],[-1.45,-.95],[-1.45,.95]], r:.15}, h:.82, taper:.72, rake:.2}, mantlet:{type:'pig', w:.95, h:.62, d:.4},
+       gun:{len:5.25, r:.045, brake:2}, cupola:[-1.0,.5], extras:['skirts','exhausts','hullMG']}},
+  'CHURCHILL':{nation:'UK', armor:152, speed:24, gun:'75 mm QF',        cal:75,  vel:.95,  rof:9,  weight:40.7, crew:5,
+    m:{L:7.44, W:3.25, hullW:1.95, hull:[[-3.6,.45],[3.35,.45],[3.5,1.15],[3.35,1.55],[-3.6,1.55]], slope:0, lower:null,
+       run:{type:'small', n:11, r:.2, x0:-2.8, x1:2.8}, sprocket:[-3.5,.6,.55], idler:[3.5,1.05,.6], trackW:.55, trackTop:1.72, churchill:true,
+       turret:{x:.55, plan:{poly:[[.95,.8],[.95,-.8],[-.9,-.85],[-.9,.85]], r:.25}, h:.85, taper:.9}, mantlet:{type:'box', w:.8, h:.5, d:.25},
+       gun:{len:2.6, r:.05, brake:0}, cupola:[-.5,.4], extras:['hullMG','louvres']}},
+  'CROMWELL': {nation:'UK', armor:76,  speed:64, gun:'75 mm QF',        cal:75,  vel:.95,  rof:10, weight:27.9, crew:5,
+    m:{L:6.35, W:2.91, hullW:2.3, hull:[[-3.15,.5],[2.9,.5],[3.2,.85],[3.1,.95],[3.1,1.6],[-3.1,1.6],[-3.18,.98]], slope:0, lower:null,
+       run:{type:'christie', n:5, r:.41, x0:-2.2, x1:2.2}, sprocket:[-2.75,.55,.35], idler:[2.75,.55,.33], trackW:.36, trackTop:.92,
+       turret:{x:.15, plan:{poly:[[.85,.85],[.85,-.85],[-.95,-.85],[-.95,.85]], r:.06}, h:.82, taper:.97}, mantlet:{type:'box', w:1.0, h:.48, d:.22},
+       gun:{len:2.7, r:.045, brake:0}, cupola:[-.55,.4], extras:['fenders','bins','hullMG','lights']}},
+  'IS-2':     {nation:'SU', armor:200, speed:37, gun:'122 mm D-25T',    cal:122, vel:.95,  rof:2.5,weight:46,   crew:4,
+    m:{L:6.77, W:3.07, hullW:3.07, hull:[[-3.35,.5],[2.95,.5],[3.38,.85],[2.0,1.55],[-2.95,1.55],[-3.38,.95]], slope:20, slopeY:1.0, lower:{w:2.0, y0:.32, y1:1.0},
+       run:{type:'torsion', n:6, r:.33, x0:-2.3, x1:2.25, rollers:3}, sprocket:[-2.95,.55,.36], idler:[2.95,.55,.33], trackW:.65, trackTop:1.0,
+       turret:{x:.25, plan:{ell:[1.2,1.45,1.2], flat:.9}, h:.85, taper:.7}, mantlet:{type:'box', w:1.3, h:.55, d:.35},
+       gun:{len:4.8, r:.07, brake:2}, cupola:[-.75,-.45], extras:['fuelTanks','lights']}},
+  'HELLCAT':  {nation:'US', armor:30,  speed:80, gun:'76 mm M1',        cal:76,  vel:1.08, rof:12, weight:17.7, crew:5,
+    m:{L:5.28, W:2.87, hullW:2.87, hull:[[-2.65,.55],[2.3,.55],[2.66,.78],[1.3,1.45],[-2.45,1.5],[-2.66,1.05]], slope:22, slopeY:.95, lower:{w:1.9, y0:.32, y1:.95},
+       run:{type:'torsion', n:5, r:.33, x0:-1.75, x1:1.75, rollers:4}, sprocket:[2.25,.62,.32], idler:[-2.25,.42,.3], trackW:.36, trackTop:.92,
+       turret:{x:-.15, plan:{poly:[[1.25,0],[.55,.98],[-1.1,.98],[-1.1,-.98],[.55,-.98]], r:.08}, h:.7, taper:.85, open:.9}, mantlet:{type:'box', w:.7, h:.4, d:.2},
+       gun:{len:4.0, r:.045, brake:1}, cupola:null, extras:['mgRing','lights']}},
+  'STUG III': {nation:'DE', armor:80,  speed:40, gun:'7.5 cm StuK 40',  cal:75,  vel:1.08, rof:8,  weight:23.9, crew:4,
+    m:{L:5.4, W:2.95, hullW:2.95, hull:[[-2.7,.48],[2.45,.48],[2.75,.82],[2.62,1.1],[-2.7,1.1]], slope:0, lower:{w:1.9, y0:.3, y1:.9},
+       run:{type:'torsion', n:6, r:.27, x0:-1.95, x1:1.6, rollers:3}, sprocket:[2.35,.6,.34], idler:[-2.45,.5,.3], trackW:.4, trackTop:.86,
+       turret:{x:.15, plan:{poly:[[1.3,.95],[1.3,-.95],[-1.25,-1.15],[-1.25,1.15]], r:.05}, h:.62, taper:.82, rake:.45}, mantlet:{type:'pig', w:.75, h:.5, d:.38},
+       gun:{len:3.4, r:.045, brake:2}, cupola:[-.75,.5], extras:['skirts','exhausts']}},
+  'STUART':   {nation:'US', armor:55,  speed:58, gun:'37 mm M6',        cal:37,  vel:.95,  rof:20, weight:15.4, crew:4,
+    m:{L:4.84, W:2.29, hullW:2.29, hull:[[-2.4,.55],[2.1,.55],[2.42,.78],[1.35,1.55],[-2.2,1.55],[-2.44,1.1]], slope:20, slopeY:1.0, lower:{w:1.5, y0:.32, y1:1.0},
+       run:{type:'vvss', bogies:[-.9,.75], r:.23}, sprocket:[2.05,.58,.28], idler:[-2.05,.31,.3], trackW:.3, trackTop:.86,
+       turret:{x:-.1, plan:{poly:[[.7,.6],[.7,-.6],[-.75,-.65],[-.75,.65]], r:.2}, h:.7, taper:.88}, mantlet:{type:'box', w:.7, h:.4, d:.2},
+       gun:{len:1.9, r:.028, brake:0}, cupola:null, extras:['hullMG','lights']}},
+};
+// game stats from the real numbers (the same scaling for every tank)
+for (const t of TANKS) {
+  const r = REAL[t.name]; t.real = r; t.nation = r.nation; t.m3 = r.m;
+  t.hp = Math.round(120 + Math.sqrt(r.armor) * 11);          // 30 mm -> 180 HP ... 200 mm -> 276 HP
+  t.atk = Math.round(100 * Math.sqrt(r.cal / 75) * r.vel);   // damage multiplier, % of a 75 mm gun
+  t.rel = clamp((60 / r.rof) / 8, .5, 2.2);                  // reload multiplier from the rate of fire
+  t.speed = r.speed / 3.6 * .5;                              // m/s in game: half the real road speed
+  t.w = r.m.W;
+}
 const WEAPONS = [
   {key:'missile', name:'MISSILE',  short:'MISSILE',  r:10, dmg:45, n:1, ammo:Infinity, col:'#ffd966'},
   {key:'bigbomb', name:'BIG BOMB', short:'BIG BOMB', r:18, dmg:75, n:1, ammo:3, col:'#ff8a5c'},
@@ -320,7 +447,7 @@ const SEAT_COLORS = ['#e6b44c', '#e0573a', '#6fb8de', '#a3cf5f'];
 // gun (heavier hitters load slower) and, for CPU tanks, by their skill level.
 const RELOAD = {missile: 3.5, bigbomb: 6, triple: 5, drill: 5, special: 6};
 const CPU_RELOAD = [2.2, 1.6, 1.25, 1];
-const speedOf = spec => 5 + spec.fuel * .06;   // m/s: the old fuel stat is now mobility
+const speedOf = spec => spec.speed;   // m/s, from the real road speed
 
 // ================================================================ store: cosmetics bought with money earned in battle
 // Same catalogue, ids, prices and payout as 2D Iron Rain, and the same saved profile, so the wallet and unlocks carry over.
@@ -529,21 +656,46 @@ function genTerrain(mi, seed) {
   skyMat.uniforms.top.value.setHex(T.top); skyMat.uniforms.hor.value.setHex(T.hor); skyMat.uniforms.sunCol.value.setHex(T.sun);
   sunDir.set(Math.cos(T.sunEl * D2R) * Math.cos(T.sunAz * D2R), Math.sin(T.sunEl * D2R), Math.cos(T.sunEl * D2R) * Math.sin(T.sunAz * D2R)).normalize();
   skyMat.uniforms.sunDir.value.copy(sunDir);
-  sun.color.setHex(T.sun); sun.intensity = T.sunEl < 15 ? .85 : .95;
-  hemi.color.setHex(T.sky); hemi.groundColor.setHex(T.gnd);
+  sun.color.setHex(T.sun); sun.intensity = T.sunEl < 15 ? 1.0 : 1.15;   // a stronger sun and softer fill give the armour some modelling
+  hemi.color.setHex(T.sky); hemi.groundColor.setHex(T.gnd); hemi.intensity = .5;
   renderer.setClearColor(T.fog);
   scatter(rand);
 }
 
-// rocks and scrub (instanced); removed when a blast lands on them
-const ROCKS = 170, SHRUBS = 520;
+// scenery (instanced): rocks, scrub, grass tufts and trees. Anything a blast lands on is removed.
+const ROCKS = 170, SHRUBS = 520, GRASS = 8000, TREES = 220;
+const GRASS_N = [7000, 5000, 2200, 8000, 1500], TREE_N = [150, 200, 20, 25, 0];
 const rockMesh = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshLambertMaterial({color: 0x777777}), ROCKS);
 const shrubMesh = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1.7, 6), new THREE.MeshLambertMaterial({color: 0x445522}), SHRUBS);
-rockMesh.castShadow = rockMesh.receiveShadow = true; shrubMesh.castShadow = true;
-rockMesh.frustumCulled = shrubMesh.frustumCulled = false;
-scene.add(rockMesh, shrubMesh);
+// a grass tuft: three crossed quads with a blade texture
+function crossQuads(n) {
+  const pos = [], uv = [], idx = [];
+  for (let k = 0; k < n; k++) {
+    const a = k / n * Math.PI, c = Math.cos(a) * .5, s = Math.sin(a) * .5, b = k * 4;
+    pos.push(-c, 0, -s, c, 0, s, c, 1, s, -c, 1, -s); uv.push(0, 0, 1, 0, 1, 1, 0, 1);
+    idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+  g.computeVertexNormals();
+  const nrm = g.attributes.normal; for (let i = 0; i < nrm.count; i++) nrm.setXYZ(i, 0, 1, 0);   // light grass from above, like the ground
+  return g;
+}
+const GRASS_TEX = canvasTex(64, (g, s) => {
+  const r = mulberry(11);
+  for (let i = 0; i < 22; i++) {
+    const x = 6 + r() * (s - 12), h = s * (.45 + r() * .55), lean = (r() - .5) * 16, w = 1.5 + r() * 2.5, l = 150 + r() * 70;
+    g.fillStyle = `rgb(${l * .78 | 0},${l | 0},${l * .55 | 0})`;
+    g.beginPath(); g.moveTo(x - w, s); g.quadraticCurveTo(x + lean * .3, s - h * .6, x + lean, s - h); g.quadraticCurveTo(x + lean * .3 + w * .3, s - h * .6, x + w, s); g.fill();
+  }
+});
+const grassMesh = new THREE.InstancedMesh(crossQuads(3), new THREE.MeshLambertMaterial({map: GRASS_TEX, alphaTest: .45, side: THREE.DoubleSide, color: 0xffffff}), GRASS);
+const trunkMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(.18, .28, 1, 6), new THREE.MeshLambertMaterial({color: 0x4a3a2a}), TREES);
+const crownMesh = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1, 8), new THREE.MeshLambertMaterial({color: 0x2f4423, flatShading: true}), TREES);
+rockMesh.castShadow = rockMesh.receiveShadow = true; shrubMesh.castShadow = true; trunkMesh.castShadow = crownMesh.castShadow = true;
+for (const im of [rockMesh, shrubMesh, grassMesh, trunkMesh, crownMesh]) { im.frustumCulled = false; scene.add(im); }
 let props = [];
-const _o = new THREE.Object3D();
+const _o = new THREE.Object3D(), _c = new THREE.Color();
 function setProp(p) {
   _o.position.set(p.x, groundAt(p.x, p.z) + p.dy * p.s, p.z); _o.rotation.set(p.rx, p.ry, 0);
   if (p.dead) _o.scale.set(0, 0, 0); else _o.scale.set(p.s * p.sx, p.s * p.sy, p.s * p.sx);
@@ -553,19 +705,52 @@ function scatter(rand) {
   props = [];
   rockMesh.material.color.setHex(theme.rock).multiplyScalar(.9);
   shrubMesh.material.color.setHex(theme.veg);
-  for (let i = 0; i < ROCKS; i++) props.push({mesh: rockMesh, idx: i, x: (rand() * 2 - 1) * 620, z: (rand() * 2 - 1) * 620, s: .5 + rand() * rand() * 2.6, sx: 1, sy: .55 + rand() * .4, dy: -.15, rx: rand() * 3, ry: rand() * 6});
-  for (let i = 0; i < SHRUBS; i++) {
-    const p = {mesh: shrubMesh, idx: i, x: (rand() * 2 - 1) * 620, z: (rand() * 2 - 1) * 620, s: .5 + rand() * .7, sx: 1.2, sy: .7 + rand() * .8, dy: .55, rx: 0, ry: rand() * 6};
-    if (i >= theme.vegN) p.dead = true;
-    props.push(p);
+  crownMesh.material.color.setHex(theme.veg).multiplyScalar(.75);
+  const mi = MAPS.indexOf(mapDef), rx = () => (rand() * 2 - 1) * 620;
+  for (let i = 0; i < ROCKS; i++) props.push({mesh: rockMesh, idx: i, x: rx(), z: rx(), s: .5 + rand() * rand() * 2.6, sx: 1, sy: .55 + rand() * .4, dy: -.15, rx: rand() * 3, ry: rand() * 6});
+  for (let i = 0; i < SHRUBS; i++) props.push({mesh: shrubMesh, idx: i, x: rx(), z: rx(), s: .5 + rand() * .7, sx: 1.2, sy: .7 + rand() * .8, dy: .55, rx: 0, ry: rand() * 6, dead: i >= theme.vegN, steep: true});
+  // grass: tinted per tuft from the map's ground colours, denser in the play area
+  const lo = new THREE.Color(theme.low), hi = new THREE.Color(theme.veg);
+  for (let i = 0; i < GRASS; i++) {
+    const x = (rand() * 2 - 1) * 600, z = (rand() * 2 - 1) * 600;
+    props.push({mesh: grassMesh, idx: i, x, z, s: .7 + rand() * .7, sx: 1.3, sy: .8 + rand() * .7, dy: -.02, rx: 0, ry: rand() * 6, dead: i >= GRASS_N[mi], steep: true});
+    _c.copy(lo).lerp(hi, rand() * .7).multiplyScalar(.85 + rand() * .35); grassMesh.setColorAt(i, _c);
   }
-  for (const p of props) { if (p.mesh === shrubMesh && normalAt(p.x, p.z).y < .8) p.dead = true; setProp(p); }
+  if (grassMesh.instanceColor) grassMesh.instanceColor.needsUpdate = true;
+  // trees in loose clumps: a trunk and a conifer crown sharing one spot
+  let cx = 0, cz = 0;
+  for (let i = 0; i < TREES; i++) {
+    if (i % 6 === 0) { cx = rx(); cz = rx(); }
+    const x = cx + (rand() - .5) * 40, z = cz + (rand() - .5) * 40, s = .8 + rand() * .7, dead = i >= TREE_N[mi], ry = rand() * 6;
+    props.push({mesh: trunkMesh, idx: i, x, z, s, sx: 1, sy: 3, dy: 1.5, rx: 0, ry, dead, steep: true});
+    props.push({mesh: crownMesh, idx: i, x, z, s, sx: 2.2, sy: 6.5, dy: 5.6, rx: 0, ry, dead, steep: true});
+  }
+  for (const p of props) { if (p.steep && normalAt(p.x, p.z).y < .8) p.dead = true; if (theme.snow && p.mesh === grassMesh && groundAt(p.x, p.z) > 85) p.dead = true; setProp(p); }
+  buildClouds(rand);
 }
 function clearProps(x, z, r) {
   for (const p of props) {
     if (p.dead) continue;
-    const d = Math.hypot(p.x - x, p.z - z);
+    const dx = p.x - x, dz = p.z - z; if (Math.abs(dx) > r * 2.2 || Math.abs(dz) > r * 2.2) continue;
+    const d = Math.hypot(dx, dz);
     if (d < r * 1.05) { p.dead = true; setProp(p); } else if (d < r * 2.2) setProp(p);
+  }
+}
+// clouds: soft billboards high over the battlefield, tinted by the map's sky
+const CLOUD_TEX = canvasTex(128, (g, s) => {
+  const r = mulberry(5);
+  for (let i = 0; i < 26; i++) { const x = s * (.18 + r() * .64), y = s * (.4 + r() * .3), rr = s * (.08 + r() * .16), gr = g.createRadialGradient(x, y, 0, x, y, rr);
+    gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, s, s); }
+});
+const cloudGroup = new THREE.Group(); scene.add(cloudGroup);
+function buildClouds(rand) {
+  while (cloudGroup.children.length) { const c = cloudGroup.children.pop(); c.material.dispose(); }
+  const tint = new THREE.Color(theme.hor).lerp(new THREE.Color(0xffffff), .55);
+  for (let i = 0; i < 22; i++) {
+    const m = new THREE.SpriteMaterial({map: CLOUD_TEX, color: tint, transparent: true, opacity: .55 + rand() * .35, depthWrite: false, fog: false});
+    const sp = new THREE.Sprite(m), sc = 260 + rand() * 360;
+    sp.scale.set(sc, sc * .45, 1); sp.position.set((rand() * 2 - 1) * 1700, 380 + rand() * 260, (rand() * 2 - 1) * 1700);
+    cloudGroup.add(sp);
   }
 }
 
@@ -807,82 +992,271 @@ function flagTex(id) {
 }
 
 // ================================================================ tanks (meshes)
-const SX = .15, SY = .13;
+const SX = .15, SY = .13;   // scale of Iron Rain's 2D profiles (still used for the menu silhouettes)
 function box(w, h, d, mat) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); }
-function bodyMaterial(paint, cos) {
+function cyl(rt, rb, len, mat, seg = 14) { return new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, len, seg), mat); }
+
+// ---- factory paint: each nation's colours, with weathering and (for the Germans) the three-tone scheme
+const NATION_PAINT = {US: '#4d5530', SU: '#4a5a32', UK: '#585a3c', DE: '#b4a067'};
+function nationTex(nat) {
+  if (texCache['nat:' + nat]) return texCache['nat:' + nat];
+  const S = 256, r = mulberry(nat.charCodeAt(0) * 131 + nat.charCodeAt(1));
+  const cv = canvasOf(S, S, g => {
+    g.fillStyle = NATION_PAINT[nat]; g.fillRect(0, 0, S, S);
+    if (nat === 'DE') {   // dunkelgelb with red-brown and olive bands
+      for (let i = 0; i < 14; i++) {
+        const c = i % 2 ? '#5e4a2e' : '#4f5a33', x = r() * S, y = r() * S, len = 60 + r() * 90, a = r() * 3, w = 10 + r() * 14;
+        const f = () => { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = c; g.beginPath();
+          for (let k = 0; k <= 10; k++) g.lineTo(-len / 2 + k * len / 10, Math.sin(k * 1.3 + i) * 5 - w / 2);
+          for (let k = 10; k >= 0; k--) g.lineTo(-len / 2 + k * len / 10, Math.sin(k * 1.1 + i) * 5 + w / 2);
+          g.closePath(); g.fill(); g.restore(); }; f.g = g; wrapDraw(S, f);
+      }
+    }
+    for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${r() < .5 ? '0,0,0' : '255,250,230'},${r() * .06})`; g.fillRect(r() * S, r() * S, 1 + r() * 3, 1 + r() * 3); }
+    for (let i = 0; i < 60; i++) { const x = r() * S, gr = g.createLinearGradient(x, 0, x, S); gr.addColorStop(0, 'rgba(40,30,20,0)'); gr.addColorStop(1, `rgba(40,30,20,${.05 + r() * .08})`); g.fillStyle = gr; g.fillRect(x, r() * S * .5, 1 + r() * 2, S); }
+  });
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(.35, .35);
+  return texCache['nat:' + nat] = t;
+}
+// national markings, used when the default emblem is equipped
+function insigniaTex(nat) {
+  if (texCache['ins:' + nat]) return texCache['ins:' + nat];
+  const cv = canvasOf(128, 128, g => {
+    const star = (cx, cy, R, col) => { g.fillStyle = col; g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? R * .4 : R; g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } g.closePath(); g.fill(); };
+    if (nat === 'US') { g.strokeStyle = '#ece8da'; g.lineWidth = 7; g.beginPath(); g.arc(64, 64, 54, 0, TAU); g.stroke(); star(64, 67, 48, '#ece8da'); }
+    else if (nat === 'SU') { star(64, 68, 52, '#a8211b'); g.strokeStyle = '#f0e8d0'; g.lineWidth = 3; g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? 21 : 52; g.lineTo(64 + Math.cos(a) * rr, 68 + Math.sin(a) * rr); } g.closePath(); g.stroke(); }
+    else if (nat === 'DE') { g.fillStyle = '#f2f0e8'; g.fillRect(14, 52, 100, 24); g.fillRect(52, 14, 24, 100); g.fillStyle = '#151515'; g.fillRect(24, 57, 80, 14); g.fillRect(57, 24, 14, 80); }
+    else { g.fillStyle = '#f2f0e8'; g.fillRect(8, 40, 36, 48); g.fillStyle = '#b3241d'; g.fillRect(46, 40, 36, 48); g.fillStyle = '#f2f0e8'; g.fillRect(84, 40, 36, 48); }   // British recognition flash
+  });
+  return texCache['ins:' + nat] = new THREE.CanvasTexture(cv);
+}
+const TRACK_TEX = (() => {
+  const t = canvasTex(64, (g, s) => {
+    g.fillStyle = '#2a2925'; g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 4; i++) { g.fillStyle = '#3c3a34'; g.fillRect(i * 16 + 1, 0, 12, s); g.fillStyle = '#1a1916'; g.fillRect(i * 16 + 13, 0, 3, s); g.fillStyle = '#4a473f'; g.fillRect(i * 16 + 4, s * .2, 5, s * .6); }
+  });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2.2, 2.2); return t;
+})();
+function bodyMaterial(sp, cos) {
   const id = cos && cos.camo || 'std';
-  if (id === 'std') return new THREE.MeshStandardMaterial({color: paint, roughness: .86, metalness: .22, flatShading: true});
+  if (id === 'std') return new THREE.MeshStandardMaterial({color: 0xffffff, map: nationTex(sp.nation), roughness: .82, metalness: .18, flatShading: true});
   const tx = camoTex(id), shiny = id === 'chrome' || id === 'gold';
   const m = new THREE.MeshStandardMaterial({color: 0xffffff, map: tx.map, roughness: shiny ? .3 : .85, metalness: shiny ? .45 : .2, flatShading: true});
   if (tx.emissive) { m.emissiveMap = tx.emissive; m.emissive = new THREE.Color(0xffffff); m.emissiveIntensity = 1; }
   return m;
 }
+
+// ---- geometry helpers
+// a side profile extruded across the hull; upper sides can lean inward (sloped armour, as on the T-34 or Panther)
+function sideExtrude(pts, width, mat, slopeDeg = 0, slopeY = 0) {
+  const g = new THREE.ExtrudeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y))), {depth: width, bevelEnabled: false});
+  g.translate(0, 0, -width / 2);
+  if (slopeDeg) {
+    const p = g.attributes.position, k = Math.tan(slopeDeg * D2R);
+    for (let i = 0; i < p.count; i++) { const y = p.getY(i); if (y > slopeY) { const z = p.getZ(i); p.setZ(i, Math.sign(z) * Math.max(.2, Math.abs(z) - (y - slopeY) * k)); } }
+  }
+  g.computeVertexNormals();
+  return new THREE.Mesh(g, mat);
+}
+// round the corners of a plan outline
+function roundPoly(c, r, n = 4) {
+  const out = [];
+  for (let i = 0; i < c.length; i++) {
+    const p = c[i], a = c[(i + c.length - 1) % c.length], b = c[(i + 1) % c.length];
+    const da = Math.hypot(a[0] - p[0], a[1] - p[1]), db = Math.hypot(b[0] - p[0], b[1] - p[1]), rr = Math.min(r, da / 2, db / 2);
+    const p1 = [p[0] + (a[0] - p[0]) / da * rr, p[1] + (a[1] - p[1]) / da * rr], p2 = [p[0] + (b[0] - p[0]) / db * rr, p[1] + (b[1] - p[1]) / db * rr];
+    for (let k = 0; k <= n; k++) { const t = k / n, u = 1 - t; out.push([u * u * p1[0] + 2 * u * t * p[0] + t * t * p2[0], u * u * p1[1] + 2 * u * t * p[1] + t * t * p2[1]]); }
+  }
+  return out;
+}
+// plan outline (x forward, z across) of a cast or welded turret
+function planPoints(plan) {
+  if (plan.ell) {
+    const [rf, rr, rz] = plan.ell, flat = plan.flat || 1, pts = [];
+    for (let i = 0; i < 28; i++) { const a = i / 28 * TAU, c = Math.cos(a); let x = c * (c > 0 ? rf : rr); if (x > rf * flat) x = rf * flat; pts.push([x, Math.sin(a) * rz]); }
+    return pts;
+  }
+  return roundPoly(plan.poly, plan.r || .05);
+}
+// turret from its plan, extruded upward with sloped sides (taper) and an optional raked front; `open` leaves the roof off
+function turretBody(T, mat) {
+  const plan = planPoints(T.plan), sh = new THREE.Shape(plan.map(([x, z]) => new THREE.Vector2(x, -z)));
+  if (T.open) sh.holes.push(new THREE.Path(plan.map(([x, z]) => new THREE.Vector2(x * T.open, -z * T.open)).reverse()));
+  const g = new THREE.ExtrudeGeometry(sh, {depth: T.h, bevelEnabled: false, curveSegments: 6});
+  g.rotateX(-Math.PI / 2);
+  const p = g.attributes.position, xmax = Math.max(...plan.map(q => q[0]));
+  for (let i = 0; i < p.count; i++) {
+    const t = p.getY(i) / T.h, s = 1 - (1 - T.taper) * t; let x = p.getX(i) * s;
+    if (T.rake && x > 0) x -= T.rake * t * (x / xmax);
+    p.setX(i, x); p.setZ(i, p.getZ(i) * s);
+  }
+  g.computeVertexNormals();
+  return {mesh: new THREE.Mesh(g, mat), front: xmax * (1 - (1 - T.taper) * .5) - (T.rake || 0) * .5, rz: Math.max(...plan.map(q => Math.abs(q[1]))), back: -Math.min(...plan.map(q => q[0]))};
+}
+// a track run: the loop around sprocket and idler, as a band (so the wheels show through) with a tread texture
+function trackLoop(m, side, mats) {
+  const [sx, sy, sr] = m.sprocket, [ix, iy, ir] = m.idler, th = .1;
+  const front = sx > ix ? [sx, sy, sr] : [ix, iy, ir], rear = sx > ix ? [ix, iy, ir] : [sx, sy, sr];
+  const loop = (inset) => {
+    const pts = [], top = m.trackTop - inset, bot = .03 + inset;
+    pts.push([rear[0], bot]); pts.push([front[0], bot]);
+    for (let k = 0; k <= 8; k++) { const a = -Math.PI / 2 + k / 8 * Math.PI; pts.push([front[0] + Math.cos(a) * (front[2] + .04 - inset), Math.max(bot, front[1] + Math.sin(a) * (front[2] + .04 - inset))]); }
+    pts.push([front[0] - .1, top]); pts.push([rear[0] + .1, top]);
+    for (let k = 0; k <= 8; k++) { const a = Math.PI / 2 + k / 8 * Math.PI; pts.push([rear[0] + Math.cos(a) * (rear[2] + .04 - inset), Math.max(bot, rear[1] + Math.sin(a) * (rear[2] + .04 - inset))]); }
+    return pts;
+  };
+  const sh = new THREE.Shape(loop(0).map(([x, y]) => new THREE.Vector2(x, y)));
+  sh.holes.push(new THREE.Path(loop(th).map(([x, y]) => new THREE.Vector2(x, y)).reverse()));
+  const g = new THREE.ExtrudeGeometry(sh, {depth: m.trackW, bevelEnabled: false, curveSegments: 4});
+  g.translate(0, 0, -m.trackW / 2);
+  const mesh = new THREE.Mesh(g, mats.track); mesh.position.z = side * (m.W / 2 - m.trackW / 2);
+  return mesh;
+}
+function roadWheel(r, w, mats, rim = true) {
+  const g = new THREE.Group();
+  const tyre = cyl(r, r, w, mats.rubber, 18); tyre.rotation.x = Math.PI / 2; g.add(tyre);
+  const disc = cyl(r * .82, r * .82, w + .02, mats.wheel, 18); disc.rotation.x = Math.PI / 2; g.add(disc);
+  if (rim) { const hub = cyl(r * .28, r * .32, w + .08, mats.metal, 10); hub.rotation.x = Math.PI / 2; g.add(hub); }
+  return g;
+}
+
+// ---- the tank: hull, running gear, turret, gun and fittings, built from the vehicle's real dimensions
 function makeTankMesh(sp, cos) {
   cos = cleanCos(cos);
-  const body = bodyMaterial(sp.paint, cos);
-  const camoBase = cos.camo !== 'std' ? new THREE.Color(cosItem('camo', cos.camo).base) : new THREE.Color(sp.paint);
-  const dark = new THREE.MeshStandardMaterial({color: 0x2b2c27, roughness: .95, metalness: .35});
-  const wheelM = new THREE.MeshStandardMaterial({color: 0x45463f, roughness: .9, metalness: .35});
-  const gunM = new THREE.MeshStandardMaterial({color: camoBase.clone().multiplyScalar(.75), roughness: .7, metalness: .35});
+  const m = sp.m3;
+  const body = bodyMaterial(sp, cos);
+  const camoBase = cos.camo !== 'std' ? new THREE.Color(cosItem('camo', cos.camo).base) : new THREE.Color(NATION_PAINT[sp.nation]);
+  const mats = {
+    rubber: new THREE.MeshStandardMaterial({color: 0x1f1f1c, roughness: .95, metalness: .05}),
+    wheel: new THREE.MeshStandardMaterial({color: camoBase.clone().multiplyScalar(.85), roughness: .85, metalness: .25, map: cos.camo === 'std' ? nationTex(sp.nation) : null}),
+    metal: new THREE.MeshStandardMaterial({color: 0x3a3a35, roughness: .55, metalness: .6}),
+    dark: new THREE.MeshStandardMaterial({color: 0x24251f, roughness: .9, metalness: .3}),
+    track: new THREE.MeshStandardMaterial({color: 0xffffff, map: TRACK_TEX, roughness: .9, metalness: .45}),
+    gun: new THREE.MeshStandardMaterial({color: camoBase.clone().multiplyScalar(.82), roughness: .65, metalness: .35, map: cos.camo === 'std' ? nationTex(sp.nation) : null}),
+    glass: new THREE.MeshStandardMaterial({color: 0xd8e4e8, roughness: .2, metalness: .5, emissive: 0x334044}),
+  };
+  if (mats.wheel.map) mats.wheel.color.setHex(0xdddddd);
+  if (mats.gun.map) mats.gun.color.setHex(0xcfcfcf);
   const hull = new THREE.Group(), turret = new THREE.Group(), gun = new THREE.Group();
-  const xs = sp.hull.map(p => p[0]), minX = Math.min(...xs), maxX = Math.max(...xs), cx = (minX + maxX) / 2;
-  const L = (maxX - minX) * SX, W = sp.w, trackH = 12.5 * SY, hullTop = -Math.min(...sp.hull.map(p => p[1])) * SY;
-  const shape = new THREE.Shape(sp.hull.map(([x, y]) => new THREE.Vector2((x - cx) * SX, -y * SY)));
-  const hg = new THREE.ExtrudeGeometry(shape, {depth: W, bevelEnabled: false}); hg.translate(0, 0, -W / 2);
-  hull.add(new THREE.Mesh(hg, body));
-  const lower = box(L * .84, trackH * .8, W * .62, dark); lower.position.y = trackH * .55; hull.add(lower);
-  for (const s of [-1, 1]) {
-    const tr = box(L * .92, trackH * .92, .64, dark); tr.position.set(0, trackH * .48, s * (W / 2 - .32)); hull.add(tr);
-    const r = sp.wheelR * SX * .82, n = sp.wheels;
-    for (let i = 0; i < n; i++) {
-      const wl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, .2, 12), wheelM); wl.rotation.x = Math.PI / 2;
-      wl.position.set(-L * .38 + (L * .76) * (n > 1 ? i / (n - 1) : .5), r + .12, s * (W / 2 + .02)); hull.add(wl);
+  const hullTop = Math.max(...m.hull.map(p => p[1]));
+
+  // hull: upper hull from the side profile, lower hull tub between the tracks
+  // the hull is only full width above the tracks (sponsons/superstructure); below that it's the narrow tub between them
+  const clipY = (pts, y, keepAbove) => {   // cut the side profile along a horizontal line
+    const out = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length], ina = keepAbove ? a[1] >= y : a[1] <= y, inb = keepAbove ? b[1] >= y : b[1] <= y;
+      if (ina) out.push(a);
+      if (ina !== inb) out.push([a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]), y]);
     }
-    if (sp.skirt) { const sk = box(L * .84, trackH * .5, .06, body); sk.position.set(0, trackH * .78, s * (W / 2 + .1)); hull.add(sk); }
-    const fender = box(L * .98, .08, .7, body); fender.position.set(0, trackH + .02, s * (W / 2 - .3)); hull.add(fender);
+    return out;
+  };
+  const cut = m.churchill ? 0 : m.trackTop + .04;
+  if (cut > 0 && m.lower) {
+    hull.add(sideExtrude(clipY(m.hull, cut, true), m.hullW, body, m.slope, m.slopeY));
+    hull.add(sideExtrude(clipY(m.hull, cut + .01, false), m.lower.w, body));
+    const belly = box(m.L * .82, cut - m.lower.y0, m.lower.w * .98, mats.dark); belly.position.y = (cut + m.lower.y0) / 2; hull.add(belly);
+  } else hull.add(sideExtrude(m.hull, m.hullW, body, m.slope, m.slopeY));
+  // engine deck: grilles and an access plate on the rear hull roof
+  { const deckX = Math.min(...m.hull.map(p => p[0])) + m.L * .2, hy = hullTop + .015;
+    for (let k = 0; k < 2; k++) { const gr = box(m.L * .18, .02, m.hullW * .3, mats.dark); gr.position.set(deckX + k * m.L * .02, hy, (k ? -1 : 1) * m.hullW * .2); hull.add(gr); }
+    const plate = box(m.L * .12, .03, m.hullW * .5, body); plate.position.set(deckX + m.L * .2, hy, 0); hull.add(plate); }
+  if (m.hullW < m.W - .2 && !m.churchill) {   // track guards over the runs
+    for (const s of [-1, 1]) { const f = box(m.L * .96, .05, (m.W - m.hullW) / 2 + .02, body); f.position.set(0, m.trackTop + .04, s * (m.hullW / 2 + (m.W - m.hullW) / 4)); hull.add(f); }
   }
-  let mount, gp, tTop, tDepth, tW;
-  if (sp.dome) {
-    const rx = sp.dome.rx * SX, ry = sp.dome.ry * SY * 1.25, rz = W * .37;
-    const dm = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 10, 0, TAU, 0, Math.PI / 2), body); dm.scale.set(rx, ry, rz); turret.add(dm);
-    mount = new THREE.Vector3((-1 - cx) * SX, hullTop - .05, 0); gp = new THREE.Vector3(rx * .82, ry * .42, 0); tTop = ry; tDepth = rx; tW = rz * 2;
-  } else {
-    const txs = sp.turret.map(p => p[0]), tys = sp.turret.map(p => p[1]);
-    const tcx = (Math.min(...txs) + Math.max(...txs)) / 2, base = -Math.max(...tys) * SY, th = (Math.max(...tys) - Math.min(...tys)) * SY;
-    const tsh = new THREE.Shape(sp.turret.map(([x, y]) => new THREE.Vector2((x - tcx) * SX, -y * SY - base)));
-    tW = W * (sp.tw || .66);
-    const tg = new THREE.ExtrudeGeometry(tsh, {depth: tW, bevelEnabled: false}); tg.translate(0, 0, -tW / 2);
-    turret.add(new THREE.Mesh(tg, body));
-    mount = new THREE.Vector3((tcx - cx) * SX, base, 0);
-    const front = (Math.max(...txs) - tcx) * SX;
-    gp = new THREE.Vector3(front * .9, th * .5, 0); tTop = th; tDepth = (Math.max(...txs) - Math.min(...txs)) * SX / 2;
-    if (!sp.open && sp.tw == null) { const cup = new THREE.Mesh(new THREE.CylinderGeometry(.36, .4, .32, 10), body); cup.position.set(-tDepth * .35, th + .14, tW * .2); turret.add(cup); }
-  }
-  const gl = sp.gun.len * SX, gr = sp.gun.w * .06;
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(gr * .85, gr, gl, 16), gunM); barrel.rotation.z = -Math.PI / 2; barrel.position.x = gl / 2; gun.add(barrel);
-  if (sp.gun.sleeve) { const sl = new THREE.Mesh(new THREE.CylinderGeometry(gr * 1.9, gr * 2.1, .7, 12), gunM); sl.rotation.z = -Math.PI / 2; sl.position.x = .25; gun.add(sl); }
-  if (sp.gun.brake) { const br = box(.38, gr * 2.4, gr * 2.4, gunM); br.position.x = gl - .1; gun.add(br); }
-  gun.position.copy(gp); turret.add(gun);
-  // emblem decals: on the turret sides, or on the hull sides under a cast dome
-  const emMat = new THREE.MeshStandardMaterial({map: emblemTex(cos.emblem), transparent: true, alphaTest: .4, roughness: .8, polygonOffset: true, polygonOffsetFactor: -2});
+  // running gear, both sides
   for (const s of [-1, 1]) {
-    const em = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), emMat);
-    if (sp.dome) { em.position.set(-L * .12, trackH + (hullTop - trackH) * .5, s * (W / 2 + .015)); em.scale.setScalar(Math.min(1.1, (hullTop - trackH) * .9)); hull.add(em); }
-    else { em.position.set(-tDepth * .15, tTop * .5, s * (tW / 2 + .015)); em.scale.setScalar(Math.min(1.2, tTop * .8)); turret.add(em); }
-    em.rotation.y = s > 0 ? 0 : Math.PI;
+    const zt = s * (m.W / 2 - m.trackW / 2), zw = s * (m.W / 2 - m.trackW / 2);
+    hull.add(trackLoop(m, s, mats));
+    const R = m.run, ww = Math.min(m.trackW * .8, .32);
+    const wheelAt = (x, y, r, z = zw, w = ww) => { const wl = roadWheel(r, w, mats); wl.position.set(x, y, z); hull.add(wl); };
+    if (R.type === 'christie' || R.type === 'torsion' || R.type === 'small') {
+      for (let i = 0; i < R.n; i++) wheelAt(R.x0 + (R.x1 - R.x0) * i / (R.n - 1), R.r + .06, R.r);
+      if (R.rollers) for (let i = 0; i < R.rollers; i++) wheelAt(R.x0 + (R.x1 - R.x0) * (i + .5) / R.rollers, m.trackTop - .14, .1, zw, ww * .6);
+    } else if (R.type === 'interleaved') {   // big overlapping wheels in two rows (Tiger, Panther)
+      for (let i = 0; i < R.n; i++) wheelAt(R.x0 + (R.x1 - R.x0) * i / (R.n - 1), R.r + .06, R.r, zw + (i % 2 ? -s * .16 : s * .02), .14);
+    } else if (R.type === 'vvss') {           // volute-spring bogies: two small wheels each, with a return roller on top
+      for (const bx of R.bogies) {
+        wheelAt(bx - R.r * 1.15, R.r + .06, R.r); wheelAt(bx + R.r * 1.15, R.r + .06, R.r);
+        const br = box(R.r * 2.6, R.r * 1.2, .14, mats.wheel); br.position.set(bx, R.r * 1.5, zw - s * .05); hull.add(br);
+        const rl = roadWheel(.09, .14, mats, false); rl.position.set(bx + .1, R.r * 2.5, zw); hull.add(rl);
+      }
+    }
+    const spr = roadWheel(m.sprocket[2], ww * .9, mats); spr.position.set(m.sprocket[0], m.sprocket[1], zw); hull.add(spr);
+    const idl = roadWheel(m.idler[2], ww * .9, mats); idl.position.set(m.idler[0], m.idler[1], zw); hull.add(idl);
+    if (m.extras.includes('skirts')) { const sk = box(m.L * .8, .55, .04, body); sk.position.set(-.1, m.trackTop - .2, s * (m.W / 2 + .05)); hull.add(sk); }
+    if (m.extras.includes('fuelTanks')) for (const fx of [-.4, -1.4]) { const ft = cyl(.19, .19, .85, mats.wheel, 12); ft.rotation.z = Math.PI / 2; const fy = hullTop - .3; ft.position.set(-m.L / 2 + 1.2 + fx * .9 + .4, fy, s * (m.hullW / 2 - (m.slope ? (fy - m.slopeY) * Math.tan(m.slope * D2R) : 0) + .08)); hull.add(ft); }
+    if (m.extras.includes('bins')) for (const bx of [-1.6, -.4, .8]) { const b = box(.95, .35, .4, body); b.position.set(bx, m.trackTop + .24, s * (m.W / 2 - .22)); hull.add(b); }
+    if (m.churchill) { const g2 = box(m.L * .98, .06, m.trackW + .1, body); g2.position.set(0, m.trackTop + .05, zt); hull.add(g2);
+      if (m.extras.includes('louvres')) { const lv = box(1.2, .4, .05, mats.dark); lv.position.set(-1.8, 1.25, s * (m.hullW / 2 + .03)); hull.add(lv); } }
   }
+  // hull fittings (placed on the front plate at the right height)
+  const frontXAt = y => { let best = -1e9; const P = m.hull; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; if ((a[1] - y) * (b[1] - y) <= 0 && a[1] !== b[1]) best = Math.max(best, a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1])); } return best; };
+  const front = Math.max(...m.hull.map(p => p[0]));
+  if (m.extras.includes('hullMG')) { const ball = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8), body); const fy = hullTop - .25;
+    const fx = frontXAt(fy); ball.position.set(fx - .05, fy, -m.hullW * .25); hull.add(ball);
+    const mg = cyl(.022, .022, .5, mats.metal, 6); mg.rotation.z = -Math.PI / 2; mg.position.set(fx + .15, fy, -m.hullW * .25); hull.add(mg); }
+  if (m.extras.includes('lights')) for (const s of [-1, 1]) { const l = cyl(.09, .1, .14, mats.metal, 10); l.rotation.z = -Math.PI / 2; const ly = hullTop - .35; l.position.set(frontXAt(ly) - .02, ly, s * m.hullW * .38); hull.add(l);
+    const lens = cyl(.075, .075, .02, mats.glass, 10); lens.rotation.z = -Math.PI / 2; lens.position.set(l.position.x + .08, l.position.y, l.position.z); hull.add(lens); }
+  if (m.extras.includes('spareTracks')) for (let k = 0; k < 5; k++) { const lnk = box(.16, .04, .42, mats.track); lnk.position.set(2.25 - k * .17 * .55, 1.35 + k * .17 * .4, 0); lnk.rotation.z = .65; hull.add(lnk); }
+  if (m.extras.includes('exhausts')) for (const s of [-1, 1]) { const e = cyl(.08, .09, .7, mats.dark, 10); e.position.set(-m.L / 2 + .05, hullTop - .05, s * .45); hull.add(e); }
+  if (m.extras.includes('deflector')) { const d = box(.15, .35, m.hullW * .7, mats.dark); d.position.set(-m.L / 2 + .02, .8, 0); hull.add(d); }
+  for (const s of [-1, 1]) { const hatch = cyl(.27, .27, .05, body, 14); hatch.position.set(front - 1.25, hullTop + .02, s * m.hullW * .22); hull.add(hatch); }
+
+  // turret
+  const T = m.turret, tb = turretBody(T, body);
+  turret.add(tb.mesh);
+  if (T.open) { const floor = new THREE.Mesh(new THREE.CircleGeometry(tb.rz * .85, 16), mats.dark); floor.rotation.x = -Math.PI / 2; floor.position.y = .2; turret.add(floor); }
+  const gpx = tb.front, gpy = T.h * .5;
+  const ml = m.mantlet;
+  let mant;
+  if (ml.type === 'pig') { mant = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), body); mant.scale.set(ml.d, ml.h / 2, ml.w / 2); }
+  else if (ml.type === 'round') { mant = cyl(ml.h / 2, ml.h / 2, ml.w, body, 14); mant.rotation.x = Math.PI / 2; }
+  else if (ml.type === 'rotor') { mant = new THREE.Mesh(new THREE.CylinderGeometry(ml.w * .55, ml.w * .55, ml.h, 16, 1, false, -.55, 1.1), body); mant.rotation.y = Math.PI / 2; mant.position.x = -ml.w * .45; const holder = new THREE.Group(); holder.add(mant); mant = holder; }
+  else mant = box(ml.d, ml.h, ml.w, body);
+  mant.position.set(ml.type === 'rotor' ? 0 : ml.d * .35, 0, 0);
+  gun.add(mant);
+  const gl = m.gun.len, gr = m.gun.r;
+  const barrel = cyl(gr * .82, gr * 1.1, gl, mats.gun, 14); barrel.rotation.z = -Math.PI / 2; barrel.position.x = gl / 2 + ml.d * .5; gun.add(barrel);
+  const sleeve = cyl(gr * 1.6, gr * 1.8, .6, mats.gun, 14); sleeve.rotation.z = -Math.PI / 2; sleeve.position.x = ml.d * .5 + .35; gun.add(sleeve);
+  if (m.gun.brake) {
+    const bl = m.gun.brake === 2 ? .42 : .26;
+    const br = cyl(gr * 2.1, gr * 2.1, bl, mats.gun, 14); br.rotation.z = -Math.PI / 2; br.position.x = gl + ml.d * .5 - bl / 2 + .05; gun.add(br);
+    if (m.gun.brake === 2) { const gap = cyl(gr * 2.15, gr * 2.15, .05, mats.dark, 14); gap.rotation.z = -Math.PI / 2; gap.position.x = br.position.x; gun.add(gap); }
+  }
+  gun.position.set(gpx, gpy, 0); turret.add(gun);
+  // turret fittings
+  if (m.cupola) { const [cx, cz] = m.cupola, cu = cyl(.34, .36, .24, body, 16); cu.position.set(cx, T.h + .12, cz); turret.add(cu);
+    for (let k = 0; k < 6; k++) { const v = box(.08, .06, .02, mats.glass); const a = k / 6 * TAU; v.position.set(cx + Math.cos(a) * .35, T.h + .14, cz + Math.sin(a) * .35); v.rotation.y = -a; turret.add(v); }
+    const lid = cyl(.3, .3, .04, body, 16); lid.position.set(cx, T.h + .26, cz); turret.add(lid); }
+  if (!T.open) { const hatch = cyl(.25, .25, .04, body, 14); hatch.position.set(-tb.back * .3, T.h + .02, m.cupola ? -m.cupola[1] : .3); turret.add(hatch); }
+  if (m.extras.includes('turretBin')) { const b = box(.55, .45, 1.3, body); b.position.set(-tb.back - .2, T.h * .55, 0); turret.add(b); }
+  if (m.extras.includes('smoke')) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { const d = cyl(.05, .05, .25, mats.dark, 8); d.rotation.x = s * .6; d.position.set(.2 - k * .2, T.h * .8, s * (tb.rz * .9)); turret.add(d); }
+  if (m.extras.includes('mgRing')) { const ring = new THREE.Mesh(new THREE.TorusGeometry(.35, .03, 6, 16), mats.metal); ring.rotation.x = Math.PI / 2; ring.position.set(-tb.back + .3, T.h + .05, 0); turret.add(ring);
+    const mg = cyl(.025, .025, 1.1, mats.metal, 6); mg.rotation.z = -Math.PI / 2; mg.position.set(-tb.back + .7, T.h + .2, 0); turret.add(mg); }
+  // markings: national insignia (or your store emblem) on the turret sides, tilted with the armour
+  const emTex = cos.emblem === 'star' ? insigniaTex(sp.nation) : emblemTex(cos.emblem);
+  const emMat = new THREE.MeshStandardMaterial({map: emTex, transparent: true, alphaTest: .4, roughness: .8, polygonOffset: true, polygonOffsetFactor: -2});
+  const tilt = Math.atan((1 - T.taper) * tb.rz / T.h);
+  for (const s of [-1, 1]) {
+    const em = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), emMat), sz = Math.min(.7, T.h * .75);
+    em.scale.set(sz, sz, 1); em.position.set(-tb.back * .15, T.h * .5, s * (tb.rz * (1 - (1 - T.taper) * .5) + .012));
+    em.rotation.set(0, s > 0 ? 0 : Math.PI, 0); em.rotateX(-tilt); turret.add(em);
+  }
+  // antenna and flag
   let flag = null;
-  const antennaTops = [];
-  for (let a = 0; a < sp.antennas; a++) { const an = new THREE.Mesh(new THREE.CylinderGeometry(.02, .03, 2.6, 4), dark); an.position.set(-L * .4, hullTop + 1.3, (a ? -1 : 1) * W * .35); hull.add(an); antennaTops.push(new THREE.Vector3(-L * .4, hullTop + 2.5, (a ? -1 : 1) * W * .35)); }
+  const dark = mats.dark, antennaTops = [];
+  const an = cyl(.015, .025, 2.6, dark, 4); an.position.set(-m.L * .38, hullTop + 1.3, -m.hullW * .35); hull.add(an); antennaTops.push(new THREE.Vector3(-m.L * .38, hullTop + 2.5, -m.hullW * .35));
   if (cos.flag !== 'none') {
-    if (!antennaTops.length) { const mast = new THREE.Mesh(new THREE.CylinderGeometry(.03, .04, 2.4, 5), dark); mast.position.set(-L * .42, hullTop + 1.2, W * .3); hull.add(mast); antennaTops.push(new THREE.Vector3(-L * .42, hullTop + 2.3, W * .3)); }
     const fg = new THREE.PlaneGeometry(1.4, .88, 6, 1); fg.translate(-.7, -.44, 0);
     flag = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({map: flagTex(cos.flag), transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .9}));
     flag.position.copy(antennaTops[0]); hull.add(flag);
   }
   [hull, turret].forEach(g => g.traverse(o => { if (o.isMesh && o.material !== emMat) { o.castShadow = true; o.receiveShadow = true; } }));
   scene.add(hull, turret);
-  return {hull, turret, gun, flag, mount, gp, L, W, gunLen: gl, top: mount.y + tTop, eye: new THREE.Vector3(-tDepth * .3, tTop + 1.45, -W * .3), mats: [body, wheelM, gunM, dark, emMat]};
+  const mount = new THREE.Vector3(T.x, hullTop - .02, 0);
+  return {hull, turret, gun, flag, mount, gp: new THREE.Vector3(gpx, gpy, 0), L: m.L, W: m.W, gunLen: gl + ml.d * .5, top: mount.y + T.h + (m.cupola ? .25 : 0),
+    eye: new THREE.Vector3(-tb.back * .45, T.h + 1.1, -m.hullW * .22), mats: [body, emMat, ...Object.values(mats)]};
 }
 function disposeTank(m) { for (const g of [m.hull, m.turret]) { scene.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } m.mats.forEach(x => x.dispose()); }
 
@@ -1051,7 +1425,7 @@ function createBattle(cfg) {
   }
   mySeat = net ? (net.role === 'host' ? 0 : net.seat) : 0;
   aimPitch = 0; arcPref = 0;
-  player = tanks[mySeat];
+  player = tanks[mySeat]; seatRider(player); riderMsg = null; riderLowSaid = false;
   mode = 'game'; paused = false; worldTime = 0; nextFlight = rnd(10, 20);
   hideScreens();
 }
@@ -1163,7 +1537,7 @@ function fire(t) {
   if (!canFire(t)) return;
   const w = weaponOf(t), p = POWER;
   const base = t.weapon === 'S' ? RELOAD.special : RELOAD[w.key] || 4;
-  t.reload = t.reloadMax = base * t.spec.atk / 100 * (t.ai ? CPU_RELOAD[battleLvl] || 1.5 : 1);
+  t.reload = t.reloadMax = base * t.spec.rel * (t.ai ? CPU_RELOAD[battleLvl] || 1.5 : 1);   // the real rate of fire sets the reload
   if (t.weapon === 'S') { t.stock.splice(t.armed, 1); t.weapon = 0; t.armed = 0; }
   else if (t.ammo[t.weapon] !== Infinity) { t.ammo[t.weapon]--; if (t.ammo[t.weapon] <= 0) t.weapon = 0; }
   t.stats.shots++;
@@ -1299,7 +1673,7 @@ function kill(t, by) {
   t.alive = false; t.hp = 0;
   if (by && by !== t) by.stats.kills++;
   emit({t: 'feed', s: t.name + ' DESTROYED' + (by && by !== t ? ' by ' + by.name : ''), c: '#ff8a5c'});
-  emit({t: 'kill', i: t.i, b: t.cos.boom});
+  emit({t: 'kill', i: t.i, b: t.cos.boom, by: by ? by.i : -1});
 }
 function killVisual(t, boom, quiet) {
   t.alive = false; t.hp = 0;
@@ -1539,10 +1913,10 @@ function applyEvent(e) {
       if (t !== player) { t.yaw = e.y; t.elev = e.e; }
       else lastShot = {rng: aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null, elev: e.e, brg: bearingOf(e.y), w: e.w, res: null, x: t.x, z: t.z};
       fireFx(t); break; }
-    case 'hurt': { const t = T(e.i); if (!t) break; pops.push({x: t.x, y: t.y + t.mesh.top + 2, z: t.z, s: '-' + e.d, c: e.f ? '#d6c99c' : '#ffb199', t: 0}); if (t === player) { dmgFlash = Math.min(1, .45 + e.d / 60); camShake = Math.max(camShake, .8); } break; }
-    case 'kill': { const t = T(e.i); if (t) killVisual(t, e.b); break; }
+    case 'hurt': { const t = T(e.i); if (!t) break; pops.push({x: t.x, y: t.y + t.mesh.top + 2, z: t.z, s: '-' + e.d, c: e.f ? '#d6c99c' : '#ffb199', t: 0}); if (t === player) { if (e.d >= 15 && worldTime - riderHitAt > 6 && t.hp > 0) { riderHitAt = worldTime; riderSay(t.hp / t.maxHp < .3 && !riderLowSaid ? (riderLowSaid = true, 'low') : 'hit'); } dmgFlash = Math.min(1, .45 + e.d / 60); camShake = Math.max(camShake, .8); } break; }
+    case 'kill': { const t = T(e.i); if (t) killVisual(t, e.b); if (e.by === mySeat && e.i !== mySeat && player && player.alive) riderSay('kill', true); break; }
     case 'feed': feedMsg(e.s, e.c); break;
-    case 'start': showBanner('ENGAGE', 'Free fire · drive and shoot at will', '#e6b44c', 2.6); sfx.tick(700); break;
+    case 'start': showBanner('ENGAGE', 'Free fire · drive and shoot at will', '#e6b44c', 2.6); sfx.tick(700); setTimeout(() => riderSay('start'), 1600); break;
     case 'spot': if (e.i === mySeat) spotReport(e.x, e.z, e.d >= 0 && T(e.d) !== player ? T(e.d) : null); break;
     case 'dust': for (let i = 0; i < 10; i++) puffSmoke(e.x, e.y + 1, e.z, {vx: rnd(-5, 5), vy: rnd(3, 10), vz: rnd(-5, 5), life: 2, s0: 2, s1: 6, g: .45, a: .6}); sfx.clank(); break;
     case 'spark': for (let i = 0; i < 8; i++) fireP.spawn({x: e.x, y: e.y, z: e.z, vx: rnd(-10, 10), vy: rnd(4, 14), vz: rnd(-10, 10), grav: G, life: .5, s0: .5, s1: .2, c0: FIRE_HOT, c1: FIRE_MID, a: 1}); sfx.clank(); break;
@@ -1558,7 +1932,7 @@ function applyEvent(e) {
       if (e.i != null) { sfx.prize(); const t = T(e.i); if (t && !auth()) { t.x = e.x; t.z = e.z; t.y = e.y; } } break;
     case 'sfx': if (sfx[e.n] && (e.i == null || e.i === mySeat)) sfx[e.n](e.f); break;
     case 'say': { const t = T(e.i); if (t) { feedMsg((t.name) + ': ' + e.s, t.color); sfx.chat(); } break; }
-    case 'over': winner = e.w; state = 'over'; overT = 0;
+    case 'over': winner = e.w; state = 'over'; overT = 0; riderSay((net ? winner === mySeat : player && player.alive) ? 'win' : 'lose', true);
       if (net) showBanner(winner === mySeat ? 'VICTORY' : winner >= 0 ? tanks[winner].name + ' WINS' : 'DRAW', winner === mySeat ? 'Last tank standing' : 'Battle over', winner >= 0 ? tanks[winner].color : '#d6c99c', 3);
       else showBanner(player.alive ? 'VICTORY' : 'KNOCKED OUT', player.alive ? 'Last tank standing' : 'Your tank is out of action', player.alive ? '#e6b44c' : '#e0573a', 3);
       break;
@@ -1777,7 +2151,7 @@ function startClientRound(m) {
   for (const c of m.carves || []) applyEvent({t: 'carve', x: c[0], y: c[1], z: c[2], r: c[3], vs: c[4], sc: c[5]});
   tanks = seats.map((s, i) => { const p = m.pos[i]; const t = makeTank(i, s, p[0], p[1], p[2]); t.yaw = p[3]; t.elev = p[4]; t.hp = p[5]; return t; });
   tanks.forEach((t, i) => { t.name = seats[i].name; if (!m.pos[i][6]) killVisual(t, null, true); });
-  mySeat = net.seat; player = tanks[mySeat];
+  mySeat = net.seat; player = tanks[mySeat]; seatRider(player); riderMsg = null; riderLowSaid = false;
   mode = 'game'; paused = false; worldTime = 0; state = 'battle'; stateT = 0;
   hideScreens(); requestLock();
 }
@@ -1852,7 +2226,7 @@ glc.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('mousemove', e => {
   if (mode !== 'game' || paused || chatOpen) return;   // no button needed: the mouse always aims (pointer lock just keeps the cursor from hitting the screen edge)
   const t = player; if (!t || !t.alive || state === 'over') return;
-  const zf = zoom > .5 ? .22 * settings.zsens : 1, s = settings.sens;
+  const zf = zoom > .5 ? .22 * settings.zsens * scopeFov() / 16 : 1, s = settings.sens;
   t.yaw = wrapA(t.yaw - e.movementX * .0021 * s * zf);
   aimPitch = clamp(aimPitch - e.movementY * .07 * s * zf * (settings.invert ? -1 : 1), -35, 40);   // the mouse moves your view; the gun lays itself to hit what you look at
 });
@@ -1879,7 +2253,7 @@ addEventListener('keydown', e => {
     else if (e.key.length === 1 && chatBuf.length < 40) chatBuf += e.key;
     return;
   }
-  if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'tab'].includes(k)) e.preventDefault();
+  if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'tab', 'pageup', 'pagedown'].includes(k)) e.preventDefault();
   if (k === 'escape') { if (!locked) setPaused(!paused); return; }
   if (paused) return;
   if (k === 't' && net && !e.repeat) { chatOpen = true; chatBuf = ''; for (const q in keys) keys[q] = false; e.preventDefault(); return; }
@@ -1889,6 +2263,8 @@ addEventListener('keydown', e => {
   if (k === 'r' && state === 'battle' && player.alive) { const rf = rangefind(); if (rf) { setZero(rf.d, 'lase'); feedMsg('LASED ' + Math.round(rf.d) + ' m · zero set', '#e6b44c'); } else sfx.bad(); }
   if (k === 'x' && state === 'battle' && player.alive) { arcPref = arcPref ? 0 : 1; sfx.tick(arcPref ? 1200 : 800); feedMsg(arcPref ? 'LOB: high arc over cover' : 'DIRECT: flat, fast shot', '#e6b44c'); }
   if (k === 'v' && myShell && !myShell.dead) followShell = myShell;   // hold V: ride along with your shell full-screen
+  if ((k === 'pageup' || k === 'pagedown') && state === 'battle' && player.alive) { setZero(zeroRange + (k === 'pageup' ? 1 : -1) * (e.shiftKey ? 5 : 25)); return; }   // zero the sight
+  if (k === 'tab' && player && player.alive) { scopeMag = scopeMag === 4 ? 8 : 4; sfx.tick(scopeMag === 8 ? 1300 : 1000); return; }
   if (k === '[' || k === ']') { nudgeSens(k === ']' ? 1.1 : 1 / 1.1); return; }
   if (k === 'c') { settings.shellCam = !settings.shellCam; save('ironrain3d.settings', settings); feedMsg('Follow-shell camera ' + (settings.shellCam ? 'ON' : 'OFF'), '#d6c99c'); }
   if (k === 'm') { settings.vol = settings.vol > 0 ? 0 : .7; if (master) master.gain.value = settings.vol; save('ironrain3d.settings', settings); }
@@ -1905,7 +2281,7 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; zoomHeld
 
 function playerInput(dt) {
   const t = player; if (!t || !t.alive || state === 'over' || paused) { engineLevel = 0; traverseRate = 0; return; }
-  const fine = keys.shift ? .25 : 1, zf = zoom > .5 ? .3 : 1;
+  const fine = keys.shift ? .25 : 1, zf = zoom > .5 ? .3 * scopeFov() / 16 : 1;
   const y0 = t.yaw;
   if (keys.arrowleft) t.yaw += 40 * D2R * dt * fine * zf;
   if (keys.arrowright) t.yaw -= 40 * D2R * dt * fine * zf;
@@ -1946,19 +2322,20 @@ function step(dt) {
     }
   }
   for (const t of tanks) { tankPhysics(t, dt, auth()); syncTank(t, dt); }
-  fireP.update(dt); smokeP.update(dt); chipP.update(dt); stepSprites(dt); stepFlights(dt);
+  fireP.update(dt); smokeP.update(dt); chipP.update(dt); stepSprites(dt); stepFlights(dt); stepRider(dt);
   for (const p of pops) p.t += dt; pops = pops.filter(p => p.t < 2);
   for (const f of feed) f.t += dt; feed = feed.filter(f => f.t < 8);
   for (const i of impacts) i.t -= dt; impacts = impacts.filter(i => i.t > 0);
   if (banner && (banner.t += dt) > banner.dur) banner = null;
   if (spot && (spot.t += dt) > 4.5) spot = null;
+  if (zeroFlash > 0) zeroFlash -= dt;
   camShake = Math.max(0, camShake - dt * 1.8); camKick = Math.max(0, camKick - dt * 4); dmgFlash = Math.max(0, dmgFlash - dt * 1.2);
   if (flashT > 0) { flashT -= dt; flash.intensity *= Math.exp(-dt * 12); if (flashT <= 0) flash.intensity = 0; }
   if (camHold && (camHold.t -= dt) <= 0) camHold = null;
   if (state === 'over') {
     overT += dt;
     if (!roundPay && (auth() || tanks.some(t => t.stats.shots))) payRound();
-    if (overT > 3.2 && document.getElementById('end').hidden && !paused) showEnd();
+    if (overT > 3.2 && !myReel() && document.getElementById('end').hidden && !paused) showEnd();   // let your prize show first
   }
   if (net && net.role === 'host' && (snapAcc += dt) >= .05) { snapAcc = 0; bcast(snapMsg()); }
   else if (net && net.role === 'host' && evq.length > 40) bcast(snapMsg());
@@ -1971,7 +2348,7 @@ function step(dt) {
   }
 }
 function hostStep(dt) {
-  if (state !== 'battle') return;
+  if (state !== 'battle') { if (state === 'over') stepReels(dt); return; }   // a supply spin still lands and pays out after the last shot
   aiBudget = 1;
   for (const t of tanks) {
     if (!t.alive) continue;
@@ -2010,7 +2387,8 @@ function payRound() {
 // raised by the superelevation for the ZERO range. A target at the zero range is hit dead on the crosshair; for
 // nearer or farther targets use the range marks on the reticle (hold over). Wheel sets the zero, R lases the range
 // under the crosshair and sets the zero to it, X switches to the high lob solution for that range.
-let aimPitch = 0, arcPref = 0, zeroRange = 300, zeroOut = false;
+let aimPitch = 0, arcPref = 0, zeroRange = 300, zeroOut = false, scopeMag = 4, zeroFlash = 0;
+const scopeFov = () => scopeMag === 8 ? 8 : 16;   // x4 and x8 (Tab switches)
 const ZERO_MIN = 50, ZERO_MAX = 725;
 function gunElevFor(t, pitchDeg, R, lob) {   // gun elevation (deg) that drops a full-charge shell on the sight line at range R
   const v = shotSpeed(POWER), p = pitchDeg * D2R;
@@ -2029,9 +2407,90 @@ function gunLay(dt) {
   t.elev += clamp(want - t.elev, -120 * dt, 120 * dt);   // fast enough to feel locked to the mouse
 }
 function setZero(r, why) {
-  zeroRange = clamp(Math.round(r / 5) * 5, ZERO_MIN, ZERO_MAX);
+  zeroRange = clamp(Math.round(r / 5) * 5, ZERO_MIN, ZERO_MAX); zeroFlash = 1.4;
   sfx.tick(why === 'lase' ? 1500 : 900);
 }
+// ================================================================ the tank rider: Sgt. Vera, who rides on your rear deck
+// and shouts at the enemy. Her lines show in a speech bar and are spoken with the browser's own voice (settings: RIDER VOICE).
+const RIDER_NAME = 'SGT. VERA';
+const RIDER_LINES = {
+  start: ['Mount up, boys. Let\'s give them something to remember.', 'I\'ll spot, you shoot. Deal?', 'Nice day for a war. Let\'s keep it short.', 'Engine\'s warm. Guns are hot. Go!'],
+  kill: ['Arrivederci!', 'Auf Wiedersehen!', 'Do svidaniya!', 'Hasta la vista!', 'G.I. go home!', 'Tschüss!', 'Bonsoir, mon ami!', 'Scratch one!', 'That\'s a brew-up!',
+         'Bullseye! Paint that one on the barrel!', 'Next!', 'Who taught you to drive that thing?', 'Sayonara!', 'Ciao, bello!', 'Back to the factory with you!',
+         'Ha! Did you see that turret fly?', 'One less to worry about!', 'That\'s for Kursk!', 'Tell your friends!'],
+  hit: ['Ow! Watch the paint!', 'They\'re ranging us, move!', 'That one rang my helmet!', 'Hey! I\'m sitting up here!', 'Get us out of their sights!', 'Return fire, return fire!'],
+  low: ['We\'re smoking! Get us out of here!', 'One more like that and we\'re walking home!', 'I can smell the engine. Not good!'],
+  win: ['Last one standing! Drinks are on you!', 'Victory! Not a scratch on me. Mostly.', 'That\'s how it\'s done!'],
+  lose: ['I\'m bailing out! Good luck, sweetheart!', 'Abandon tank!', 'Well. That could have gone better.'],
+};
+let riderMsg = null, riderLast = '', riderHitAt = -99, riderLowSaid = false, riderWave = 0;
+function riderSay(kind, force) {
+  if (!force && riderMsg && riderMsg.t < 1.2) return;
+  const pool = RIDER_LINES[kind].filter(s => s !== riderLast), s = pick(pool.length ? pool : RIDER_LINES[kind]);
+  riderLast = s; riderMsg = {s, t: 0, dur: 2.2 + s.length * .05, kind};
+  if (kind === 'kill' || kind === 'win') riderWave = 1.6;
+  if (settings.voice && window.speechSynthesis && settings.vol > 0) {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(s), vs = speechSynthesis.getVoices();
+      const v = vs.find(v => /female|zira|samantha|victoria|karen|moira|tessa|susan|hazel|libby|sonia/i.test(v.name) && /^en/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang));
+      if (v) u.voice = v;
+      u.rate = 1.12; u.pitch = 1.25; u.volume = clamp(settings.vol * 1.2, 0, 1);
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+}
+// a seated figure in tanker coveralls, helmet and goggles, legs over the side of the hull
+function makeRider(nation) {
+  const g = new THREE.Group();
+  const cloth = new THREE.MeshStandardMaterial({color: {US: 0x6b6a45, SU: 0x5d6040, UK: 0x6d6448, DE: 0x4f5345}[nation] || 0x6b6a45, roughness: .95});
+  const dark = new THREE.MeshStandardMaterial({color: 0x2c261f, roughness: .9});
+  const skin = new THREE.MeshStandardMaterial({color: 0xd9a988, roughness: .8});
+  const hair = new THREE.MeshStandardMaterial({color: 0x5a3220, roughness: .85});
+  const helm = new THREE.MeshStandardMaterial({color: {US: 0x4e5530, SU: 0x3b3a30, UK: 0x4c4a35, DE: 0x4a4f48}[nation] || 0x4e5530, roughness: .7, metalness: .2});
+  const add = (mesh, x, y, z, rx = 0, ry = 0, rz = 0) => { mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz); mesh.castShadow = true; g.add(mesh); return mesh; };
+  add(box(.3, .22, .36, cloth), 0, .11, 0);                                        // hips
+  add(box(.24, .44, .34, cloth), 0, .42, -.04, .12);                               // torso, leaning back a touch
+  add(box(.26, .12, .36, dark), 0, .26, -.04);                                     // belt
+  add(new THREE.Mesh(new THREE.SphereGeometry(.105, 12, 10), skin), 0, .78, -.03); // head
+  add(new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 8, 0, TAU, 0, Math.PI / 2), helm), 0, .8, -.03);
+  add(box(.06, .045, .2, dark), .085, .83, -.03);                                  // goggles on the helmet
+  add(box(.07, .2, .09, hair), -.03, .66, -.15, -.3);                              // ponytail
+  for (const s of [-1, 1]) {
+    add(box(.42, .11, .12, cloth), .16, .1, s * .1);                              // thighs forward over the edge
+    add(box(.1, .38, .11, cloth), .33, -.12, s * .1);                             // shins hanging down
+    add(box(.15, .08, .12, dark), .37, -.33, s * .1);                             // boots
+  }
+  const armR = new THREE.Group(); armR.position.set(0, .6, .2); g.add(armR);       // the waving arm
+  const ua = box(.08, .3, .08, cloth); ua.position.y = -.15; ua.castShadow = true; armR.add(ua);
+  const hand = new THREE.Mesh(new THREE.SphereGeometry(.045, 8, 6), skin); hand.position.y = -.32; armR.add(hand);
+  add(box(.08, .32, .08, cloth), .08, .45, -.22, 0, 0, -.5);                        // other arm, braced on the deck
+  g.userData.arm = armR;
+  return g;
+}
+function seatRider(t) {   // on the rear deck, facing out over the left track
+  if (!t || t.mesh.rider) return;
+  const m = t.spec.m3, r = makeRider(t.spec.nation), hullTop = Math.max(...m.hull.map(p => p[1]));
+  r.position.set(-m.L * .28, hullTop, -(m.hullW / 2 - .32)); r.rotation.y = Math.PI / 2;
+  t.mesh.hull.add(r); t.mesh.rider = r;
+}
+function stepRider(dt) {
+  if (riderMsg && (riderMsg.t += dt) > riderMsg.dur) riderMsg = null;
+  const r = player && player.mesh && player.mesh.rider;
+  if (r) { riderWave = Math.max(0, riderWave - dt); const arm = r.userData.arm; arm.rotation.x = riderWave > 0 ? Math.PI * .85 + Math.sin(worldTime * 14) * .35 : .15; r.visible = player.alive; }
+}
+function drawRider() {
+  if (!riderMsg) return;
+  const m = riderMsg, a = Math.min(1, m.t * 6, (m.dur - m.t) * 3), w = Math.min(560, W - 40);
+  hx.font = `600 19px ${FONT.body}`; const tw = hx.measureText('“' + m.s + '”').width;
+  const bw = Math.min(w, tw + 150), x = W / 2 - bw / 2, y = 96;
+  hx.globalAlpha = Math.max(0, a);
+  hx.fillStyle = 'rgba(14,16,11,.84)'; hx.fillRect(x, y, bw, 40); hx.fillStyle = '#e6b44c'; hx.fillRect(x, y, 4, 40);
+  txt(RIDER_NAME, x + 14, y + 25, 12, '#e6b44c', 'left', 'data');
+  txt('“' + m.s + '”', x + 110, y + 27, 19, m.kind === 'hit' || m.kind === 'low' || m.kind === 'lose' ? '#ffb199' : '#f2e6b8', 'left', 'body', '600');
+  hx.globalAlpha = 1;
+}
+
 // ================================================================ camera
 let camEye = {ok: false}, camAim = {p: null};
 // shell cam: a small picture-in-picture that chases your latest shell (and lingers on the blast) while you keep driving
@@ -2072,7 +2531,7 @@ function updateCamera(dt) {
   if (mode === 'menu') return;
   const t = player; if (!t) return;
   const m = t.mesh;
-  let fovTarget = lerp(70, 16, zoom);
+  let fovTarget = lerp(70, scopeFov(), zoom);
   const spectating = net && !t.alive;
   if (followShell && !followShell.dead && !followShell.under && (followShell.mesh)) {
     const s = followShell, sp = Math.hypot(s.vx, s.vy, s.vz) || 1;
@@ -2134,15 +2593,18 @@ function menuTankSwap() {
   const pts = spawnPoints(1, mulberry(99 + setup.map));
   if (menuTank) disposeTank(menuTank.mesh);
   menuTank = makeTank(0, {spec: setup.tank, name: '', cos: previewCos || profile.equip}, pts[0].x, pts[0].z, .4);
-  menuTank.elev = 14; menuTank.yaw = .55;
+  menuTank.elev = 14; menuTank.yaw = .55; seatRider(menuTank);
 }
 function menuUpdate(dt) {
   if (!menuTank) return;
   menuAng += dt * .12;
   const t = menuTank; tankPhysics(t, dt, true); syncTank(t, dt);
+  // showroom shot: a low orbit, with the tank framed in the open space left of the side panel
   const R = 15, ax = t.x + Math.cos(menuAng) * R, az = t.z + Math.sin(menuAng) * R;
-  camera.position.set(ax, Math.max(groundAt(ax, az) + 3.2, t.y + 3.6), az);
-  camera.lookAt(t.x - Math.sin(menuAng) * 4, t.y + 1.8, t.z + Math.cos(menuAng) * 4);
+  camera.position.set(ax, Math.max(groundAt(ax, az) + 2.2, t.y + 2.6), az);
+  camera.lookAt(t.x, t.y + 1.5, t.z);
+  const panel = W > 900 ? Math.min(600, W * .5) : 0, fx = ((W - panel) / 2) / W, hf = Math.atan(Math.tan(camera.fov * D2R / 2) * camera.aspect);
+  camera.rotateY(-Math.atan((.5 - fx) * 2 * Math.tan(hf)));
   if (Math.abs(camera.fov - 50) > .05) { camera.fov = 50; camera.updateProjectionMatrix(); }
   for (const s of menuShells) { s.vy -= G * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt; s.trail += dt; while (s.trail > .018) { s.trail -= .018; trailFx(s, s.kind); }
     s.mesh.position.set(s.x, s.y, s.z); if (s.y < groundAt(s.x, s.z)) { s.dead = true; scene.remove(s.mesh); explosionFx(s.x, groundAt(s.x, s.z), s.z, 6, ''); sfx.boom(Math.hypot(s.x - camera.position.x, s.z - camera.position.z), 6); } }
@@ -2178,15 +2640,16 @@ function drawHUD() {
   if (mode !== 'game' || !player) return;
   hx.textBaseline = 'alphabetic';
   const t = player, inShellCam = !!(followShell || camHold), spectating = net && !t.alive;
-  if (zoom > .5 && !inShellCam) drawOptic(); else if (!inShellCam && t.alive) drawReticle();
+  if (!inShellCam && t.alive && zoom < .5) drawReticle();
+  if (zoom > .02 && !inShellCam) drawOptic();   // the scope grows in over the plain crosshair
   if (!inShellCam && t.alive) aimNote();
-  drawTags(); drawPops(); drawCompass(); drawRoster(); drawRadar(); drawPanel(); drawHealth(); drawLastShot(); drawPipFrame(); drawFeed(); drawSpot(); drawBanner(); drawHints();
+  drawTags(); drawPops(); drawCompass(); drawRoster(); drawRadar(); drawPanel(); drawHealth(); drawLastShot(); drawPipFrame(); drawRider(); drawFeed(); drawSpot(); drawBanner(); drawHints();
   if (spectating && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt('KNOCKED OUT · SPECTATING', W / 2, 92, 18, '#e0573a', 'center', 'display'); hx.shadowBlur = 0; }
   if (myReel()) drawReel(myReel());
   if (chatOpen) drawChat();
   if (net && net.role === 'client' && net.re) { hx.fillStyle = 'rgba(6,7,5,.7)'; hx.fillRect(0, Hh / 2 - 40, W, 80); txt('CONNECTION LOST · RECONNECTING…', W / 2, Hh / 2 + 6, 26, '#e6b44c', 'center', 'display'); txt('Esc to give up', W / 2, Hh / 2 + 28, 13, '#d6c99c', 'center', 'data'); }
   if (dmgFlash > 0) { const g = hx.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .3, W / 2, Hh / 2, Math.max(W, Hh) * .7); g.addColorStop(0, 'rgba(160,20,10,0)'); g.addColorStop(1, `rgba(160,20,10,${dmgFlash * .55})`); hx.fillStyle = g; hx.fillRect(0, 0, W, Hh); }
-  if (!locked && !paused && state !== 'over' && t.alive && !chatOpen) { hx.shadowColor = 'rgba(0,0,0,.8)'; hx.shadowBlur = 6; txt('CLICK to capture the mouse (Esc frees it)', W / 2, Hh - 184, 16, '#e6b44c', 'center', 'body', '600'); hx.shadowBlur = 0; }
+  if (!locked && !paused && state !== 'over' && t.alive && !chatOpen && zoom < .5) { hx.shadowColor = 'rgba(0,0,0,.8)'; hx.shadowBlur = 6; txt('CLICK to capture the mouse (Esc frees it)', W / 2, Hh - 184, 16, '#e6b44c', 'center', 'body', '600'); hx.shadowBlur = 0; }
 }
 function reloadRing(cx, cy, r) {   // around the sight: fills as the gun loads, brass when ready
   const t = player, f = t.reloadMax > 0 ? 1 - t.reload / t.reloadMax : 1;
@@ -2209,7 +2672,7 @@ function aimNote() {
   const t = player; if (!t.alive || state !== 'battle') return;
   hx.shadowColor = 'rgba(0,0,0,.9)'; hx.shadowBlur = 4;
   const zoomed = zoom > .5, x = W / 2 + (zoomed ? 40 : 22), y = Hh / 2 - (zoomed ? 8 : 6);
-  txt((arcPref ? 'LOB ' : '') + zeroRange, x, y, zoomed ? 15 : 13, zeroOut ? '#f0a28f' : '#e6b44c', 'left', 'data');
+  if (!zoomed) txt((arcPref ? 'LOB ' : '') + zeroRange, x, y, 13, zeroOut ? '#f0a28f' : '#e6b44c', 'left', 'data');
   if (zeroOut) txt('OUT OF RANGE', W / 2, Hh / 2 + 34, 13, '#f0a28f', 'center', 'data');
   hx.shadowBlur = 0;
   if (!zoomed) return;
@@ -2224,6 +2687,18 @@ function aimNote() {
     const major = r % 100 === 0, w = major ? 16 : 8;
     hx.beginPath(); hx.moveTo(cx - w, yy); hx.lineTo(cx - 4, yy); hx.moveTo(cx + 4, yy); hx.lineTo(cx + w, yy); hx.stroke();
     if (major) txt(String(r), cx + w + 4, yy + 4, 11, '#e6b44c', 'left', 'data');
+  }
+  // HOLD: where the target the rangefinder measured sits on this zero. Put that mark on the target and fire.
+  const rf = rangeCache.v;
+  if (rf && Math.abs(rf.d - zeroRange) > 15) {
+    const e = gunElevFor(t, aimPitch, rf.d, arcPref);
+    if (e != null) {
+      const yy = cy + Math.tan((e - e0) * D2R) * f;
+      if (Math.abs(yy - cy) < Math.min(W, Hh) * .4) {
+        hx.fillStyle = '#ffb347'; hx.beginPath(); hx.moveTo(cx - 22, yy); hx.lineTo(cx - 32, yy - 6); hx.lineTo(cx - 32, yy + 6); hx.closePath(); hx.fill();
+        txt('HOLD ' + Math.round(rf.d), cx - 36, yy + 4, 11, '#ffb347', 'right', 'data');
+      }
+    }
   }
   hx.shadowBlur = 0;
 }
@@ -2240,25 +2715,49 @@ function rangefind() {
   return null;
 }
 function drawOptic() {
-  const cx = W / 2, cy = Hh / 2, R = Math.min(W, Hh) * .44;
+  const t = player, k = clamp(zoom, 0, 1), ease = k * k * (3 - 2 * k);
+  const cx = W / 2, cy = Hh / 2, R = Math.min(W, Hh) * .45 * (.55 + .45 * ease);
   hx.save();
-  hx.fillStyle = 'rgba(4,5,3,.94)'; hx.beginPath(); hx.rect(0, 0, W, Hh); hx.arc(cx, cy, R, 0, TAU, true); hx.fill();
-  const g = hx.createRadialGradient(cx, cy, R * .75, cx, cy, R); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.55)'); hx.fillStyle = g; hx.beginPath(); hx.arc(cx, cy, R, 0, TAU); hx.fill();
-  hx.strokeStyle = 'rgba(15,15,12,.95)'; hx.lineWidth = 2;
-  hx.beginPath(); hx.moveTo(cx - R, cy); hx.lineTo(cx - 40, cy); hx.moveTo(cx + 40, cy); hx.lineTo(cx + R, cy); hx.moveTo(cx, cy + 40); hx.lineTo(cx, cy + R); hx.stroke();
-  hx.lineWidth = 1.6; hx.beginPath(); hx.moveTo(cx - 12, cy + 12); hx.lineTo(cx, cy); hx.lineTo(cx + 12, cy + 12); hx.stroke();
-  const pxPerDeg = Hh / camera.fov;
-  for (let k = -6; k <= 6; k++) { if (!k) continue; const x = cx + k * pxPerDeg * .5; hx.beginPath(); hx.moveTo(x, cy - (k % 2 ? 4 : 8)); hx.lineTo(x, cy); hx.stroke(); }
+  // eyepiece: black surround, a thick lens rim, and a soft dark edge inside the glass
+  hx.globalAlpha = ease;
+  hx.fillStyle = '#050604'; hx.beginPath(); hx.rect(0, 0, W, Hh); hx.arc(cx, cy, R + 10, 0, TAU, true); hx.fill();
+  hx.lineWidth = 14; hx.strokeStyle = '#121410'; hx.beginPath(); hx.arc(cx, cy, R + 4, 0, TAU); hx.stroke();
+  hx.lineWidth = 1.5; hx.strokeStyle = 'rgba(214,201,156,.18)'; hx.beginPath(); hx.arc(cx, cy, R + 10, 0, TAU); hx.stroke();
+  const g = hx.createRadialGradient(cx, cy, R * .7, cx, cy, R); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
+  hx.fillStyle = g; hx.beginPath(); hx.arc(cx, cy, R, 0, TAU); hx.fill();
+  hx.fillStyle = 'rgba(255,236,190,.035)'; hx.beginPath(); hx.arc(cx, cy, R, 0, TAU); hx.fill();   // faint warm coating
+  // reload: a thin arc around the glass, brass when the gun is loaded
+  const lf = t.reloadMax > 0 ? 1 - t.reload / t.reloadMax : 1;
+  hx.lineWidth = 3; hx.strokeStyle = t.reload > 0 ? 'rgba(224,87,58,.85)' : 'rgba(230,180,76,.8)';
+  hx.beginPath(); hx.arc(cx, cy, R - 6, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(lf, 0, 1)); hx.stroke();
+  if (k < .5) { hx.restore(); return; }
+  // reticle: heavy posts, thin centre lines, lit chevron and centre dot
+  hx.globalAlpha = 1;
+  hx.strokeStyle = 'rgba(12,12,10,.95)'; hx.lineWidth = 3;
+  hx.beginPath(); hx.moveTo(cx - R, cy); hx.lineTo(cx - R * .35, cy); hx.moveTo(cx + R * .35, cy); hx.lineTo(cx + R, cy); hx.moveTo(cx, cy + R * .45); hx.lineTo(cx, cy + R); hx.stroke();
+  hx.lineWidth = 1.2; hx.beginPath(); hx.moveTo(cx - R * .35, cy); hx.lineTo(cx - 18, cy); hx.moveTo(cx + 18, cy); hx.lineTo(cx + R * .35, cy); hx.stroke();
+  const f = (Hh / 2) / Math.tan(camera.fov * D2R / 2);
+  for (let m = -10; m <= 10; m++) {   // a mark every degree along the horizontal line, longer every 5
+    if (!m) continue; const x = cx + Math.tan(m * D2R) * f; if (Math.abs(x - cx) > R * .95) continue;
+    hx.beginPath(); hx.moveTo(x, cy); hx.lineTo(x, cy - (m % 5 ? 5 : 10)); hx.stroke();
+  }
+  hx.shadowColor = 'rgba(255,150,40,.9)'; hx.shadowBlur = 6; hx.strokeStyle = 'rgba(255,170,70,.95)'; hx.lineWidth = 1.6;
+  hx.beginPath(); hx.moveTo(cx - 11, cy + 11); hx.lineTo(cx, cy); hx.lineTo(cx + 11, cy + 11); hx.stroke();
+  hx.fillStyle = 'rgba(255,190,90,1)'; hx.beginPath(); hx.arc(cx, cy, 1.6, 0, TAU); hx.fill();
   hx.restore();
+  // readouts along the bottom of the glass
   if (worldTime - rangeCache.t > .1 || worldTime < rangeCache.t) rangeCache = {t: worldTime, v: rangefind()};
-  const r = rangeCache.v, lx = cx + R * .52, ly = cy + R * .62;
-  hx.shadowColor = 'rgba(0,0,0,.9)'; hx.shadowBlur = 4;
-  txt('RANGE', lx, ly - 22, 12, 'rgba(230,180,76,.85)', 'left', 'data');
-  txt(r ? Math.round(r.d) + ' m' : '----', lx, ly, 24, '#f2e6b8', 'left', 'data');
-  if (r && r.tank) txt(r.tank.name, lx, ly + 18, 13, r.tank.color, 'left', 'data');
-  txt('ELEV ' + player.elev.toFixed(1) + '°', cx - R * .52, ly, 18, '#f2e6b8', 'right', 'data');
-  txt('x4 OPTIC', cx - R * .52, ly - 22, 12, 'rgba(230,180,76,.85)', 'right', 'data');
-  txt(player.reload > 0 ? 'LOADING' : 'READY', cx, cy - R * .7, 14, player.reload > 0 ? '#f0a28f' : '#e6b44c', 'center', 'data');
+  const r = rangeCache.v, by = cy + R * .56;
+  hx.shadowColor = 'rgba(0,0,0,.95)'; hx.shadowBlur = 4;
+  txt('RANGE', cx + R * .42, by - 20, 11, 'rgba(230,180,76,.85)', 'center', 'data');
+  txt(r ? Math.round(r.d) + ' m' : '----', cx + R * .42, by + 2, 22, r && r.tank ? r.tank.color : '#f2e6b8', 'center', 'data');
+  txt('ZERO', cx - R * .42, by - 20, 11, 'rgba(230,180,76,.85)', 'center', 'data');
+  const zf = zeroFlash > 0 ? Math.min(1, zeroFlash) : 0;
+  txt((arcPref ? 'LOB ' : '') + zeroRange + ' m', cx - R * .42, by + 2, 22 + zf * 4, zeroOut ? '#f0a28f' : zf ? '#ffe39a' : '#f2e6b8', 'center', 'data');
+  txt('PgUp / PgDn · R lase', cx - R * .42, by + 18, 10, 'rgba(214,201,156,.7)', 'center', 'data');
+  txt('x' + scopeMag + '  ·  TAB', cx, cy - R * .78, 11, 'rgba(230,180,76,.85)', 'center', 'data');
+  txt(t.reload > 0 ? 'LOADING ' + t.reload.toFixed(1) + 's' : 'READY', cx, by + 18, 12, t.reload > 0 ? '#f0a28f' : '#e6b44c', 'center', 'data');
+  if (r && Math.abs(r.d - zeroRange) > 15 && !zeroOut) txt('R to zero ' + Math.round(r.d) + ' m', cx + R * .42, by + 18, 10, 'rgba(214,201,156,.7)', 'center', 'data');
   hx.shadowBlur = 0;
 }
 function drawTags() {
@@ -2438,6 +2937,7 @@ function drawLastShot() {
   txt(r, x + 12, y + 45, 12, L.res && L.res.startsWith('DIRECT') ? '#a8e07a' : '#e6b44c', 'left', 'data');
 }
 function drawHints() {
+  if (zoom > .5) return;   // the scope carries its own readouts
   let s = '';
   if (state === 'battle' && player.alive) s = 'CLICK fire · WHEEL zero · R lase · Z sight · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
@@ -2519,28 +3019,88 @@ function pickChanged() {
   if (net.role === 'host') { Object.assign(lobby.seats[0], myPick()); bcastLobby(); }
   else sendHost({t: 'pick', ...myPick()});
 }
-// tank stats, with bars scaled across the whole roster so the differences show
-const tankLen = t => { const xs = t.hull.map(p => p[0]); return (Math.max(...xs) - Math.min(...xs)) * SX; };
+// tank stats: the real vehicle's figure, then what it means in game. Bars are scaled across the whole roster.
 const TSTAT = [
-  ['ARMOR',     t => t.hp,                          v => v + ' HP',                      true],
-  ['SPEED',     t => speedOf(t) * 3.6,              v => Math.round(v) + ' km/h',        true],
-  ['FIREPOWER', t => 45 * t.atk / 100,              v => Math.round(v) + ' dmg / hit',   true],
-  ['RELOAD',    t => RELOAD.missile * t.atk / 100,  v => v.toFixed(1) + ' s',            false],
-  ['SIZE',      t => tankLen(t) * t.w,              v => v.toFixed(1) + ' m² target',    false],
+  ['ARMOR',     t => t.real.armor,                        t => t.real.armor + ' mm · ' + t.hp + ' HP',                          true],
+  ['SPEED',     t => t.real.speed,                        t => t.real.speed + ' km/h',                                         true],
+  ['GUN',       t => t.atk,                               t => t.real.gun + ' · ' + Math.round(45 * t.atk / 100) + ' dmg',     true],
+  ['RELOAD',    t => t.rel,                               t => t.real.rof + '/min · ' + (RELOAD.missile * t.rel).toFixed(1) + ' s', false],
+  ['SIZE',      t => t.m3.L * t.m3.W,                     t => t.m3.L.toFixed(1) + ' × ' + t.m3.W.toFixed(1) + ' m',           false],
 ];
 const TRANGE = TSTAT.map(([, f]) => { const v = TANKS.map(f); return [Math.min(...v), Math.max(...v)]; });
 function statsHTML(i) {
   const t = TANKS[i];
-  return `<span class="sh">${t.name}</span><span class="sr">${t.role}</span>` + TSTAT.map(([k, f, fmt, high], j) => {
+  return `<span class="sh">${t.name}</span><span class="sr">${t.role} · ${t.real.weight} t · crew ${t.real.crew}</span>` + TSTAT.map(([k, f, fmt, high], j) => {
     const v = f(t), [lo, hi] = TRANGE[j], n = hi > lo ? (v - lo) / (hi - lo) : .5, good = high ? n : 1 - n;
-    return `<span>${k}</span><span class="bar"><i style="width:${Math.round(15 + good * 85)}%"></i></span><span class="v">${fmt(v)}</span>`;
-  }).join('') + `<span class="fine sn">Longer bars are better. Bigger tanks are easier to hit.</span>`;
+    return `<span>${k}</span><span class="bar"><i style="width:${Math.round(15 + good * 85)}%"></i></span><span class="v">${fmt(t)}</span>`;
+  }).join('') + `<span class="fine sn">Real 1944–45 figures; game stats scale from them. Longer bars are better; bigger tanks are easier to hit.</span>`;
+}
+// side-profile silhouettes from Iron Rain's 2D hull/turret shapes, for the tank cards
+const silCache = {};
+function tankSilhouette(i) {
+  if (silCache[i]) return silCache[i];
+  const t = TANKS[i];
+  return silCache[i] = canvasOf(240, 68, (g, w, h) => {
+    const pts = [...t.hull, ...(t.turret || [])], xs = pts.map(p => p[0]);
+    const x0 = Math.min(...xs) - 2, x1 = Math.max(...xs) + t.gun.len - 4, s = Math.min((w - 8) / (x1 - x0), (h - 6) / 32);
+    const X = x => 4 + (x - x0) * s, Y = y => h - 3 + y * s;
+    g.fillStyle = '#d6c99c';
+    const poly = p => { g.beginPath(); p.forEach(([x, y], k) => k ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y))); g.closePath(); g.fill(); };
+    const hxs = t.hull.map(p => p[0]), hl = Math.min(...hxs), hr = Math.max(...hxs), top = Math.min(...t.hull.map(p => p[1]));
+    g.beginPath(); g.roundRect ? g.roundRect(X(hl + 1), Y(-12.5), (hr - hl - 2) * s, 12.5 * s, 5 * s) : g.rect(X(hl + 1), Y(-12.5), (hr - hl - 2) * s, 12.5 * s); g.fill();
+    poly(t.hull);
+    let gx, gy;
+    if (t.dome) { g.beginPath(); g.ellipse(X(-1), Y(top), t.dome.rx * s, t.dome.ry * s, 0, Math.PI, TAU); g.fill(); gx = -1 + t.dome.rx * .8; gy = top - t.dome.ry * .45; }
+    else { poly(t.turret); const tx = t.turret.map(p => p[0]), ty = t.turret.map(p => p[1]); gx = Math.max(...tx) - 1; gy = (Math.min(...ty) + Math.max(...ty)) / 2; }
+    g.fillRect(X(gx), Y(gy) - t.gun.w * s * .45, t.gun.len * s, t.gun.w * s * .9);
+    g.globalCompositeOperation = 'destination-out';
+    const n = t.wheels, r = t.wheelR * .55;
+    for (let k = 0; k < n; k++) { const x = hl + 4 + (hr - hl - 8) * (n > 1 ? k / (n - 1) : .5); g.beginPath(); g.arc(X(x), Y(-t.wheelR - .8), r * s, 0, TAU); g.fill(); }
+  });
+}
+// tiny shaded relief maps of each battlefield, from the same terrain function and seed as the menu backdrop
+const mapThumbCache = {};
+function mapThumb(mi) {
+  if (mapThumbCache[mi]) return mapThumbCache[mi];
+  const m = MAPS[mi], T = THEMES[m.theme], f = makeNoise(mulberry(1234 + mi * 77));
+  const lo = new THREE.Color(T.low), hi = new THREE.Color(T.high), c = new THREE.Color(), Wd = 96, Ht = 64, R = 560;
+  const hAt = (x, z) => m.h(x, z, f);
+  return mapThumbCache[mi] = canvasOf(Wd, Ht, (g) => {
+    const im = g.createImageData(Wd, Ht);
+    for (let py = 0; py < Ht; py++) for (let px = 0; px < Wd; px++) {
+      const x = -R + (px + .5) / Wd * 2 * R, z = -R * .67 + (py + .5) / Ht * 1.33 * R, h = hAt(x, z);
+      const sh = clamp(.8 + (hAt(x - 10, z - 10) - hAt(x + 10, z + 10)) * .035, .35, 1.3);
+      c.copy(lo).lerp(hi, sstep(T.h0, T.h1, h)).multiplyScalar(sh);
+      const k = (py * Wd + px) * 4; im.data[k] = Math.min(255, c.r * 255); im.data[k + 1] = Math.min(255, c.g * 255); im.data[k + 2] = Math.min(255, c.b * 255); im.data[k + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+  });
+}
+function tankCard(i, on, click) {
+  const t = TANKS[i], b = document.createElement('button'); b.className = 'tcard'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = t.role;
+  const cv = tankSilhouette(i), img = document.createElement('canvas'); img.width = cv.width; img.height = cv.height; img.getContext('2d').drawImage(cv, 0, 0);
+  if (on) { const g = img.getContext('2d'); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#e6b44c'; g.fillRect(0, 0, img.width, img.height); }
+  b.appendChild(img);
+  b.insertAdjacentHTML('beforeend', `<span class="n">${t.name}</span><span class="r">${t.real.armor} mm · ${t.real.speed} km/h · ${t.real.cal} mm</span>`);
+  b.addEventListener('click', () => { audioInit(); click(); }); return b;
+}
+function mapCard(i, on, click, disabled) {
+  const m = MAPS[i], b = document.createElement('button'); b.className = 'mcard'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = m.desc; b.disabled = !!disabled;
+  const src = mapThumb(i), img = document.createElement('canvas'); img.width = src.width; img.height = src.height; img.getContext('2d').drawImage(src, 0, 0);
+  b.appendChild(img); b.insertAdjacentHTML('beforeend', `<span class="n">${m.name.replace('THE ', '')}</span>`);
+  b.addEventListener('click', () => { audioInit(); click(); }); return b;
+}
+function renderPlate() {
+  const t = TANKS[setup.tank];
+  $('plateName').textContent = t.name; $('plateRole').textContent = t.role;
+  $('plateStats').innerHTML = [[t.real.armor + '<small> mm</small>', 'ARMOR'], [t.real.speed + '<small> km/h</small>', 'TOP SPEED'], [t.real.cal + '<small> mm</small>', 'GUN'], [t.real.rof + '<small>/min</small>', 'RATE OF FIRE'], [t.real.weight + '<small> t</small>', 'WEIGHT']]
+    .map(([v, k]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
 }
 function tankGrid(el, statsEl) {
   el.innerHTML = '';
   statsEl.innerHTML = statsHTML(setup.tank);
   TANKS.forEach((t, i) => {
-    const b = optBtn(t.name, t.hp + ' HP · ' + Math.round(speedOf(t) * 3.6) + ' km/h', setup.tank === i, () => { setup.tank = i; save('ironrain3d.setup', setup); renderMenu(); menuTankSwap(); pickChanged(); });
+    const b = tankCard(i, setup.tank === i, () => { setup.tank = i; save('ironrain3d.setup', setup); renderMenu(); menuTankSwap(); pickChanged(); });
     b.title = t.role;
     const show = () => { statsEl.innerHTML = statsHTML(i); }, back = () => { statsEl.innerHTML = statsHTML(setup.tank); };
     b.addEventListener('mouseenter', show); b.addEventListener('focus', show);
@@ -2550,9 +3110,9 @@ function tankGrid(el, statsEl) {
 }
 function renderMenu() {
   renderMoney();
-  tankGrid($('tankGrid'), $('tankStats'));
+  tankGrid($('tankGrid'), $('tankStats')); renderPlate();
   const mr = $('mapRow'); mr.innerHTML = '';
-  MAPS.forEach((m, i) => mr.appendChild(optBtn(m.name.replace('THE ', ''), '', setup.map === i, () => { setup.map = i; save('ironrain3d.setup', setup); renderMenu(); menuWorld(); })));
+  MAPS.forEach((m, i) => mr.appendChild(mapCard(i, setup.map === i, () => { setup.map = i; save('ironrain3d.setup', setup); renderMenu(); menuWorld(); })));
   $('mapDesc').textContent = MAPS[setup.map].desc;
   const fr = $('foeRow'); fr.innerHTML = '';
   [1, 2, 3].forEach(n => fr.appendChild(optBtn(String(n), '', setup.foes === n, () => { setup.foes = n; save('ironrain3d.setup', setup); renderMenu(); })));
@@ -2590,7 +3150,7 @@ function renderOnline() {
   tankGrid($('lobbyTanks'), $('lobbyStats'));
   $('hostOpts').hidden = false;
   const lm = $('lobbyMaps'); lm.innerHTML = '';
-  MAPS.forEach((m, i) => { const b = optBtn(m.name.replace('THE ', ''), '', lobby.map === i, () => { if (!host) return; lobby.map = i; setup.map = i; save('ironrain3d.setup', setup); menuWorld(); bcastLobby(); }); b.disabled = !host; lm.appendChild(b); });
+  MAPS.forEach((m, i) => lm.appendChild(mapCard(i, lobby.map === i, () => { if (!host) return; lobby.map = i; setup.map = i; save('ironrain3d.setup', setup); menuWorld(); bcastLobby(); }, !host)));
   const ll = $('lobbyLvl'); ll.innerHTML = '';
   CPU_LEVELS.forEach((l, i) => { const b = optBtn(l.name, '', lobby.lvl === i, () => { if (!host) return; lobby.lvl = i; bcastLobby(); }, l.color); b.disabled = !host; ll.appendChild(b); });
   $('startBtn').hidden = !host;
@@ -2656,6 +3216,7 @@ const SET_ROWS = [
   {k: 'invert',   label: 'INVERT MOUSE Y', check: true},
   {k: 'shellCam', label: 'ALWAYS FOLLOW MY SHELLS (C)', check: true},
   {k: 'shadows',  label: 'SHADOWS', check: true},
+  {k: 'voice',    label: 'RIDER VOICE (SGT. VERA)', check: true},
 ];
 function applySetting(k) {
   if (k === 'vol' && master) master.gain.value = settings.vol;
@@ -2765,6 +3326,7 @@ function render() {
 let lastFrame = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
+  if (window.__irFreeze) return;   // test hook: lets a test hold a hand-placed camera
   lastDt = Math.min(.05, Math.max(0, (now - lastFrame) / 1000)); lastFrame = now;
   lastTick = performance.now(); acc = 0;
   netTick();
@@ -2789,6 +3351,6 @@ requestAnimationFrame(frame);
 })();
 // test hook
 window.__ir = {get state() { return state; }, get tanks() { return tanks; }, get player() { return player; }, get shells() { return shells; }, get net() { return net; }, get lobby() { return lobby; },
-  step, render, fire, startOffline, setup, solve, groundAt, explosionFx, deathFx, hostRoom, joinRoom, hostStart, showTab, get followShell() { return followShell; }, get camHold() { return camHold; }, camera, get aimImpact() { return aimImpact; }, get zero() { return zeroRange; }, setZero: r => { zeroRange = r; }, setPitch: v => { aimPitch = v; }, frameMs: ms => { lastDt = ms / 1000; if (lastDt > 1 / 40) { step(lastDt / 2); step(lastDt / 2); } else step(lastDt); render(); }, get zoom() { return zoom; }};
+  step, render, fire, startOffline, setup, solve, groundAt, explosionFx, deathFx, hostRoom, joinRoom, hostStart, showTab, get followShell() { return followShell; }, get camHold() { return camHold; }, camera, get aimImpact() { return aimImpact; }, get zero() { return zeroRange; }, setZero: r => { zeroRange = r; }, setPitch: v => { aimPitch = v; }, frameMs: ms => { lastDt = ms / 1000; if (lastDt > 1 / 40) { step(lastDt / 2); step(lastDt / 2); } else step(lastDt); render(); }, get zoom() { return zoom; }, get menuTank() { return menuTank; }, renderer, scene};
 </script>
 </html>
