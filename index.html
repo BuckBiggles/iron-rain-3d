@@ -2495,11 +2495,29 @@ function loadTankModel(spec) {
 const loadTankModels = specs => Promise.all([...new Set(specs)].map(loadTankModel));
 const tplReady = spec => !spec || spec.foot || !!modelTpl[spec.model];
 // a tank built from its template: shared geometry, its own materials (they darken when it burns, and take the camo tint)
+// store camo on a real model: the pattern is projected onto the armour from three sides (so it needs no UVs) and takes
+// its light and shade from the model's own texture; dark parts (tracks, rubber, vision slits) keep their own colour
+function camoPaint(m, camo) {
+  m.onBeforeCompile = sh => {
+    sh.uniforms.camoMap = {value: camo.map}; sh.uniforms.camoGlow = {value: camo.emissive || camo.map}; sh.uniforms.camoHasGlow = {value: camo.emissive ? 1 : 0};
+    sh.vertexShader = 'varying vec3 vCamoP; varying vec3 vCamoN;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vCamoP = position; vCamoN = normal;');
+    sh.fragmentShader = 'uniform sampler2D camoMap; uniform sampler2D camoGlow; uniform float camoHasGlow; varying vec3 vCamoP; varying vec3 vCamoN;\n' +
+      'vec3 camoTri(sampler2D t, vec3 p, vec3 n) { vec3 w = pow(abs(normalize(n)), vec3(4.0)); w /= (w.x + w.y + w.z); p *= 0.33;\n' +
+      '  return texture2D(t, p.zy).rgb * w.x + texture2D(t, p.xz).rgb * w.y + texture2D(t, p.xy).rgb * w.z; }\n' +
+      sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+        { float lum = dot(diffuseColor.rgb, vec3(.299, .587, .114));
+          vec3 cam = camoTri(camoMap, vCamoP, vCamoN) * (.45 + 1.1 * lum);
+          diffuseColor.rgb = mix(diffuseColor.rgb, cam, smoothstep(.07, .2, lum)); }`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        if (camoHasGlow > .5) totalEmissiveRadiance += camoTri(camoGlow, vCamoP, vCamoN);`);
+  };
+  m.customProgramCacheKey = () => 'camo';
+}
 function makeModelTank(sp, cos) {
   cos = cleanCos(cos);
   const tpl = modelTpl[sp.model], hull = new THREE.Group(), turret = new THREE.Group(), gun = new THREE.Group(), mats = [], matMap = new Map();
-  const tint = cos.camo !== 'std' ? new THREE.Color(cosItem('camo', cos.camo).base).lerp(new THREE.Color(0xffffff), .25).multiplyScalar(1.35) : null;
-  const matOf = src => { if (matMap.has(src)) return matMap.get(src); const m = src.clone(); if (tint && m.color) m.color.multiply(tint); if (m.emissive) m.emissive.setHex(0); matMap.set(src, m); mats.push(m); return m; };
+  const camo = cos.camo !== 'std' ? camoTex(cos.camo) : null;
+  const matOf = src => { if (matMap.has(src)) return matMap.get(src); const m = src.clone(); if (m.emissive) m.emissive.setHex(0); if (camo) camoPaint(m, camo); matMap.set(src, m); mats.push(m); return m; };
   const build = (list, grp) => { for (const q of list) { const me = new THREE.Mesh(q.geo, matOf(q.mat)); me.castShadow = me.receiveShadow = true; grp.add(me); } };
   build(tpl.parts.hull, hull); build(tpl.parts.turret, turret); build(tpl.parts.gun, gun);
   gun.position.copy(tpl.gp); turret.add(gun);
