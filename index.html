@@ -291,7 +291,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-09.4';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-09.5';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -313,7 +313,7 @@ function load(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); retur
 function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 const cleanName = s => String(s || '').toUpperCase().replace(/[^A-Z0-9 \-.]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14);
 
-const settings = load('ironrain3d.settings', {vol: .7, sens: 1, zsens: 1, shellCam: false, invert: false, shadows: true, voice: true, pinup: true});
+const settings = load('ironrain3d.settings', {vol: .7, sens: 1, zsens: 1, shellCam: false, invert: false, shadows: true, voice: true});
 if (settings.v !== 2) { settings.v = 2; settings.shellCam = false; save('ironrain3d.settings', settings); }   // real-time now: the shell camera starts off
 const setup = load('ironrain3d.setup', {tank: 0, map: 0, foes: 2, lvl: 1, seats: 2});
 let myName = (() => { try { return cleanName(localStorage.getItem('ironrain3d.name') || localStorage.getItem('ironrain.name') || ''); } catch (e) { return ''; } })();
@@ -2440,33 +2440,26 @@ function riderSay(kind, force) {
     } catch (e) {}
   }
 }
-// a seated rider, legs over the side of the hull. Outfit (settings): 1940s pin-up two-piece, or tanker coveralls.
+// a seated rider in a 1940s pin-up two-piece and tank helmet, legs over the side of the hull
 const SUIT_COL = {US: 0xc8302a, SU: 0x2f5aa0, UK: 0x2d4a7a, DE: 0x1f1f22};
 function makeRider(nation) {
-  const g = new THREE.Group(), pinup = settings.pinup !== false;
+  const g = new THREE.Group();
   const mat = (c, r = .85) => new THREE.MeshStandardMaterial({color: c, roughness: r});
-  const cloth = mat({US: 0x6b6a45, SU: 0x5d6040, UK: 0x6d6448, DE: 0x4f5345}[nation] || 0x6b6a45, .95);
   const dark = mat(0x2c261f, .9), skin = mat(0xe0b092, .65), hair = mat(0x6a3a22), suit = mat(SUIT_COL[nation] || 0xc8302a, .5);
   const helm = new THREE.MeshStandardMaterial({color: {US: 0x4e5530, SU: 0x3b3a30, UK: 0x4c4a35, DE: 0x4a4f48}[nation] || 0x4e5530, roughness: .7, metalness: .2});
   const sph = (r, m, ws = 12, hs = 10) => new THREE.Mesh(new THREE.SphereGeometry(r, ws, hs), m);
   const add = (mesh, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz); mesh.scale.set(sx, sy, sz); mesh.castShadow = true; g.add(mesh); return mesh; };
-  const body = pinup ? skin : cloth;
-  add(sph(.17, pinup ? suit : cloth), 0, .12, 0, 0, 0, 0, 1, .75, 1.15);              // hips (swimsuit bottom in pin-up)
-  add(sph(.15, body), 0, .38, -.03, .12, 0, 0, .8, 1.25, .95);                         // waist and ribs
-  if (pinup) {
-    add(sph(.1, suit), .09, .5, -.1, 0, 0, 0, 1, .95, 1); add(sph(.1, suit), .09, .5, .04, 0, 0, 0, 1, .95, 1);   // bikini top
-    add(box(.05, .03, .26, suit), .02, .5, -.03);                                      // band
-    add(sph(.09, skin), 0, .6, -.03, 0, 0, 0, 1.1, .7, 1.6);                           // shoulders
-  } else {
-    add(box(.24, .44, .34, cloth), 0, .42, -.04, .12);                                 // coverall torso
-    add(box(.26, .12, .36, dark), 0, .26, -.04);                                       // belt
-  }
+  const body = skin;
+  add(sph(.17, suit), 0, .12, 0, 0, 0, 0, 1, .75, 1.15);                                // hips, swimsuit bottom
+  add(sph(.15, body), 0, .38, -.03, .12, 0, 0, .8, 1.25, .95);                          // waist and ribs
+  add(sph(.1, suit), .09, .5, -.1, 0, 0, 0, 1, .95, 1); add(sph(.1, suit), .09, .5, .04, 0, 0, 0, 1, .95, 1);   // bikini top
+  add(box(.05, .03, .26, suit), .02, .5, -.03);                                         // band
+  add(sph(.09, skin), 0, .6, -.03, 0, 0, 0, 1.1, .7, 1.6);                              // shoulders
   add(cyl(.045, .05, .1, skin, 8), 0, .69, -.03);                                       // neck
   add(sph(.105, skin), 0, .8, -.03);                                                    // head
   add(new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 8, 0, TAU, 0, Math.PI / 2), helm), 0, .83, -.03);
   add(box(.06, .045, .2, dark), .085, .86, -.03);                                       // goggles on the helmet
-  if (pinup) { add(sph(.07, hair), -.02, .78, -.14); add(sph(.07, hair), -.02, .78, .08); add(box(.08, .22, .2, hair), -.07, .66, -.03, 0, 0, .15); }   // victory rolls and curls
-  else add(box(.07, .2, .09, hair), -.03, .69, -.15, -.3);                              // ponytail
+  add(sph(.07, hair), -.02, .78, -.14); add(sph(.07, hair), -.02, .78, .08); add(box(.08, .22, .2, hair), -.07, .66, -.03, 0, 0, .15);   // victory rolls and curls
   for (const s of [-1, 1]) {
     add(cyl(.06, .075, .42, body, 10), .16, .1, s * .09, 0, 0, Math.PI / 2);           // thighs forward over the edge
     add(cyl(.05, .042, .38, body, 10), .35, -.12, s * .09);                             // shins hanging down
@@ -3232,11 +3225,9 @@ const SET_ROWS = [
   {k: 'shellCam', label: 'ALWAYS FOLLOW MY SHELLS (C)', check: true},
   {k: 'shadows',  label: 'SHADOWS', check: true},
   {k: 'voice',    label: 'RIDER VOICE (SGT. VERA)', check: true},
-  {k: 'pinup',    label: 'RIDERS IN PIN-UP SWIMSUITS', check: true},
 ];
 function applySetting(k) {
   if (k === 'vol' && master) master.gain.value = settings.vol;
-  if (k === 'pinup' && mode === 'menu') menuTankSwap();   // battles pick it up when they start
   if (k === 'shadows') { renderer.shadowMap.enabled = settings.shadows; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
   save('ironrain3d.settings', settings);
 }
