@@ -369,7 +369,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-11.6';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-11.8';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2739,9 +2739,9 @@ const FOOT_PRIZES = [
   {id: 'ftele', name: 'TELEPORT', short: 'TELEPORT', kind: 'teleport', col: '#14b8a6', sp: 120, gk: .12, rocket: true, tag: 'A teleport round from the RPG: he warps to where it lands'},
   {id: 'loader', name: 'LOADER', kind: 'buff', col: '#86efac', tag: 'The next 3 rockets reload in 3 s'},
   {id: 'c4plus', name: 'EXTRA C4', kind: 'buff', col: '#d8d0a0', tag: '+1 C4 charge'},
-  {id: 'medkit', name: 'MEDKIT', kind: 'buff', col: '#4ade80', tag: '+40 health'},
+  {id: 'medkit', name: 'MEDKIT', kind: 'item', col: '#4ade80', tag: '+40 health: Q to bring it up, click to use'},
   {id: 'armor', name: 'BODY ARMOUR', kind: 'buff', col: '#9fb3c8', tag: 'Soaks up the next 50 damage'},
-  {id: 'pgo7', name: 'PGO-7 SCOPE', kind: 'buff', col: '#7fd6f5', tag: '2.7x optic with a range readout, for the rest of the battle'},
+  {id: 'pgo7', name: 'PGO-7 SCOPE', short: 'PGO-7', kind: 'item', col: '#7fd6f5', tag: '2.7x optic with a range readout: Q, click to mount it, hold E to take it off'},
 ];
 FOOT_PRIZES.forEach(w => { w.key = w.id; w.n = 1; w.r = w.r || 0; w.dmg = w.dmg || 0; w.foot = true; SPEC[w.id] = w; ALLW[w.id] = w; });
 const isRocketW = name => name === 'RPG' || name === 'TANDEM WARHEAD' || name === 'THERMOBARIC' || name === 'TELEPORT';
@@ -3379,6 +3379,13 @@ function shellMesh(w) { const m = new THREE.Mesh(shellGeo, new THREE.MeshBasicMa
 function fire(t) {
   if (!canFire(t)) return;
   const w = weaponOf(t), p = POWER, ct = w.kind === 'c4' && c4Target(t);
+  if (w.kind === 'item') {   // Ashton's kit in the supply slot: click uses it
+    if (w.id === 'medkit' && t.hp >= t.maxHp) { if (t === player) { sfx.bad(); feedMsg('Already at full health', '#8f8869'); } return; }
+    t.stock.splice(t.armed, 1); t.weapon = 0; t.armed = 0; t.reload = t.reloadMax = .8;
+    if (w.id === 'medkit') { const d = Math.min(40, t.maxHp - t.hp); t.hp += d; emit({t: 'heal', i: t.i, d}); }
+    if (w.id === 'pgo7') { t.pgo = 1; emit({t: 'feed', s: t.name + ' mounts the PGO-7 scope', c: '#7fd6f5'}); }
+    emit({t: 'sfx', n: 'vault', i: t.i}); return;
+  }
   const base = w.rocket ? RELOAD.rpg : t.weapon === 'S' ? RELOAD.special : RELOAD[w.key] || 4;
   t.reload = t.reloadMax = base * t.spec.rel * (t.ai ? CPU_RELOAD[battleLvl] || 1.5 : 1);   // the real rate of fire sets the reload
   if (t.spec.foot && (w.rocket || w.key === 'rpg') && t.fastN > 0) { t.fastN--; t.reload = t.reloadMax = 3; }   // the loader hands him the next round
@@ -3475,7 +3482,7 @@ function boxDist(t, x, y, z) { const [lx, ly, lz] = tankLocal(t, x, y, z), m = t
 
 function explode(s, x, y, z, direct, solid) {
   const w = s.w, o = s.owner;
-  if (w.kind === 'teleport') { teleport(o, x, z); return; }
+  if (w.kind === 'teleport') { if (o.spec.foot) footTeleport(o, x, z, direct); else teleport(o, x, z); return; }
   if (w.kind === 'orbital') { startOrbital(x, z, o, w); return; }
   if (w.kind === 'c4') { plantC4(s, x, y, z, direct); return; }
   blast(x, y, z, w.r, w.dmg, o, direct, w.kind, solid);
@@ -3525,6 +3532,31 @@ function orbitalBeam(x, z, r) {
     if (tt < .7) fireP.spawn({x: x + rnd(-2, 2), y: g + .5, z: z + rnd(-2, 2), vx: 0, vy: rnd(2, 8), vz: 0, life: .4, s0: 1.5, s1: .5, c0: [.7, .95, 1], c1: [.2, .6, 1], a: 1});
   });
   sfx.zap();
+}
+// Ashton's teleport round: wherever it lands, right beside a tank or on top of one (he rides it; WASD walks the deck,
+// SPACE or the deck's edge gets him off)
+const deckOf = tk => Math.max(...tk.spec.m3.hull.map(h => h[1]));
+function footTeleport(t, x, z, onTank) {
+  if (!t.alive) return;
+  emit({t: 'tele', x: r2(t.x), y: r2(t.y), z: r2(t.z)});
+  t.ride = null; t.vault = null; t.vy = 0; t.falling = false;
+  if (onTank && onTank.alive && onTank !== t && !onTank.spec.foot) {
+    const m = onTank.mesh; let [lx, , lz] = tankLocal(onTank, x, 0, z);
+    lx = clamp(lx, -m.L / 2 + .45, m.L / 2 - .45); lz = clamp(lz, -m.W / 2 + .4, m.W / 2 - .4);
+    if (!onTank.spec.cfg.casemate && Math.abs(lx - m.mount.x) < 1.4 && Math.abs(lz) < 1.3) lx = Math.max(-m.L / 2 + .45, m.mount.x - 1.6);   // off the turret roof, onto the engine deck
+    t.ride = {i: onTank.i, lx, lz}; rideSync(t);
+  } else {
+    x = clamp(x, -PLAY, PLAY); z = clamp(z, -PLAY, PLAY);
+    for (const o of tanks) if (o !== t && o.alive && inTank(o, x, groundAt(x, z) + 1, z, .4)) { const [lx, , lz] = tankLocal(o, x, 0, z), m = o.mesh;   // pushed out beside the hull
+      const ex = Math.abs(lx) / (m.L / 2), ez = Math.abs(lz) / (m.W / 2), nlx = ex > ez ? Math.sign(lx || 1) * (m.L / 2 + .6) : lx, nlz = ex > ez ? lz : Math.sign(lz || 1) * (m.W / 2 + .6);
+      const c = Math.cos(o.hullYaw), sn = Math.sin(o.hullYaw); x = o.x + nlx * c + nlz * sn; z = o.z - nlx * sn + nlz * c; }
+    t.x = x; t.z = z; t.y = groundAt(x, z);
+  }
+  emit({t: 'tele', x: r2(t.x), y: r2(t.y), z: r2(t.z), i: t.i});
+}
+function rideSync(t) {   // stand where he is on the tank's deck as it drives and turns
+  const tk = tanks[t.ride.i], c = Math.cos(tk.hullYaw), sn = Math.sin(tk.hullYaw), { lx, lz } = t.ride;
+  t.x = tk.x + lx * c + lz * sn; t.z = tk.z - lx * sn + lz * c; t.y = tk.y + deckOf(tk);
 }
 function teleport(t, x, z) {
   if (!t.alive) return;
@@ -3581,7 +3613,7 @@ function repairTank(t) {
   const d = Math.min(REPAIR_HP, t.maxHp - t.hp); t.hp += d;
   emit({t: 'heal', i: t.i, d});
 }
-const wheelPool = t => t.spec.foot ? FOOT_PRIZES.filter(s => (s.id !== 'medkit' || t.hp < t.maxHp) && (s.id !== 'pgo7' || !t.pgo)) : SPECIALS.filter(s => s.id !== 'repair' || t.hp < t.maxHp);   // no repairs on a full hull
+const wheelPool = t => t.spec.foot ? FOOT_PRIZES.filter(s => (s.id !== 'medkit' || t.hp < t.maxHp) && (s.id !== 'pgo7' || !t.pgo && !t.stock.includes('pgo7'))) : SPECIALS.filter(s => s.id !== 'repair' || t.hp < t.maxHp);   // no repairs on a full hull
 function award(t, id) { id = id || pick(wheelPool(t)).id; if (id === 'repair') { repairTank(t); return id; } if (SPEC[id] && SPEC[id].kind === 'buff') { footBuff(t, id); return id; } if (t.stock.length < STOCK_MAX) t.stock.push(id); return id; }
 function startReel(t, free) {
   const target = pick(wheelPool(t)).id;
@@ -3685,7 +3717,8 @@ function sampleTilt(t) {
 }
 function tankPhysics(t, dt, sim) {
   const s = sampleTilt(t);
-  if (sim && t.vault) {   // the vault: hands on the top, legs swung over, down on the far side
+  if (sim && t.ride) { if (tanks[t.ride.i] && tanks[t.ride.i].alive) rideSync(t); else { t.ride = null; t.falling = true; t.fallFrom = t.y; t.vy = 0; } }
+  else if (sim && t.vault) {   // the vault: hands on the top, legs swung over, down on the far side
     const v = t.vault; v.t += dt; const k = Math.min(1, v.t / v.dur), e = k * k * (3 - 2 * k);
     t.x = lerp(v.x0, v.x1, e); t.z = lerp(v.z0, v.z1, e);
     const y1 = groundAt(v.x1, v.z1), base = lerp(v.y0, y1, e);
@@ -3760,8 +3793,13 @@ function syncTank(t, dt) {
 }
 let engineLevel = 0, traverseRate = 0;
 // SPACE on foot: vault a wall, rock or hedge up to chest height right in front of him, or else jump (about half a metre)
+function footUnscope(t) {   // the PGO-7 comes off and goes back in his pack
+  if (!t || !t.pgo) return; t.pgo = 0; if (t.stock.length < STOCK_MAX) t.stock.push('pgo7');
+  emit({t: 'feed', s: t.name + ' takes the PGO-7 off', c: '#7fd6f5'});
+}
 function footJump(t) {
   if (!t || !t.alive || !t.spec.foot || t.falling || t.vault || t.plantT > 0) return;
+  if (t.ride) { rideSync(t); t.ride = null; t.falling = true; t.fallFrom = t.y; t.vy = 5.2; t.y += .06; return; }   // jump off the tank
   if (t.cr) { t.cr = false; if (t === player) crouchOn = false; return; }   // kneeling: space stands him up first
   const [fx, fz] = fwd(t.yaw), g = groundAt(t.x, t.z);
   let top = -1e9;
@@ -3781,6 +3819,16 @@ function footMove(t, dt, thr, str) {   // Ashton runs where he looks: W/S forwar
   t.stam = clamp((t.stam ?? 1) + (t.sprinting ? -dt / 6 : (t.moving ? .12 : .25) * dt), 0, 1);   // 6 s of sprint, back in about 5 s
   if (!thr && !str) t.sprinting = false;
   if (t.vault) { t.moving = 1; return; }   // mid-vault: the vault carries him
+  if (t.ride) {   // on a tank: walk its deck; past the edge he drops off
+    const tk = tanks[t.ride.i];
+    if (!tk || !tk.alive) { t.ride = null; t.falling = true; t.fallFrom = t.y; t.vy = 0; return; }
+    if (!t.alive || (!thr && !str) || t.plantT > 0) { t.moving = 0; return; }
+    const [fx, fz] = fwd(t.yaw), [lx, lz] = fwd(t.yaw + Math.PI / 2), mx = fx * thr + lx * str, mz = fz * thr + lz * str, l = Math.hypot(mx, mz) || 1, sp = t.spec.speed * .6 * dt;
+    const c = Math.cos(tk.hullYaw), sn = Math.sin(tk.hullYaw), dx = mx / l * sp, dz = mz / l * sp;
+    t.ride.lx += dx * c - dz * sn; t.ride.lz += dx * sn + dz * c; t.moving = 1;
+    const m = tk.mesh; if (Math.abs(t.ride.lx) > m.L / 2 || Math.abs(t.ride.lz) > m.W / 2) { rideSync(t); t.ride = null; t.falling = true; t.fallFrom = t.y; t.vy = 0; }
+    return;
+  }
   if (!t.alive || (!thr && !str) || t.plantT > 0) { t.moving = 0; return; }   // he stays put while he plants a charge
   const [fx, fz] = fwd(t.yaw), [lx, lz] = fwd(t.yaw + Math.PI / 2);
   const d = t.drv || {}; t.sprinting = !!(d.sp && thr > 0 && !d.ad && !t.cr && (t.stam ?? 1) > .02);
@@ -3806,7 +3854,7 @@ function drive(t, dt, thr, str) {
   const nx = t.x + fx * mv, nz = t.z + fz * mv;
   let ok = Math.abs(nx) < PLAY && Math.abs(nz) < PLAY;
   if (ok && Math.abs(mv) > 0) { const rise = groundAt(nx, nz) - groundAt(t.x, t.z); if (rise > Math.abs(mv) * 1.1) ok = false; }
-  if (ok) for (const o of tanks) if (o !== t && Math.hypot(o.x - nx, o.z - nz) < (o.mesh.L + t.mesh.L) * .45 && Math.hypot(o.x - nx, o.z - nz) < Math.hypot(o.x - t.x, o.z - t.z)) ok = false;
+  if (ok) for (const o of tanks) if (o !== t && !(o.ride && o.ride.i === t.i) && Math.hypot(o.x - nx, o.z - nz) < (o.mesh.L + t.mesh.L) * .45 && Math.hypot(o.x - nx, o.z - nz) < Math.hypot(o.x - t.x, o.z - t.z)) ok = false;
   if (ok && solidTop > -1e8) {
     const blockedAt = (px0, pz0, act) => {
       const [hx, hz] = fwd(t.hullYaw), g0 = groundAt(px0, pz0), hl = t.mesh.L * .46, hw = t.mesh.W * .44; let hit = false;
@@ -4027,6 +4075,7 @@ function hostData(conn, d) {
     return;
   }
   if (d.t === 'jump') { footJump(t); return; }
+  if (d.t === 'unscope') { footUnscope(t); return; }
   if (d.t === 'drv') { t.drv = {th: clamp(Math.round(+d.th) || 0, -1, 1), st: clamp(Math.round(+d.st) || 0, -1, 1), sp: d.sp ? 1 : 0, cr: d.cr ? 1 : 0, ad: d.ad ? 1 : 0}; return; }
 }
 function cleanChat(s) { return String(s).replace(/[^\x20-\x7E]/g, '').trim().slice(0, 40); }
@@ -4297,6 +4346,7 @@ function playerInput(dt) {
   if (keys.arrowup) aimPitch = clamp(aimPitch + 12 * dt * fine * zf, -35, 70);
   if (keys.arrowdown) aimPitch = clamp(aimPitch - 12 * dt * fine * zf, -35, 70);
   const thr = chatOpen ? 0 : (keys.w ? 1 : 0) - (keys.s ? 1 : 0), str = chatOpen ? 0 : (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
+  if (t.spec.foot && t.pgo && keys.e && !chatOpen) { unscopeT += dt; if (unscopeT >= .8) { unscopeT = -9; if (auth()) footUnscope(t); else sendHost({t: 'unscope'}); } } else if (!keys.e) unscopeT = 0;   // hold E
   const foot = t.spec.foot, dsp = foot && keys.shift && !chatOpen ? 1 : 0, dcr = foot && crouchOn ? 1 : 0, dad = foot && zoom > .5 ? 1 : 0;
   if (auth()) t.drv = {th: thr, st: str, sp: dsp, cr: dcr, ad: dad}; else { t.cr = !!dcr; t.sprinting = !!(dsp && thr > 0 && !dad && !dcr); }
   engineLevel = Math.max(Math.abs(thr), Math.abs(str) * .6);
@@ -4404,7 +4454,7 @@ function payRound() {
 // raised by the superelevation for the ZERO range. A target at the zero range is hit dead on the crosshair; for
 // nearer or farther targets use the range marks on the reticle (hold over). Wheel sets the zero, R lases the range
 // under the crosshair and sets the zero to it, X switches to the high lob solution for that range.
-let crouchOn = false, aimPitch = 0, arcPref = 0, zeroRange = 300, zeroOut = false, scopeMag = 4, zeroFlash = 0;
+let unscopeT = 0, crouchOn = false, aimPitch = 0, arcPref = 0, zeroRange = 300, zeroOut = false, scopeMag = 4, zeroFlash = 0;
 const scopeFov = () => player && player.spec.foot ? (player.pgo ? 18 : 42) : scopeMag === 8 ? 8 : 16;   // x4 and x8 (Tab switches); Ashton just raises the RPG's iron sights
 const ZERO_MIN = 100, ZERO_MAX = 3000;
 // the RPG-7's iron sights on the model (launcher frame, metres): the rear leaf's notch and the front post's tip. The eye sits
@@ -5205,6 +5255,7 @@ function drawIronSights() {
   if (st < .999 || t.sprinting) { hx.fillStyle = 'rgba(14,16,11,.6)'; hx.fillRect(sx, sy, 160, 8); hx.fillStyle = st < .25 ? '#e0573a' : '#86efac'; hx.fillRect(sx, sy, 160 * st, 8); txt('STAMINA', sx, sy - 6, 10, '#8f8869', 'left', 'data'); }
   const chips = [t.cr && ['KNEELING', '#d6c99c'], t.shield > 0 && ['ARMOUR ' + Math.round(t.shield), '#9fb3c8'], t.fastN > 0 && ['LOADER ×' + t.fastN, '#86efac'], t.pgo && ['PGO-7', '#7fd6f5']].filter(Boolean);
   chips.forEach(([l, c], i) => txt(l, sx, sy + 28 + i * 18, 13, c, 'left', 'data'));
+  if (t.pgo && unscopeT > 0) { hx.fillStyle = 'rgba(14,16,11,.7)'; hx.fillRect(cx - 80, Hh / 2 + 90, 160, 8); hx.fillStyle = '#7fd6f5'; hx.fillRect(cx - 80, Hh / 2 + 90, 160 * Math.min(1, unscopeT / .8), 8); txt('REMOVING SCOPE', cx, Hh / 2 + 84, 12, '#7fd6f5', 'center', 'data'); }
   hx.shadowBlur = 0;
 }
 // WW2 gunsight, after the German TZF sights: a large aiming triangle (its tip is the aim point) with smaller triangles
@@ -5529,7 +5580,7 @@ function drawLastShot() {
 function drawHints() {
   if (zoom > .5) return;   // the scope carries its own readouts
   let s = '';
-  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · SHIFT sprint · SPACE jump / vault · C kneel · RIGHT-CLICK aim · WHEEL sight 200-500 m · CLICK fire · 1 RPG · 2 C4 · Q supply';
+  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · SHIFT sprint · SPACE jump / vault · C kneel · HOLD E scope off · RIGHT-CLICK aim · WHEEL sight 200-500 m · CLICK fire · 1 RPG · 2 C4 · Q supply';
   else if (state === 'battle' && player.alive) s = 'CLICK fire · R lase · Z sight · H 3rd person · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
   if (!s) return;
