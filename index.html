@@ -369,7 +369,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-11.3';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-11.4';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2650,6 +2650,7 @@ const sfx = {
     nz(t, 1.6 + r / 25, 1400 - Math.min(dist, 900), 40, .9 * v); tone(t, .9, 70, 24, .9 * v); if (dist < 200) nz(t, .3, 5000, 1500, .25 * v, 'highpass'); },
   whistle(dur) { if (!AC) return; tone(AC.currentTime, dur, 2100, 520, .07); },
   tick(f = 1100) { if (!AC) return; tone(AC.currentTime, .06, f, f, .12, 'square'); },
+  step(dist = 0, soft) { if (!AC || dist > 45) return; const v = (1 - dist / 45) * (soft ? .5 : 1); tone(AC.currentTime, .07, rnd(95, 130), 55, .09 * v, 'triangle'); tone(AC.currentTime, .03, rnd(900, 1400), 400, .012 * v, 'sawtooth'); },
   bad() { if (!AC) return; const t = AC.currentTime; tone(t, .35, 180, 90, .25, 'sawtooth'); },
   prize() { if (!AC) return; const t = AC.currentTime; [523, 659, 784, 1047].forEach((f, i) => tone(t + i * .07, .25, f, f, .14, 'triangle')); },
   clank() { if (!AC) return; const t = AC.currentTime; tone(t, .12, 900, 400, .1, 'square'); nz(t, .1, 3000, 1000, .15, 'bandpass', 3); },
@@ -2691,8 +2692,8 @@ const cpuL = () => CPU_LEVELS[battleLvl] || CPU_LEVELS[1];
 const fwd = yaw => [Math.cos(yaw), -Math.sin(yaw)];
 const bearingOf = yaw => ((90 - yaw / D2R) % 360 + 360) % 360;
 const myReel = () => reels.find(r => r.seat === mySeat);
-const canFire = t => t && t.alive && state === 'battle' && t.reload <= 0;
-function weaponOf(t) { if (t.spec.foot) return FOOT_W[t.weapon] || FOOT_W[0]; return t.weapon === 'S' ? (SPEC[t.stock[t.armed]] || WEAPONS[0]) : WEAPONS[t.weapon] || WEAPONS[0]; }
+const canFire = t => t && t.alive && state === 'battle' && t.reload <= 0 && !t.sprinting;
+function weaponOf(t) { if (t.spec.foot) return t.weapon === 'S' ? SPEC[t.stock[t.armed]] || FOOT_W[0] : FOOT_W[t.weapon] || FOOT_W[0]; return t.weapon === 'S' ? (SPEC[t.stock[t.armed]] || WEAPONS[0]) : WEAPONS[t.weapon] || WEAPONS[0]; }
 
 function spawnPoints(n, rand) {
   const out = [], ok = mapDef.ok || (() => true);
@@ -2730,6 +2731,25 @@ const FOOT_W = [
 ];
 FOOT_W.forEach(w => { ALLW[w.key] = w; });
 RELOAD.rpg = 7.5; RELOAD.c4 = 1.6;
+// Ashton's supply spin (a hit spins it, like the tanks'): real RPG-7 rounds and kit a gunner would want
+const FOOT_PRIZES = [
+  {id: 'tandem', name: 'TANDEM WARHEAD', short: 'TANDEM', r: 5, dmg: 100, col: '#ff9f43', sp: 120, gk: .12, rocket: true, tag: 'PG-7VR: a two-stage warhead, double damage'},
+  {id: 'thermo', name: 'THERMOBARIC', short: 'TBG-7V', r: 16, dmg: 60, col: '#ff5f3a', sp: 120, gk: .12, rocket: true, tag: 'TBG-7V: a huge blast'},
+  {id: 'loader', name: 'LOADER', kind: 'buff', col: '#86efac', tag: 'The next 3 rockets reload in 3 s'},
+  {id: 'c4plus', name: 'EXTRA C4', kind: 'buff', col: '#d8d0a0', tag: '+1 C4 charge'},
+  {id: 'medkit', name: 'MEDKIT', kind: 'buff', col: '#4ade80', tag: '+40 health'},
+  {id: 'armor', name: 'BODY ARMOUR', kind: 'buff', col: '#9fb3c8', tag: 'Soaks up the next 50 damage'},
+  {id: 'pgo7', name: 'PGO-7 SCOPE', kind: 'buff', col: '#7fd6f5', tag: '2.7x optic with a range readout, for the rest of the battle'},
+];
+FOOT_PRIZES.forEach(w => { w.key = w.id; w.n = 1; w.r = w.r || 0; w.dmg = w.dmg || 0; w.foot = true; SPEC[w.id] = w; ALLW[w.id] = w; });
+const isRocketW = name => name === 'RPG' || name === 'TANDEM WARHEAD' || name === 'THERMOBARIC';
+function footBuff(t, id) {
+  if (id === 'medkit') { const d = Math.min(40, t.maxHp - t.hp); t.hp += d; emit({t: 'heal', i: t.i, d}); }
+  else if (id === 'c4plus') t.ammo[1] = (t.ammo[1] || 0) + 1;
+  else if (id === 'armor') t.shield = 50;
+  else if (id === 'loader') t.fastN = 3;
+  else if (id === 'pgo7') t.pgo = 1;
+}
 // C4 is planted by hand, not thrown: on a tank within reach he stands and presses it onto the armour, otherwise he crouches
 // and sets it on the ground; it goes off on a 10 second timer, there is no detonator
 const C4_FUSE = 10, PLANT_T = 2.1, PLANT_AT = 1.05, PLANT_REACH = 2.2;
@@ -2781,9 +2801,9 @@ function prepRPG(root) {
   const w = new THREE.Group(); w.add(r); w.updateMatrixWorld(true);
   // the tube's axis at the muzzle, and the pistol grip (the plastic part) for the right hand
   const tube = root.getObjectByName('pCube12_black_metal_0') || root, mz = []; const v = new THREE.Vector3();
-  tube.traverse(q => { if (!q.isMesh) return; const p = q.geometry.attributes.position; for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(q.matrixWorld); if (v.x > .33 && v.x < .45) mz.push(v.clone()); } });
+  tube.traverse(q => { if (!q.isMesh) return; const p = q.geometry.attributes.position; for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(q.matrixWorld); if (v.x > .485) mz.push(v.clone()); } });   // the muzzle ring itself, past the front sight
   const med = a => a.length ? a.slice().sort((p, q) => p - q)[a.length >> 1] : 0;
-  // the tube's centre from a plain section just behind the muzzle (the front sight post sits right at the muzzle)
+  // the tube's centre from the muzzle ring (a plain round section), so the rocket sits dead centre in the bore
   const tb = new THREE.Box3().setFromPoints(mz.length ? mz : [new THREE.Vector3(.4, 0, 0)]), axisY = (tb.min.y + tb.max.y) / 2, axisZ = (tb.min.z + tb.max.z) / 2;
   if (rk) { w.attach(rk); w.updateMatrixWorld(true); const rb = new THREE.Box3().setFromObject(rk), rcen = rb.getCenter(new THREE.Vector3());
     rk.position.x += .5 + .42 - rb.max.x; rk.position.y += axisY - rcen.y; rk.position.z += axisZ - rcen.z; }   // warhead 0.42 m out of the muzzle
@@ -2934,7 +2954,8 @@ function poseSoldier(t, m, dt) {
   for (const k in B) B[k].quaternion.copy(B[k].userData.rest);
   m.turret.updateMatrixWorld(true);
   const W = (x, y, z) => m.turret.localToWorld(new THREE.Vector3(x, y, z)), dirW = (x, y, z) => W(x, y, z).sub(W(0, 0, 0)).normalize();
-  const run = t.moving && t.alive; m.runK = lerp(m.runK || 0, run ? 1 : 0, 1 - Math.exp(-dt * 8)); m.stride = (m.stride || 0) + dt * 10 * m.runK;
+  const run = t.moving && t.alive; m.runK = lerp(m.runK || 0, run ? 1 : 0, 1 - Math.exp(-dt * 8)); m.stride = (m.stride || 0) + dt * 10 * m.runK * (t.sprinting ? 1.35 : t.cr ? .7 : 1);
+  { const ph = Math.floor(m.stride / Math.PI); if (ph !== m.stepPh) { m.stepPh = ph; if (m.runK > .4) sfx.step(Math.hypot(t.x - camera.position.x, t.z - camera.position.z), t.cr); } }   // footsteps
   for (const [sd, ph] of [['Left', 0], ['Right', Math.PI]]) {
     const hip = B[sd + 'UpLeg'], knee = B[sd + 'Leg'], foot = B[sd + 'Foot']; if (!hip || !knee || !foot) continue;
     const H = m.turret.worldToLocal(hip.getWorldPosition(new THREE.Vector3())), ll = hip.getWorldPosition(new THREE.Vector3()).distanceTo(knee.getWorldPosition(new THREE.Vector3())) + knee.getWorldPosition(new THREE.Vector3()).distanceTo(foot.getWorldPosition(new THREE.Vector3()));
@@ -3215,7 +3236,7 @@ function createBattle(cfg) {
     t.elev = clamp(5, ...elevLim(t));
   }
   mySeat = net ? (net.role === 'host' ? 0 : net.seat) : 0;
-  aimPitch = 0; arcPref = 0;
+  aimPitch = 0; arcPref = 0; crouchOn = false;
   player = tanks[mySeat]; viewYaw = player.yaw; zeroRange = player.spec.foot ? 200 : 500;   // the RPG's lowest sight setting; tank sights start at a 500 m battle zero
   tanks.forEach(seatRider); loadClips(myRider().id).catch(() => {}); riderMsg = null; riderLowSaid = false; fly.on = false;
   mode = 'game'; paused = false; worldTime = 0; nextFlight = rnd(10, 20);
@@ -3269,7 +3290,6 @@ function checkOver() {
 // landing a hit on someone else spins the supply wheel (one spin at a time per tank; CPUs win one at their skill's odds)
 function onHit(by) {
   if (!by || !by.alive || state !== 'battle') return;
-  if (by.spec.foot) return;   // Ashton carries his own kit: no supply spins
   if (by.ai) { if (by.stock.length < STOCK_MAX && Math.random() < cpuL().combo * .6) { const it = award(by); emit({t: 'feed', s: by.name + ' gets ' + SPEC[it].name, c: by.color}); } return; }
   if (!reels.some(r => r.seat === by.i)) startReel(by, false);
 }
@@ -3357,8 +3377,9 @@ function shellMesh(w) { const m = new THREE.Mesh(shellGeo, new THREE.MeshBasicMa
 function fire(t) {
   if (!canFire(t)) return;
   const w = weaponOf(t), p = POWER, ct = w.kind === 'c4' && c4Target(t);
-  const base = t.weapon === 'S' ? RELOAD.special : RELOAD[w.key] || 4;
+  const base = w.rocket ? RELOAD.rpg : t.weapon === 'S' ? RELOAD.special : RELOAD[w.key] || 4;
   t.reload = t.reloadMax = base * t.spec.rel * (t.ai ? CPU_RELOAD[battleLvl] || 1.5 : 1);   // the real rate of fire sets the reload
+  if (t.spec.foot && (w.rocket || w.key === 'rpg') && t.fastN > 0) { t.fastN--; t.reload = t.reloadMax = 3; }   // the loader hands him the next round
   if (t.weapon === 'S') { t.stock.splice(t.armed, 1); t.weapon = 0; t.armed = 0; }
   else if (t.ammo[t.weapon] !== Infinity) { t.ammo[t.weapon]--; if (t.ammo[t.weapon] <= 0) t.weapon = 0; }
   t.stats.shots++;
@@ -3369,7 +3390,10 @@ function fire(t) {
   const list = [];
   if (w.n === 3) for (const o of [-1, 0, 1]) list.push([t.yaw + o * w.spreadYaw * D2R, t.elev]);
   else if (w.n === 7) for (let k = -3; k <= 3; k++) list.push([t.yaw, t.elev + k * w.spreadElev]);
-  else list.push([t.yaw, t.elev]);
+  else if (t.spec.foot) {   // the RPG from the hip wanders; aimed down the sights it goes where the post is, steadier still kneeling
+    const d = t.drv || {}, sd = (d.ad ? .25 : 2.2) * (t.moving ? 1.6 : 1) * (t.cr ? .6 : 1);
+    list.push([t.yaw + gauss() * sd * .5 * D2R, t.elev + gauss() * sd * .5]);
+  } else list.push([t.yaw, t.elev]);
   for (const [yaw, elev] of list) { const s = newShell(t, w, yaw, elev, p); s.id = shellId++; s.mesh = shellMesh(w); s.mesh.position.set(s.x, s.y, s.z); shells.push(s); }
   const sid = shells[shells.length - 1 - Math.floor(list.length / 2)].id;
   emit({t: 'fire', i: t.i, y: r3(t.yaw), e: r2(t.elev), p, w: w.name, sid});
@@ -3511,6 +3535,7 @@ function teleport(t, x, z) {
 
 function damage(t, dm, by, cause) {
   if (!t.alive || dm <= 0) return;
+  if (t.shield > 0) { const a = Math.min(t.shield, dm); t.shield -= a; dm -= a; if (dm <= 0) { if (by) t.lastHitBy = by; return; } }   // Ashton's body armour
   const real = Math.min(dm, t.hp);
   t.hp -= dm; t.stats.taken += real;
   if (by) t.lastHitBy = by;
@@ -3554,13 +3579,13 @@ function repairTank(t) {
   const d = Math.min(REPAIR_HP, t.maxHp - t.hp); t.hp += d;
   emit({t: 'heal', i: t.i, d});
 }
-const wheelPool = t => SPECIALS.filter(s => s.id !== 'repair' || t.hp < t.maxHp);   // no repairs on a full hull
-function award(t, id) { id = id || pick(wheelPool(t)).id; if (id === 'repair') { repairTank(t); return id; } if (t.stock.length < STOCK_MAX) t.stock.push(id); return id; }
+const wheelPool = t => t.spec.foot ? FOOT_PRIZES.filter(s => (s.id !== 'medkit' || t.hp < t.maxHp) && (s.id !== 'pgo7' || !t.pgo)) : SPECIALS.filter(s => s.id !== 'repair' || t.hp < t.maxHp);   // no repairs on a full hull
+function award(t, id) { id = id || pick(wheelPool(t)).id; if (id === 'repair') { repairTank(t); return id; } if (SPEC[id] && SPEC[id].kind === 'buff') { footBuff(t, id); return id; } if (t.stock.length < STOCK_MAX) t.stock.push(id); return id; }
 function startReel(t, free) {
   const target = pick(wheelPool(t)).id;
   if (t.ai) { award(t, target); return; }
   if (t.stock.length >= STOCK_MAX) return;
-  const strip = []; for (let i = 0; i < 26; i++) strip.push(pick(SPECIALS).id); strip.push(target, pick(SPECIALS).id, pick(SPECIALS).id);
+  const P = t.spec.foot ? FOOT_PRIZES : SPECIALS, strip = []; for (let i = 0; i < 26; i++) strip.push(pick(P).id); strip.push(target, pick(P).id, pick(P).id);
   reels.push({strip, target, t: 0, dur: 2.3, hold: 0, free, seat: t.i, lastIdx: -1, given: false});
 }
 function stepReels(dt) {   // host / offline
@@ -3691,7 +3716,7 @@ function syncTank(t, dt) {
     if (!m.gunHome) m.gunHome = m.gun.position.clone();
     m.gun.rotation.set(0, 0, t.alive ? t.elev * D2R : 0); m.gun.position.copy(m.gunHome); m.gun.position.x -= t.recoil * .25;
     // reloading the RPG: lower the launcher, a fresh rocket comes up from the pack and slides into the muzzle, shoulder it again
-    m.reloadP = t.lastW === 'RPG' && t.reload > 0 && t.reloadMax > 0 && t.alive ? 1 - t.reload / t.reloadMax : null;   // the model soldier runs the full drill in poseSoldier
+    m.reloadP = isRocketW(t.lastW) && t.reload > 0 && t.reloadMax > 0 && t.alive ? 1 - t.reload / t.reloadMax : null;   // the model soldier runs the full drill in poseSoldier
     if (m.reloadP != null && !m.bones) {
       const p = m.reloadP, tilt = sstep(0, .12, p) * (1 - sstep(.86, 1, p)), ins = sstep(.3, .72, p);
       m.gun.rotation.z = lerp(t.elev * D2R, -40 * D2R, tilt);
@@ -3703,7 +3728,8 @@ function syncTank(t, dt) {
     if (!auth() && t.plantT > 0) t.plantT = Math.max(0, t.plantT - dt);
     const pp = t.plantT > 0 && t.alive ? 1 - t.plantT / PLANT_T : 1;
     m.plantK = sstep(.1, .35, pp) * (1 - sstep(.65, .9, pp)); m.stowK = sstep(0, .16, pp) * (1 - sstep(.84, 1, pp)); m.plantP = pp; m.plantAt = m.plantK > 0 && t.plantTgt ? c4TargetPos(t.plantTgt) : null;
-    m.crouchK = m.plantAt && t.plantTgt.ti < 0 ? m.plantK : 0; m.crouch = .68 * m.crouchK;
+    m.crK = lerp(m.crK || 0, t.cr && t.alive ? 1 : 0, 1 - Math.exp(-dt * 10));   // kneeling (C)
+    m.crouchK = Math.max(m.plantAt && t.plantTgt.ti < 0 ? m.plantK : 0, m.crK); m.crouch = .68 * m.crouchK; m.top = 1.85 - m.crouch * .85;
     m.turret.position.y -= m.crouch;
     if (m.bones) { const r = m.turret.position.y; m.turret.position.y = t.base.y - m.crouch; poseSoldier(t, m, dt); m.turret.position.y = r; }   // the model's own run cycle replaces the bob
     return;
@@ -3725,10 +3751,14 @@ function syncTank(t, dt) {
 }
 let engineLevel = 0, traverseRate = 0;
 function footMove(t, dt, thr, str) {   // Ashton runs where he looks: W/S forward and back, A/D sidestep
-  t.hullYaw = t.yaw;
+  t.hullYaw = t.yaw; t.cr = !!(t.drv && t.drv.cr);
+  t.stam = clamp((t.stam ?? 1) + (t.sprinting ? -dt / 6 : (t.moving ? .12 : .25) * dt), 0, 1);   // 6 s of sprint, back in about 5 s
+  if (!thr && !str) t.sprinting = false;
   if (!t.alive || (!thr && !str) || t.plantT > 0) { t.moving = 0; return; }   // he stays put while he plants a charge
   const [fx, fz] = fwd(t.yaw), [lx, lz] = fwd(t.yaw + Math.PI / 2);
-  let mx = fx * thr + lx * str, mz = fz * thr + lz * str; const l = Math.hypot(mx, mz) || 1, sp = t.spec.speed * dt * (thr < 0 ? .7 : 1);
+  const d = t.drv || {}; t.sprinting = !!(d.sp && thr > 0 && !d.ad && !t.cr && (t.stam ?? 1) > .02);
+  const mul = t.sprinting ? 1.65 : t.cr ? .45 : d.ad ? .55 : 1;   // sprint, kneel-walk, or walk while aiming
+  let mx = fx * thr + lx * str, mz = fz * thr + lz * str; const l = Math.hypot(mx, mz) || 1, sp = t.spec.speed * mul * dt * (thr < 0 ? .7 : 1);
   mx = mx / l * sp; mz = mz / l * sp;
   const nx = t.x + mx, nz = t.z + mz, g0 = groundAt(t.x, t.z), g1 = groundAt(nx, nz);
   t.moving = 1;
@@ -3968,7 +3998,7 @@ function hostData(conn, d) {
     if (d.t === 'fire') fire(t);   // fire() itself refuses while reloading
     return;
   }
-  if (d.t === 'drv') { t.drv = {th: clamp(Math.round(+d.th) || 0, -1, 1), st: clamp(Math.round(+d.st) || 0, -1, 1)}; return; }
+  if (d.t === 'drv') { t.drv = {th: clamp(Math.round(+d.th) || 0, -1, 1), st: clamp(Math.round(+d.st) || 0, -1, 1), sp: d.sp ? 1 : 0, cr: d.cr ? 1 : 0, ad: d.ad ? 1 : 0}; return; }
 }
 function cleanChat(s) { return String(s).replace(/[^\x20-\x7E]/g, '').trim().slice(0, 40); }
 function bcastLobby() { bcast({t: 'lobby', lb: lobby}); renderOnline(); }
@@ -4001,7 +4031,7 @@ function roundMsg() {
 }
 function snapMsg() {
   const m = {t: 's', st: state, w: winner,
-    k: tanks.map(t => [r2(t.x), r2(t.z), r2(t.y), r3(t.hullYaw), r3(t.yaw), r2(t.elev), r2(t.power), t.hp, t.weapon === 'S' ? -1 : t.weapon, t.armed, t.stock.join(','), t.ammo.map(a => a === Infinity ? -1 : a), r2(t.reload), t.ai ? 1 : 0, r2(t.reloadMax), t.moving ? 1 : 0]),
+    k: tanks.map(t => [r2(t.x), r2(t.z), r2(t.y), r3(t.hullYaw), r3(t.yaw), r2(t.elev), r2(t.power), t.hp, t.weapon === 'S' ? -1 : t.weapon, t.armed, t.stock.join(','), t.ammo.map(a => a === Infinity ? -1 : a), r2(t.reload), t.ai ? 1 : 0, r2(t.reloadMax), t.moving ? 1 : 0, [t.shield || 0, t.fastN || 0, t.pgo ? 1 : 0, t.cr ? 1 : 0, r2(t.stam ?? 1), t.sprinting ? 1 : 0]]),
     sh: shells.map(s => [s.id, r2(s.x), r2(s.y), r2(s.z), r2(s.vx), r2(s.vy), r2(s.vz), s.w.key, s.under ? 1 : 0, s.owner.i]),
     rl: reels.map(r => [r.strip.join(','), r.target, r2(r.t), r.free ? 1 : 0, r.seat]),
     ss: state === 'over' ? tanks.map(t => [t.stats.shots, t.stats.hits, t.stats.dmg, t.stats.kills]) : undefined};
@@ -4103,6 +4133,7 @@ function applySnap(m) {
     t.hp = Math.max(0, hp); if (t.alive && hp <= 0 && !t.deb) killVisual(t, null, true);
     const stock = a[10] ? a[10].split(',').filter(id => SPEC[id]) : [];
     t.ammo = a[11].map(v => v < 0 ? Infinity : v); t.ai = !!a[13]; t.reloadMax = a[14] || 1; t.moving = a[15];
+    if (a[16]) { t.shield = a[16][0]; t.fastN = a[16][1]; t.pgo = a[16][2]; if (t !== player) { t.cr = !!a[16][3]; t.sprinting = !!a[16][5]; } t.stam = a[16][4]; }
     t.tgt = {x: a[0], z: a[1], y: a[2], hy: a[3], yaw: a[4], elev: a[5]};
     if (!t.init) { t.x = a[0]; t.z = a[1]; t.y = a[2]; t.hullYaw = a[3]; t.init = true; }
     if (t === player) {   // my aim, power and shell choice are mine; take the host's reload, and its weapon only once a shot used it up
@@ -4136,8 +4167,9 @@ function sendInputs() {   // client: my aim (and drive) to the host, only when s
   const t = player; if (!t || !t.alive) return;
   const sig = [r3(t.yaw), r2(t.elev), Math.round(t.power), t.weapon, t.armed].join();
   if (sig !== net.lastIn && performance.now() - (net.inAt || 0) > 60) { net.lastIn = sig; net.inAt = performance.now(); sendHost({t: 'in', y: r3(t.yaw), e: r2(t.elev), p: Math.round(t.power), w: t.weapon === 'S' ? -1 : t.weapon, a: t.armed}); }
-  const th = chatOpen || paused || fly.on ? 0 : (keys.w ? 1 : 0) - (keys.s ? 1 : 0), st = chatOpen || paused || fly.on ? 0 : (keys.a ? 1 : 0) - (keys.d ? 1 : 0), ds = th + ',' + st;
-  if (ds !== net.lastDrv || performance.now() - (net.drvAt || 0) > 1000) { net.lastDrv = ds; net.drvAt = performance.now(); sendHost({t: 'drv', th, st}); }
+  const th = chatOpen || paused || fly.on ? 0 : (keys.w ? 1 : 0) - (keys.s ? 1 : 0), st = chatOpen || paused || fly.on ? 0 : (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
+  const sp = t.spec.foot && keys.shift && !chatOpen ? 1 : 0, cr = t.spec.foot && crouchOn ? 1 : 0, ad = t.spec.foot && zoom > .5 ? 1 : 0, ds = [th, st, sp, cr, ad].join();
+  if (ds !== net.lastDrv || performance.now() - (net.drvAt || 0) > 1000) { net.lastDrv = ds; net.drvAt = performance.now(); sendHost({t: 'drv', th, st, sp, cr, ad}); }
 }
 
 // ================================================================ input
@@ -4213,6 +4245,7 @@ addEventListener('keydown', e => {
   if ((k === 'pageup' || k === 'pagedown') && state === 'battle' && player.alive) { setZero(zeroRange + (k === 'pageup' ? 1 : -1) * zeroStep(e)); return; }   // zero the sight
   if (k === 'tab' && player && player.alive) { scopeMag = scopeMag === 4 ? 8 : 4; sfx.tick(scopeMag === 8 ? 1300 : 1000); return; }
   if (k === '[' || k === ']') { nudgeSens(k === ']' ? 1.1 : 1 / 1.1); return; }
+  if (k === 'c' && player && player.spec.foot && state === 'battle' && player.alive) { crouchOn = !crouchOn; sfx.tick(crouchOn ? 500 : 700); return; }
   if (k === 'c') { settings.shellCam = !settings.shellCam; save('ironrain3d.settings', settings); feedMsg('Follow-shell camera ' + (settings.shellCam ? 'ON' : 'OFF'), '#d6c99c'); }
   if (k === 'm') { settings.vol = settings.vol > 0 ? 0 : .7; if (master) master.gain.value = settings.vol; save('ironrain3d.settings', settings); }
   if (state === 'over' && overT > 2.5 && (k === 'enter' || k === ' ')) { showEnd(); return; }
@@ -4228,14 +4261,15 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; zoomHeld
 
 function playerInput(dt) {
   const t = player; if (!t || !t.alive || state === 'over' || paused || fly.on) { engineLevel = 0; traverseRate = 0; if (t && fly.on && auth()) t.drv = {th: 0, st: 0}; return; }
-  const fine = keys.shift ? .25 : 1, zf = zoom > .5 ? .3 * scopeFov() / 16 : 1;
+  const fine = keys.shift && !t.spec.foot ? .25 : 1, zf = zoom > .5 ? .3 * scopeFov() / 16 : 1;
   const y0 = t.yaw;
   if (keys.arrowleft) viewYaw = wrapA(viewYaw + 40 * D2R * dt * fine * zf);
   if (keys.arrowright) viewYaw = wrapA(viewYaw - 40 * D2R * dt * fine * zf);
   if (keys.arrowup) aimPitch = clamp(aimPitch + 12 * dt * fine * zf, -35, 70);
   if (keys.arrowdown) aimPitch = clamp(aimPitch - 12 * dt * fine * zf, -35, 70);
   const thr = chatOpen ? 0 : (keys.w ? 1 : 0) - (keys.s ? 1 : 0), str = chatOpen ? 0 : (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
-  if (auth()) t.drv = {th: thr, st: str};
+  const foot = t.spec.foot, dsp = foot && keys.shift && !chatOpen ? 1 : 0, dcr = foot && crouchOn ? 1 : 0, dad = foot && zoom > .5 ? 1 : 0;
+  if (auth()) t.drv = {th: thr, st: str, sp: dsp, cr: dcr, ad: dad}; else { t.cr = !!dcr; t.sprinting = !!(dsp && thr > 0 && !dad && !dcr); }
   engineLevel = Math.max(Math.abs(thr), Math.abs(str) * .6);
   if (!auth() && t.reload > 0) { t.reload = Math.max(0, t.reload - dt); if (t.reload === 0) sfx.clank(); }
   traverseRate = Math.abs(wrapA(t.yaw - y0)) / Math.max(dt, 1e-3);
@@ -4341,8 +4375,8 @@ function payRound() {
 // raised by the superelevation for the ZERO range. A target at the zero range is hit dead on the crosshair; for
 // nearer or farther targets use the range marks on the reticle (hold over). Wheel sets the zero, R lases the range
 // under the crosshair and sets the zero to it, X switches to the high lob solution for that range.
-let aimPitch = 0, arcPref = 0, zeroRange = 300, zeroOut = false, scopeMag = 4, zeroFlash = 0;
-const scopeFov = () => player && player.spec.foot ? 42 : scopeMag === 8 ? 8 : 16;   // x4 and x8 (Tab switches); Ashton just raises the RPG's iron sights
+let crouchOn = false, aimPitch = 0, arcPref = 0, zeroRange = 300, zeroOut = false, scopeMag = 4, zeroFlash = 0;
+const scopeFov = () => player && player.spec.foot ? (player.pgo ? 18 : 42) : scopeMag === 8 ? 8 : 16;   // x4 and x8 (Tab switches); Ashton just raises the RPG's iron sights
 const ZERO_MIN = 100, ZERO_MAX = 3000;
 // the RPG-7's iron sights on the model (launcher frame, metres): the rear leaf's notch and the front post's tip. The eye sits
 // just behind the leaf on the line through the post that's tilted down from the tube by the sight's zero: as on the real
@@ -4386,7 +4420,7 @@ function gunLay(dt) {
   let want = aimPitch;
   // third person: the camera sits above and behind, so aim the gun at whatever is under the crosshair rather than parallel to the view
   if (thirdView() && zoom <= .5 && tpAim) { const pv = t.base.y + t.mesh.gp.y, hd = Math.max(1, Math.hypot(tpAim.x - t.base.x, tpAim.z - t.base.z) - t.mesh.gp.x); want = Math.atan2(tpAim.y - pv, hd) / D2R; }
-  if (zoom > .5) { const e = gunElevFor(t, aimPitch, zeroRange, t.spec.foot ? 0 : arcPref); zeroOut = e == null; want = e == null ? 45 : e; } else zeroOut = false;
+  if (zoom > .5 || t.spec.foot) { const e = gunElevFor(t, aimPitch, zeroRange, t.spec.foot ? 0 : arcPref); zeroOut = e == null; want = e == null ? 45 : e; } else zeroOut = false;
   let wy = viewYaw;
   if (thirdView() && zoom <= .5 && tpAim) wy = Math.atan2(-(tpAim.z - t.base.z), tpAim.x - t.base.x);
   slewGun(t, wy, want, dt);
@@ -4929,6 +4963,7 @@ function updateCamera(dt) {
     let px = base.x + fx * e.x - fz * e.z, py = base.y + e.y + (t.deb ? 1.5 : 0) - (m.crouch || 0), pz = base.z + fz * e.x + fx * e.z;
     if (zoom > .5 && !m.foot) { px = base.x + fx * (m.gp.x + .3); py = base.y + m.gp.y + .45; pz = base.z + fz * (m.gp.x + .3); }   // the sight sits on the gun's trunnion (no recoil)
     const ads = m.foot && m.bones && m.reloadP == null && !(m.stowK > 0) && t.alive ? sstep(0, 1, zoom) : 0;
+    if (m.foot && !thirdView() && m.runK) { const b = m.runK * (1 - ads) * (1 + (m.sprK || 0)), ph = m.stride || 0; py += Math.abs(Math.sin(ph)) * .045 * b - .02 * b; px += -fz * Math.sin(ph) * .025 * b; pz += fx * Math.sin(ph) * .025 * b; }   // head bob as he runs
     if (ads > 0) { const pe = rpgSightEye(t, m); px = lerp(px, pe.x, ads); py = lerp(py, pe.y, ads); pz = lerp(pz, pe.z, ads); }   // Ashton: his eye behind the RPG's rear sight
     if ((camera.near < .1) !== (ads > .5)) { camera.near = ads > .5 ? .02 : .1; camera.updateProjectionMatrix(); }
     // smooth the eye point: the hull rocks on the terrain at the 60 Hz sim rate, and through a x4 sight that reads as shaking
@@ -4950,6 +4985,7 @@ function updateCamera(dt) {
     if (zoom < .5) { camera.position.x -= fx * kk * .35; camera.position.z -= fz * kk * .35; camera.position.y += kk * .08; }
     camera.rotation.set((aimPitch + kick - (m.plantK || 0) * Math.max(0, aimPitch + (m.crouchK ? 45 : 25))) * D2R, (zoom > .5 ? t.yaw : viewYaw) - Math.PI / 2 + side * D2R, side * .02, 'YXZ');
     if (zoom < .5) fovTarget += shotPunch * shotPunch * 7;   // a punch of the field of view with the blast
+    if (m.foot && !tp) { m.sprK = lerp(m.sprK || 0, t.sprinting ? 1 : 0, 1 - Math.exp(-dt * 6)); fovTarget += 9 * m.sprK; }   // sprinting widens the view
     if (tp) tpAim = castAim();
   }
   if (camShake > 0 && zoom <= .5) {   // no shake at all in the x4 sight: magnified, it read as the view drifting in and out
@@ -5040,7 +5076,7 @@ function drawHUD() {
   hx.textBaseline = 'alphabetic';
   const t = player, inShellCam = !!(followShell || camHold) || fly.on, spectating = fly.on;
   if (!inShellCam && t.alive && zoom < .5) drawReticle();
-  if (zoom > .02 && !inShellCam) { if (t.spec.foot) drawIronSights(); else drawOptic(); }   // the scope (or Ashton's iron sights) grows in over the plain crosshair
+  if (t.spec.foot) { if (!inShellCam && t.alive) drawIronSights(); } else if (zoom > .02 && !inShellCam) drawOptic();   // the scope (or Ashton's iron sights) grows in over the plain crosshair
   if (!inShellCam && t.alive) aimNote();
   drawTags(); drawPops(); drawCompass(); drawRoster(); drawRadar(); drawPanel(); drawHealth(); drawLastShot(); drawPipFrame(); drawRider(); drawFeed(); drawSpot(); drawBanner(); drawHints();
   if (fly.on && state !== 'over') { hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 6; txt(t.alive ? 'SPECTATOR' : 'DESTROYED · SPECTATING', W / 2, 160, 18, t.alive ? '#e6b44c' : '#e0573a', 'center', 'display'); txt('WASD fly · E / Space up · Q down · Shift fast · ' + (t.alive ? 'F back to your tank' : net ? 'watching to the end' : 'ENTER for results'), W / 2, 180, 12, '#e9dfb9', 'center', 'data'); hx.shadowBlur = 0; }
@@ -5116,15 +5152,31 @@ function rangefind() {
 // Ashton aiming down the RPG-7: the view is the model's own sights (rpgSightEye), so the screen only adds the rear sight's
 // setting and the launcher's state, small, below the line of sight
 function drawIronSights() {
-  const t = player, k = clamp(zoom, 0, 1), cx = W / 2;
-  if (k < .5) return;
-  hx.save(); hx.globalAlpha = sstep(.5, 1, k);
-  hx.shadowColor = 'rgba(0,0,0,.95)'; hx.shadowBlur = 4;
-  const zf = zeroFlash > 0 ? Math.min(1, zeroFlash) : 0;
-  txt('SIGHT ' + zeroRange / 100, cx - W * .18, Hh - 120, 18 + zf * 4, zf ? '#ffe39a' : '#f2e6b8', 'center', 'data');
-  txt(zeroRange + ' m · WHEEL / PGUP PGDN', cx - W * .18, Hh - 102, 10, 'rgba(214,201,156,.75)', 'center', 'data');
-  txt(t.reload > 0 ? 'RELOADING ' + t.reload.toFixed(1) + 's' : weaponOf(t).name + ' READY', cx + W * .18, Hh - 112, 16, t.reload > 0 ? '#f0a28f' : '#e6b44c', 'center', 'data');
+  const t = player, k = clamp(zoom, 0, 1), cx = W / 2, zf = zeroFlash > 0 ? Math.min(1, zeroFlash) : 0;
+  // the rear sight's setting, big and always on screen: the RPG-7's leaf is marked 2 to 5 (hundreds of metres)
+  const y = Hh - 190, bw = 300, x0 = cx - bw / 2;
+  hx.save(); hx.globalAlpha = .55 + .45 * Math.max(k, zf);
+  hx.fillStyle = 'rgba(14,16,11,.72)'; hx.fillRect(x0, y - 34, bw, 66);
+  hx.strokeStyle = zf ? 'rgba(255,227,154,.95)' : 'rgba(230,180,76,.6)'; hx.lineWidth = zf ? 3 : 1.5; hx.strokeRect(x0, y - 34, bw, 66);
+  txt('SIGHT', x0 + 14, y - 14, 12, '#8f8869', 'left', 'data');
+  txt(zeroRange + ' m', x0 + 14, y + 18, 30 + zf * 6, zf ? '#ffe39a' : '#f2e6b8', 'left', 'data');
+  [2, 3, 4, 5].forEach((n, i) => { const on = zeroRange === n * 100, bx = x0 + 150 + i * 36;
+    hx.fillStyle = on ? '#e6b44c' : 'rgba(214,201,156,.12)'; hx.fillRect(bx, y - 22, 30, 44);
+    txt(String(n), bx + 15, y + 11, on ? 28 : 20, on ? '#1a1709' : '#8f8869', 'center', 'data'); });
+  txt('WHEEL / PGUP PGDN', cx, y + 46, 11, 'rgba(214,201,156,.8)', 'center', 'data');
   hx.restore();
+  hx.shadowColor = 'rgba(0,0,0,.95)'; hx.shadowBlur = 4;
+  if (k > .5) txt(t.reload > 0 ? 'RELOADING ' + t.reload.toFixed(1) + 's' : weaponOf(t).name + ' READY', cx, y - 52, 16, t.reload > 0 ? '#f0a28f' : '#e6b44c', 'center', 'data');
+  if (t.pgo && k > .5) {   // the PGO-7's range scale: an estimate of the distance to what's on the post
+    if (worldTime - rangeCache.t > .1 || worldTime < rangeCache.t) rangeCache = {t: worldTime, v: rangefind()};
+    const r = rangeCache.v; txt('PGO-7 · ' + (r ? '~' + Math.round(r.d / 10) * 10 + ' m' : '---- m'), cx, Hh / 2 + 70, 16, r && r.tank ? r.tank.color : '#7fd6f5', 'center', 'data');
+  }
+  // stamina, stance and kit
+  const sx = 24, sy = Hh - 250, st = t.stam ?? 1;
+  if (st < .999 || t.sprinting) { hx.fillStyle = 'rgba(14,16,11,.6)'; hx.fillRect(sx, sy, 160, 8); hx.fillStyle = st < .25 ? '#e0573a' : '#86efac'; hx.fillRect(sx, sy, 160 * st, 8); txt('STAMINA', sx, sy - 6, 10, '#8f8869', 'left', 'data'); }
+  const chips = [t.cr && ['KNEELING', '#d6c99c'], t.shield > 0 && ['ARMOUR ' + Math.round(t.shield), '#9fb3c8'], t.fastN > 0 && ['LOADER ×' + t.fastN, '#86efac'], t.pgo && ['PGO-7', '#7fd6f5']].filter(Boolean);
+  chips.forEach(([l, c], i) => txt(l, sx, sy + 28 + i * 18, 13, c, 'left', 'data'));
+  hx.shadowBlur = 0;
 }
 // WW2 gunsight, after the German TZF sights: a large aiming triangle (its tip is the aim point) with smaller triangles
 // every 4 mils either side for leading a moving target, and a range drum along the top that turns as you zero
@@ -5230,7 +5282,7 @@ function drawTags() {
     hx.shadowColor = 'rgba(0,0,0,.85)'; hx.shadowBlur = 4;
     txt(t.alive ? t.name : t.name + ' · DESTROYED', p.x, p.y - 12, 14, t.alive ? t.color : '#8f8869', 'center', 'body', '700');
     if (t.alive) { hx.shadowBlur = 0; bar(p.x - 24, p.y - 7, 48, 4, t.hp / t.maxHp, hpCol(t.hp / t.maxHp), 'rgba(0,0,0,.55)'); hx.shadowBlur = 4;
-      if (t !== player) txt(Math.round(d) + ' m', p.x, p.y + 9, 11, 'rgba(230,220,190,.85)', 'center', 'data'); }
+      if (t !== player && !(player && player.spec.foot && !player.pgo)) txt(Math.round(d) + ' m', p.x, p.y + 9, 11, 'rgba(230,220,190,.85)', 'center', 'data'); }
     if (cur && t !== player) { hx.fillStyle = t.color; hx.beginPath(); hx.moveTo(p.x, p.y - 28); hx.lineTo(p.x - 6, p.y - 36); hx.lineTo(p.x + 6, p.y - 36); hx.fill(); }
     hx.shadowBlur = 0;
   }
@@ -5375,7 +5427,7 @@ function drawPanel() {
   const lf = t.reloadMax > 0 ? 1 - t.reload / t.reloadMax : 1;
   txt('LOAD', 28, y + 64, 11, '#8f8869', 'left', 'data'); bar(56, y + 57, 140, 7, lf, t.reload > 0 ? '#e0573a' : '#e6b44c');
   txt(t.reload > 0 ? t.reload.toFixed(1) + 's' : 'READY', 254, y + 64, 12, t.reload > 0 ? '#f0a28f' : '#e6b44c', 'right', 'data');
-  const WL = t.spec.foot ? FOOT_W : WEAPONS, sw = 92, n = t.spec.foot ? WL.length : 5, cw = sw * n + 8, cx0 = W / 2 - cw / 2;   // Ashton: RPG and C4, no supply crate
+  const WL = t.spec.foot ? FOOT_W : WEAPONS, sw = 92, n = t.spec.foot ? WL.length + 1 : 5, cw = sw * n + 8, cx0 = W / 2 - cw / 2;   // Ashton: RPG, C4 and his supply slot
   panel(cx0, y, cw, h);
   const myTurn = t.alive && state === 'battle';
   for (let i = 0; i < WL.length; i++) {
@@ -5385,11 +5437,11 @@ function drawPanel() {
     txt(w.short, x + (sw - 4) / 2, y + 44, 15, empty ? '#5d5949' : sel ? '#f2e6b8' : '#d6c99c', 'center', 'display');
     txt(w.ammo === Infinity ? '∞' : '×' + t.ammo[i], x + (sw - 4) / 2, y + 62, 12, empty ? '#5d5949' : '#8f8869', 'center', 'data');
   }
-  if (!t.spec.foot) { const x = cx0 + 4 + 4 * sw, sel = t.weapon === 'S', sp = sel ? SPEC[t.stock[t.armed]] : SPEC[t.stock[0]];
+  { const x = cx0 + 4 + (n - 1) * sw, sel = t.weapon === 'S', sp = sel ? SPEC[t.stock[t.armed]] : SPEC[t.stock[0]];
     if (sel && sp) { hx.fillStyle = 'rgba(230,180,76,.16)'; hx.fillRect(x, y + 4, sw - 4, h - 8); hx.fillStyle = sp.col; hx.fillRect(x, y + h - 7, sw - 4, 3); }
     txt('Q', x + 8, y + 20, 12, sel ? '#e6b44c' : '#8f8869', 'left', 'data');
     txt('SUPPLY', x + sw - 10, y + 20, 10, '#8f8869', 'right', 'data');
-    if (sp) { const nm2 = sp.name.length > 10 ? sp.name.split(' ')[0] : sp.name; txt(nm2, x + (sw - 4) / 2, y + 44, 14, sel ? sp.col : '#d6c99c', 'center', 'display'); txt(t.stock.length + ' in crate', x + (sw - 4) / 2, y + 62, 11, '#8f8869', 'center', 'data'); }
+    if (sp) { const nm2 = sp.name.length > 10 ? sp.name.split(' ')[0] : sp.name; txt(nm2, x + (sw - 4) / 2, y + 44, 14, sel ? sp.col : '#d6c99c', 'center', 'display'); txt(t.stock.length + (t.spec.foot ? ' in pack' : ' in crate'), x + (sw - 4) / 2, y + 62, 11, '#8f8869', 'center', 'data'); }
     else txt('EMPTY', x + (sw - 4) / 2, y + 44, 14, '#5d5949', 'center', 'display');
   }
   if (!myTurn) { hx.fillStyle = 'rgba(14,16,11,.45)'; hx.fillRect(cx0, y, cw, h); }
@@ -5397,8 +5449,8 @@ function drawPanel() {
   panel(gx, y, 270, h);
   txt('ELEV · ' + (arcPref ? 'LOB' : 'DIRECT'), gx + 14, y + 22, 11, '#8f8869', 'left', 'data'); txt(t.elev.toFixed(1) + '°', gx + 14, y + 46, 24, '#f2e6b8', 'left', 'data');
   txt('BRG', gx + 104, y + 22, 11, '#8f8869', 'left', 'data'); txt(String(Math.round(bearingOf(t.yaw)) % 360).padStart(3, '0') + '°', gx + 104, y + 46, 24, '#f2e6b8', 'left', 'data');
-  const rg = aimImpact ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null;
-  txt('RANGE', gx + 256, y + 22, 11, '#8f8869', 'right', 'data'); txt(rg != null ? rg + ' m' : 'OUT', gx + 256, y + 46, 26, aimImpact && aimImpact.hit && aimImpact.hit !== t ? '#a8e07a' : '#e6b44c', 'right', 'data');
+  const blind = t.spec.foot && !t.pgo, rg = aimImpact && !blind ? Math.round(Math.hypot(aimImpact.x - t.x, aimImpact.z - t.z)) : null;   // on foot with iron sights he judges range by eye
+  txt('RANGE', gx + 256, y + 22, 11, '#8f8869', 'right', 'data'); txt(rg != null ? rg + ' m' : blind ? '----' : 'OUT', gx + 256, y + 46, 26, aimImpact && aimImpact.hit && aimImpact.hit !== t ? '#a8e07a' : '#e6b44c', 'right', 'data');
 }
 // your hull integrity: a wide bar above the shell strip. Lost HP shows as a pale chunk that drains away; below 30% the
 // bar pulses, the screen edges glow red and a heartbeat plays, so you know to get out of the line of fire.
@@ -5448,7 +5500,7 @@ function drawLastShot() {
 function drawHints() {
   if (zoom > .5) return;   // the scope carries its own readouts
   let s = '';
-  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · CLICK fire · 1 RPG · 2 C4 (planted on a tank in reach, or on the ground · 10 s timer)';
+  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · SHIFT sprint · C kneel · RIGHT-CLICK aim · WHEEL sight 200-500 m · CLICK fire · 1 RPG · 2 C4 · Q supply';
   else if (state === 'battle' && player.alive) s = 'CLICK fire · R lase · Z sight · H 3rd person · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
   if (!s) return;
