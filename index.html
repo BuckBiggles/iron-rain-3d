@@ -369,7 +369,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-11.4';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-11.5';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2650,6 +2650,7 @@ const sfx = {
     nz(t, 1.6 + r / 25, 1400 - Math.min(dist, 900), 40, .9 * v); tone(t, .9, 70, 24, .9 * v); if (dist < 200) nz(t, .3, 5000, 1500, .25 * v, 'highpass'); },
   whistle(dur) { if (!AC) return; tone(AC.currentTime, dur, 2100, 520, .07); },
   tick(f = 1100) { if (!AC) return; tone(AC.currentTime, .06, f, f, .12, 'square'); },
+  vault() { if (!AC) return; tone(AC.currentTime, .12, 180, 70, .1, 'triangle'); tone(AC.currentTime + .05, .08, 1200, 500, .015, 'sawtooth'); },
   step(dist = 0, soft) { if (!AC || dist > 45) return; const v = (1 - dist / 45) * (soft ? .5 : 1); tone(AC.currentTime, .07, rnd(95, 130), 55, .09 * v, 'triangle'); tone(AC.currentTime, .03, rnd(900, 1400), 400, .012 * v, 'sawtooth'); },
   bad() { if (!AC) return; const t = AC.currentTime; tone(t, .35, 180, 90, .25, 'sawtooth'); },
   prize() { if (!AC) return; const t = AC.currentTime; [523, 659, 784, 1047].forEach((f, i) => tone(t + i * .07, .25, f, f, .14, 'triangle')); },
@@ -2961,7 +2962,7 @@ function poseSoldier(t, m, dt) {
     const H = m.turret.worldToLocal(hip.getWorldPosition(new THREE.Vector3())), ll = hip.getWorldPosition(new THREE.Vector3()).distanceTo(knee.getWorldPosition(new THREE.Vector3())) + knee.getWorldPosition(new THREE.Vector3()).distanceTo(foot.getWorldPosition(new THREE.Vector3()));
     // planting on a tank the left foot steps in; crouched, the left foot is forward and the right knee nearly down
     const a = m.stride + ph, k = m.runK, sk = (m.plantK || 0) - (m.crouchK || 0), ck = m.crouchK || 0;
-    reach2(hip, knee, foot, W(H.x + Math.sin(a) * .36 * k + (sd === 'Left' ? .22 * sk + .3 * ck : -.22 * ck), H.y - ll * (1 - .07 * k) + Math.max(0, -Math.cos(a)) * .16 * k + (m.crouch || 0) + (sd === 'Right' ? .06 * ck : 0), H.z), dirW(1, 0, 0));
+    reach2(hip, knee, foot, W(H.x + Math.sin(a) * .36 * k + (sd === 'Left' ? .22 * sk + .3 * ck : -.22 * ck), H.y - ll * (1 - .07 * k) + Math.max(0, -Math.cos(a)) * .16 * k * (1 - (m.airK || 0)) + (m.crouch || 0) + (m.airK || 0) * (sd === 'Left' ? .42 : .3) + (sd === 'Right' ? .06 * ck : 0), H.z), dirW(1, 0, 0));
   }
   if (!t.alive) return;
   const sk = (m.plantK || 0) - (m.crouchK || 0), ck = m.crouchK || 0;   // a slight lean in toward the plate, or over the charge on the ground
@@ -3683,7 +3684,13 @@ function sampleTilt(t) {
 }
 function tankPhysics(t, dt, sim) {
   const s = sampleTilt(t);
-  if (sim) {
+  if (sim && t.vault) {   // the vault: hands on the top, legs swung over, down on the far side
+    const v = t.vault; v.t += dt; const k = Math.min(1, v.t / v.dur), e = k * k * (3 - 2 * k);
+    t.x = lerp(v.x0, v.x1, e); t.z = lerp(v.z0, v.z1, e);
+    const y1 = groundAt(v.x1, v.z1), base = lerp(v.y0, y1, e);
+    t.y = Math.max(groundAt(t.x, t.z), base + Math.sin(k * Math.PI) * Math.max(0, v.peak - Math.max(v.y0, y1)));
+    if (k >= 1) { t.vault = null; t.y = y1; t.falling = false; t.vy = 0; }
+  } else if (sim) {
     if (t.y > s.g + .03) {
       if (!t.falling) { t.falling = true; t.fallFrom = t.y; t.vy = 0; }
       t.vy -= G * dt; t.y += t.vy * dt;
@@ -3729,6 +3736,7 @@ function syncTank(t, dt) {
     const pp = t.plantT > 0 && t.alive ? 1 - t.plantT / PLANT_T : 1;
     m.plantK = sstep(.1, .35, pp) * (1 - sstep(.65, .9, pp)); m.stowK = sstep(0, .16, pp) * (1 - sstep(.84, 1, pp)); m.plantP = pp; m.plantAt = m.plantK > 0 && t.plantTgt ? c4TargetPos(t.plantTgt) : null;
     m.crK = lerp(m.crK || 0, t.cr && t.alive ? 1 : 0, 1 - Math.exp(-dt * 10));   // kneeling (C)
+    m.airK = lerp(m.airK || 0, t.alive && t.y > groundAt(t.x, t.z) + .08 ? 1 : 0, 1 - Math.exp(-dt * 14));   // in the air: knees tucked up
     m.crouchK = Math.max(m.plantAt && t.plantTgt.ti < 0 ? m.plantK : 0, m.crK); m.crouch = .68 * m.crouchK; m.top = 1.85 - m.crouch * .85;
     m.turret.position.y -= m.crouch;
     if (m.bones) { const r = m.turret.position.y; m.turret.position.y = t.base.y - m.crouch; poseSoldier(t, m, dt); m.turret.position.y = r; }   // the model's own run cycle replaces the bob
@@ -3750,10 +3758,28 @@ function syncTank(t, dt) {
   if (m.flag) m.flag.rotation.y = Math.PI + Math.sin(worldTime * 2.6 + t.i) * .35 + (t.hullYaw - t.yaw) * 0;
 }
 let engineLevel = 0, traverseRate = 0;
+// SPACE on foot: vault a wall, rock or hedge up to chest height right in front of him, or else jump (about half a metre)
+function footJump(t) {
+  if (!t || !t.alive || !t.spec.foot || t.falling || t.vault || t.plantT > 0) return;
+  if (t.cr) { t.cr = false; if (t === player) crouchOn = false; return; }   // kneeling: space stands him up first
+  const [fx, fz] = fwd(t.yaw), g = groundAt(t.x, t.z);
+  let top = -1e9;
+  if (solidTop > -1e8) for (const d of [.45, .75, 1.05]) solidsNear(t.x + fx * d, t.z + fz * d, .3, o => { if (o.kind !== 'rubble' && o.y1 > g + .6 && o.y0 < g + 1.7) top = Math.max(top, o.y1); });
+  if (top > -1e9 && top <= g + 1.6) {   // something to vault: find clear ground on the far side
+    for (let d = 1.2; d <= 4.2; d += .2) {
+      const x = t.x + fx * d, z = t.z + fz * d, gl = groundAt(x, z); let blocked = Math.abs(x) > PLAY || Math.abs(z) > PLAY || Math.abs(gl - g) > 1.5;
+      if (!blocked) solidsNear(x, z, .3, o => { if (o.kind !== 'rubble' && o.y1 > gl + .6 && o.y0 < gl + 1.7) blocked = true; });
+      if (!blocked && !tanks.some(o => o !== t && o.alive && inTank(o, x, gl + 1, z, .3))) { t.vault = {x0: t.x, z0: t.z, y0: t.y, x1: x, z1: z, peak: top + .3, t: 0, dur: .45 + d * .08}; emit({t: 'sfx', n: 'vault', i: t.i}); return; }
+    }
+    return;   // a wall with no room behind it
+  }
+  t.falling = true; t.fallFrom = t.y; t.vy = 5.2; t.y += .06; t.jumped = true;   // a jump: ~0.55 m with the game's gravity
+}
 function footMove(t, dt, thr, str) {   // Ashton runs where he looks: W/S forward and back, A/D sidestep
   t.hullYaw = t.yaw; t.cr = !!(t.drv && t.drv.cr);
   t.stam = clamp((t.stam ?? 1) + (t.sprinting ? -dt / 6 : (t.moving ? .12 : .25) * dt), 0, 1);   // 6 s of sprint, back in about 5 s
   if (!thr && !str) t.sprinting = false;
+  if (t.vault) { t.moving = 1; return; }   // mid-vault: the vault carries him
   if (!t.alive || (!thr && !str) || t.plantT > 0) { t.moving = 0; return; }   // he stays put while he plants a charge
   const [fx, fz] = fwd(t.yaw), [lx, lz] = fwd(t.yaw + Math.PI / 2);
   const d = t.drv || {}; t.sprinting = !!(d.sp && thr > 0 && !d.ad && !t.cr && (t.stam ?? 1) > .02);
@@ -3762,10 +3788,11 @@ function footMove(t, dt, thr, str) {   // Ashton runs where he looks: W/S forwar
   mx = mx / l * sp; mz = mz / l * sp;
   const nx = t.x + mx, nz = t.z + mz, g0 = groundAt(t.x, t.z), g1 = groundAt(nx, nz);
   t.moving = 1;
-  if (Math.abs(nx) > PLAY || Math.abs(nz) > PLAY || g1 - g0 > sp * 2.2) return;   // too steep to climb
+  const air = t.falling, feet = air ? Math.max(g1, t.y) : g1;
+  if (Math.abs(nx) > PLAY || Math.abs(nz) > PLAY || (!air && g1 - g0 > sp * 2.2)) return;   // too steep to climb
   for (const o of tanks) if (o !== t && o.alive && inTank(o, nx, g1 + 1, nz, .25)) return;
   let hit = false;
-  if (solidTop > -1e8) solidsNear(nx, nz, .3, o => { if (o.y1 > g1 + .6 && o.y0 < g1 + 1.7 && o.kind !== 'rubble') hit = true; });
+  if (solidTop > -1e8) solidsNear(nx, nz, .3, o => { if (o.y1 > feet + (air ? .15 : .6) && o.y0 < feet + 1.7 && o.kind !== 'rubble') hit = true; });   // in the air he clears what's under his feet
   if (!hit) { t.x = nx; t.z = nz; }
 }
 function drive(t, dt, thr, str) {
@@ -3998,6 +4025,7 @@ function hostData(conn, d) {
     if (d.t === 'fire') fire(t);   // fire() itself refuses while reloading
     return;
   }
+  if (d.t === 'jump') { footJump(t); return; }
   if (d.t === 'drv') { t.drv = {th: clamp(Math.round(+d.th) || 0, -1, 1), st: clamp(Math.round(+d.st) || 0, -1, 1), sp: d.sp ? 1 : 0, cr: d.cr ? 1 : 0, ad: d.ad ? 1 : 0}; return; }
 }
 function cleanChat(s) { return String(s).replace(/[^\x20-\x7E]/g, '').trim().slice(0, 40); }
@@ -4253,7 +4281,7 @@ addEventListener('keydown', e => {
   if (state === 'battle' && t.alive) {
     if (k >= '1' && k <= '4') { const i = +k - 1; if (t.ammo[i] > 0) { t.weapon = i; sfx.tick(700); } else sfx.bad(); }
     if (k === 'q' || k === '5') { if (t.stock.length) { if (t.weapon === 'S' && k === 'q') t.armed = (t.armed + 1) % t.stock.length; else { t.weapon = 'S'; t.armed = Math.min(t.armed, t.stock.length - 1); } sfx.tick(900); } else sfx.bad(); }
-    if (k === ' ') myFire();
+    if (k === ' ') { if (t.spec.foot) { if (auth()) footJump(t); else sendHost({t: 'jump'}); } else myFire(); }   // on foot: jump / vault
   }
 });
 addEventListener('keyup', e => { const k = e.key.toLowerCase(); keys[k] = false; keys.shift = e.shiftKey; if (k === 'v' && !settings.shellCam) { followShell = null; camHold = null; } });
@@ -5500,7 +5528,7 @@ function drawLastShot() {
 function drawHints() {
   if (zoom > .5) return;   // the scope carries its own readouts
   let s = '';
-  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · SHIFT sprint · C kneel · RIGHT-CLICK aim · WHEEL sight 200-500 m · CLICK fire · 1 RPG · 2 C4 · Q supply';
+  if (state === 'battle' && player.alive && player.spec.foot) s = 'WASD run · SHIFT sprint · SPACE jump / vault · C kneel · RIGHT-CLICK aim · WHEEL sight 200-500 m · CLICK fire · 1 RPG · 2 C4 · Q supply';
   else if (state === 'battle' && player.alive) s = 'CLICK fire · R lase · Z sight · H 3rd person · X lob · V shell cam · 1-4 shells · Q supply' + (net ? ' · T chat' : '');
   else if (state === 'over' && overT > 2.5) s = 'ENTER for the after-action report';
   if (!s) return;
