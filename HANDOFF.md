@@ -1,6 +1,6 @@
 # Handoff: real models, eras, textures (branch `real-models`)
 
-This branch holds the downloaded and processed assets for the next big Iron Rain 3D update, plus the plan. Work on this branch and merge to `main` when it plays well. `main` (the live GitHub Pages site) is still build 2026-10-10.7.
+This branch holds the downloaded and processed assets for the next big Iron Rain 3D update, plus the plan. Work on this branch and merge to `main` when it plays well. Merged to `main` (the live GitHub Pages site) at build 2026-10-11.1 for the user's playtest.
 
 ## PC session log (2026-10-10 evening, newest last)
 
@@ -60,6 +60,24 @@ Queue (user requests not done yet, in order):
 5. Rider voices (more female voices; item 4 of the cloud list below).
 6. **Menu**: optimise it and make sure the tank panels/cards are aligned properly.
 7. Later: merge to `main`, bump `BUILD`, upload `assets/` to the artifact. Don't do the final handoff until the user says so.
+
+## Queue status (cloud session, build 2026-10-11.1, merged to `main` for a playtest)
+
+All 6 queue items above are done:
+1-2. Tank splits all checked (only the barrel elevates), store camo is tri-planar (`camoPaint`), aiming numbers checked against sources.
+3. **Rider seats**: `riderSeat(tpl)` rasterises each model's hull (and turret) into a 5 cm height map and searches for a flat seat with
+   nothing in her body or over her head, clear of the turret's swing, legs hanging into open air: left side of the rear deck, then the
+   right, then facing the back (StuG IV: on the casemate roof's back edge, feet on the engine deck). `seat.ry` turns her. The radio mast
+   moved to the right side. **Emblems** (`emblemSpots`): rays find a flat turret plate and the decal lies on it; no plate, no decal.
+4. **RPG-7 reload** (`reloadDrill`, model soldier): launcher down, rocket from the left hip pack, nose cap off, tail first into the
+   muzzle with a twist to seat the lug (click), hammer cocked with the right thumb (click), back on the shoulder. User: "that looks good".
+5. **Voices**: Rosie af_bella, Betty af_nicole+af_bella, Scarlett bf_emma+bf_isabella, Vera af_kore+af_aoede, Dolores ef_dora+af_river,
+   Lili Piper de-ramona, Katya Piper uk-lada (Cyrillic respelling). Generator scripts aren't in the repo (Kokoro voices can be blended
+   by averaging their style vectors; Piper LibriTTS-high has 904 speakers, ~190 female by pitch). A voice audition artifact exists for
+   the user to pick replacements. Don't use Piper "lessac" (research-only dataset licence).
+6. **Menu**: tank cards use one silhouette scale per era on a common ground line, 4 columns when there are 7 tanks, spec line wraps.
+
+Still open: artifact copy needs `assets/` uploaded; KV-2 mantlet doesn't tilt with the gun; heavy models (T-34, Sherman, Abrams, T-90M).
 
 ## Status (updated by the cloud session, build 2026-10-10.8)
 
