@@ -1,6 +1,6 @@
 # Handoff: real models, eras, textures (branch `real-models`)
 
-This branch holds the downloaded and processed assets for the next big Iron Rain 3D update, plus the plan. Work on this branch and merge to `main` when it plays well. Merged to `main` (the live GitHub Pages site) at build 2026-10-11.1 for the user's playtest.
+This branch holds the downloaded and processed assets for the next big Iron Rain 3D update, plus the plan. Work on this branch and merge to `main` when it plays well. `main` (the live GitHub Pages site) is in sync with this branch at build **2026-10-11.8**; every cloud change below was pushed to both.
 
 ## PC session log (2026-10-10 evening, newest last)
 
@@ -60,6 +60,46 @@ Queue (user requests not done yet, in order):
 5. Rider voices (more female voices; item 4 of the cloud list below).
 6. **Menu**: optimise it and make sure the tank panels/cards are aligned properly.
 7. Later: merge to `main`, bump `BUILD`, upload `assets/` to the artifact. Don't do the final handoff until the user says so.
+
+## HANDOFF (cloud session, 2026-10-11, build 2026-10-11.8)
+
+**Next task (user's last request, not started):** "I was in the sv2 [probably the KV-2 or StuG IV] and when I went down a hill my
+entire turret started to peel off my tank because it would not look down the hill with the tank. Look into how a tank actually aims in
+real life and apply that to the game. You need to research these tanks."
+- **Cause, found:** `syncTank()` (tank branch, after `t.base.copy(m.mount)...`) does `m.turret.rotation.set(0, t.yaw, 0)` in **world**
+  space; the turret is a separate scene object at `t.base`, so it never takes the hull's `pitch`/`roll` and stays level on a slope while
+  the hull tilts away under it.
+- **Fix to make:** orient the turret by the hull: `turret.quaternion = hull.quaternion * rotY(t.yaw - t.hullYaw)` (turret traverse is
+  relative to the hull ring), and gun elevation relative to the turret. `t.yaw` is currently a world bearing everywhere (`slewGun`,
+  `viewYaw`, `muzzleOf`, the CPU, the net snapshot), so either keep it world and convert, or switch to a hull-relative traverse angle.
+  `muzzleOf()` and `gunElevFor()` assume a level turret too: compute the muzzle from the gun's world matrix instead.
+- **Realism to research and apply** (user wants real behaviour per tank): elevation limits are relative to the hull/turret, so on a
+  slope the reachable world angles shift (gun depression matters going over crests). Stabilisation: WW2 tanks unstabilised except the
+  Sherman's Westinghouse gyrostabiliser (elevation only); modern MBTs (Leopard 2A6, Challenger 2, Abrams, Merkava 4, KF51, T-90M) have
+  two-axis stabilisers that hold the sight and gun on a world point while the hull pitches. Unstabilised: aim drifts with hull motion;
+  stabilised: holds world aim within the limits. The StuG IV casemate gun traverses only ±10° in the hull (`arc`).
+
+**Done this session (all live):**
+- Rider seats from a height map (`riderSeat`), emblems laid on real turret plates (`emblemSpots`), radio mast moved to the right.
+- RPG-7 reload drill (`reloadDrill`), rocket centred in the bore (prepRPG axis from the muzzle ring).
+- Voices: Vera af_kore+af_aoede, Rosie af_bella, Betty af_nicole+af_bella, Scarlett bf_emma+bf_isabella, Dolores ef_dora+af_river,
+  Lili Piper de-ramona, Katya Piper uk-lada. (Kokoro blends = averaged style vectors; Piper LibriTTS-high has 904 speakers.) Don't use
+  Piper "lessac" (research-only licence). Voice audition artifact: https://claude.ai/artifact/9AmYJvFjaJbUDvDALbLGZm
+- Menu: tank cards one scale per era, 4 columns for 7 tanks, wrapping spec line.
+- **Real ballistics:** tank shells at the real muzzle velocity (`spec.mv`) under real gravity (`G_SHELL` 9.81; `shellG(w)`), flight
+  sub-stepped to 0.8 m with tank hits inside `advance()` (returns `'tank'`, `s.hitT`). RANGE stat = battle-sight range; tank zero
+  100-3000 m (WW2) / 4000 m (modern), starts at 500 m. RPG/C4 keep the game gravity (`G` 25 x `gk`).
+- **Ashton:** any number of players/CPUs (offline and online, host picks); aims down the RPG model's own iron sights (`RPG_SIGHT`,
+  `rpgSightEye`; sights 2.5 cm left of the tube), zero 200-500 m in 100 m steps (wheel / PgUp/PgDn), zero applied from the hip too; big
+  SIGHT panel; no range readouts unless he has the PGO-7. FPS mechanics: Shift sprint (stamina), C kneel (smaller hitbox), slower while
+  aiming, hip-fire spread, head bob, footsteps, Space jump / vault (`footJump`), all networked via `drv` {th, st, sp, cr, ad} and
+  `jump`/`unscope` messages + snapshot field 16. Supply spins for Ashton (free at start, on hits): `FOOT_PRIZES` tandem, thermobaric,
+  teleport round (`footTeleport`: lands anywhere, on a tank he rides it, `t.ride`), loader, extra C4, body armour (auto), medkit and
+  PGO-7 (supply slot: Q then click; hold E to take the scope off).
+
+**Known / open:** CPU tanks are much more accurate with flat real-velocity fire (tone down if the user says so); the artifact copy of
+the game is an old build (it can't serve the .glb models); KV-2 mantlet doesn't tilt with the gun; heavy models (T-34, Sherman, Abrams,
+T-90M ~120-155k triangles). Online play with Ashton's new mechanics is untested with a second player.
 
 ## Queue status (cloud session, build 2026-10-11.1, merged to `main` for a playtest)
 
