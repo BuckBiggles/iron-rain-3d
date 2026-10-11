@@ -62,3 +62,7 @@ From [Poly Haven](https://polyhaven.com), released under [CC0](https://creativec
 ## Code libraries
 
 [three.js](https://threejs.org) (MIT), [PeerJS](https://peerjs.com) (MIT), [meshoptimizer / gltfpack](https://github.com/zeux/meshoptimizer) (MIT).
+
+## Rider voices
+
+Every rider line is pre-rendered with open neural text-to-speech voices: [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache 2.0) via [kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx) (MIT) for Vera, Rosie, Betty, Scarlett and Dolores; [Piper](https://github.com/rhasspy/piper) (MIT) voices for Lili (German "ramona") and Katya (Ukrainian "lada", reading her lines respelled in Cyrillic).
