@@ -2874,6 +2874,56 @@ function reach2(a, b, c, T, pole) {
   aimBone(a, B0, E);
   aimBone(b, c.getWorldPosition(new THREE.Vector3()), A.clone().addScaledVector(dir, d));
 }
+// reloading the RPG-7 the way it's done for real: the launcher comes down off the shoulder, muzzle up; the left hand draws a
+// rocket from the pack on his back, pulls the nose cap off its fuze, and pushes it tail first into the muzzle with a quarter
+// turn so its lug drops into the notch on top of the tube (click); the right thumb cocks the hammer (click); back on the
+// shoulder. Returns where the left hand holds the rocket and how far the right thumb is on the hammer.
+function reloadDrill(t, m, W, dirW) {
+  const p = m.reloadP, R = infTpl.rpg, rm = R.rmid, ss = sstep;
+  const low = ss(0, .1, p) * (1 - ss(.76, .92, p));                       // off the shoulder, held at the chest, muzzle up
+  m.gun.position.copy(m.gunHome).add(new THREE.Vector3(.05 * low, -.2 * low, -.04 * low));
+  m.gun.rotation.set(-.12 * low, 0, lerp(t.elev * D2R, 24 * D2R, low)); m.gun.updateMatrixWorld(true);
+  const round = m.round, X = new THREE.Vector3(1, 0, 0), rq = new THREE.Quaternion();
+  const gq = m.gun.getWorldQuaternion(new THREE.Quaternion()), gqi = gq.clone().invert();
+  // the rocket's centre and nose direction for each step, in his body frame (x ahead, y up, z to his right)
+  const setBody = (P, dir, twist) => {   // a body-frame pose -> the rocket group in the launcher's frame
+    const Pw = W(P.x, P.y, P.z), dw = dirW(dir.x, dir.y, dir.z);
+    rq.setFromUnitVectors(X, dw.applyQuaternion(gqi)).multiply(new THREE.Quaternion().setFromAxisAngle(X, twist));
+    round.quaternion.copy(rq); round.position.copy(m.gun.worldToLocal(Pw)).sub(rm.clone().applyQuaternion(rq)); };
+  const setTube = (s, twist) => {        // on the tube's axis, s metres out of the muzzle
+    rq.setFromAxisAngle(X, twist); round.quaternion.copy(rq);
+    round.position.copy(rm).add(new THREE.Vector3(s, 0, 0)).sub(rm.clone().applyQuaternion(rq)); };
+  const pack = new THREE.Vector3(-.16, 1.02, -.26), chest = new THREE.Vector3(.34, 1.14, -.2);   // the rocket pack rides on his left hip
+  let hold = 0;
+  if (p < .12) { round.visible = false; }
+  else if (p < .3) {                     // drawn up out of the pack over his left shoulder and brought round in front
+    const k = ss(.12, .3, p); round.visible = true; hold = 1;
+    const P = pack.clone().lerp(chest, k); P.y += Math.sin(k * Math.PI) * .12;
+    setBody(P, new THREE.Vector3(0, 1, 0).lerp(new THREE.Vector3(1, .35, -.1), k).normalize(), 0);
+  } else if (p < .4) {                   // the nose cap comes off the fuze: a quick twist and tug of the wrist
+    const k = ss(.3, .4, p); round.visible = true; hold = 1;
+    const P = chest.clone(); P.x += Math.sin(k * Math.PI) * .04;
+    setBody(P, new THREE.Vector3(1, .35, -.1).normalize(), Math.sin(k * Math.PI * 2) * .5);
+    if (k > .5 && !m.capOff) { m.capOff = true; if (t === player) sfx.tick(520); }
+  } else if (p < .66) {                  // lined up with the muzzle, then pushed home with a quarter turn
+    round.visible = true; hold = 1;
+    const a = ss(.4, .5, p), ins = ss(.5, .64, p), out = .52 * (1 - ins), tw = .9 * (1 - ss(.56, .64, p));
+    if (a < 1) {                         // swing from his hand onto the tube's axis
+      const P0 = W(chest.x, chest.y, chest.z), P1 = m.gun.localToWorld(rm.clone().add(new THREE.Vector3(out, 0, 0)));
+      const Pb = m.turret.worldToLocal(P0.lerp(P1, a)), d = new THREE.Vector3(1, .35, -.1).normalize().lerp(m.turret.worldToLocal(m.gun.localToWorld(X.clone())).sub(m.turret.worldToLocal(m.gun.localToWorld(new THREE.Vector3()))).normalize(), a);
+      setBody(Pb, d, tw * a);
+    } else setTube(out, tw);
+    if (p > .64 && !m.seated) { m.seated = true; if (t === player) sfx.tick(300); }
+    if (p > .62) hold = 1 - ss(.62, .68, p);
+  } else { round.visible = true; round.position.set(0, 0, 0); round.quaternion.identity(); hold = 1 - ss(.62, .68, p); }
+  if (p < .12) { m.capOff = m.seated = m.cocked = false; }
+  const cock = ss(.66, .71, p) * (1 - ss(.73, .78, p));
+  if (p > .72 && !m.cocked) { m.cocked = true; if (t === player) sfx.tick(380); }
+  // the left hand grips the rocket just behind the warhead's base
+  round.updateMatrixWorld(true);
+  const hp = round.localToWorld(rm.clone().add(new THREE.Vector3(-.02, -.045, -.01))), ha = round.localToWorld(rm.clone().add(new THREE.Vector3(.12, -.05, 0)));
+  return {hold, hand: hp, handAim: ha, cock};
+}
 // pose Ashton every frame: hands on the launcher's grips at any elevation, legs running with his movement
 function poseSoldier(t, m, dt) {
   const B = m.bones; if (!B.Hips) return;
@@ -2902,13 +2952,13 @@ function poseSoldier(t, m, dt) {
     const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), dl);
     m.gun.position.lerp(pos, stow); m.gun.quaternion.slerp(q, stow);
   }
+  const rl = m.reloadP != null && stow === 0 ? reloadDrill(t, m, W, dirW) : null;
+  if (!rl && m.round) { m.round.visible = true; m.round.position.set(0, 0, 0); m.round.quaternion.identity(); }
   m.gun.updateMatrixWorld(true);
   const G = (x, y, z) => m.gun.localToWorld(new THREE.Vector3(x, y, z));
   // the wrist goes just behind and above the grip, then the hand is turned so the fingers wrap down and round it
   const gr = infTpl.rpg.grip, fing = (sd) => B[sd + 'HandMiddle1'] || B[sd + 'HandIndex1'];
   let fo = infTpl.rpg.fore;
-  if (m.round && m.round.visible && (m.round.position.x > .02 || m.round.position.y < -.02)) {   // reloading: the left hand carries the fresh rocket into the muzzle
-    const rm = infTpl.rpg.rmid, rp = m.round.position; fo = new THREE.Vector3(rm.x + rp.x - .08, rm.y + rp.y - .02, rm.z + rp.z); }
   // with the RPG away the hands hold the charge in front of his chest, then carry it to the plate or down to the ground
   const pp = m.plantP == null ? 1 : m.plantP, hk = m.plantAt ? sstep(.12, .35, pp) * (1 - sstep(.6, .85, pp)) : 0, hold = sstep(.25, 1, stow);
   const fwdW = dirW(1, 0, 0), sideW = dirW(0, 0, 1);
@@ -2918,10 +2968,12 @@ function poseSoldier(t, m, dt) {
   const handAim = sd => C.clone().addScaledVector(sideW, sd === 'Left' ? -.02 : .02).addScaledVector(fwdW, .04).add(new THREE.Vector3(0, -.05, 0));
   if (B.RightArm && B.RightForeArm && B.RightHand) {
     const T = G(gr.x - .075, gr.y + .035, gr.z + .025).lerp(handT('Right'), hold), aim = G(gr.x + .03, gr.y - .005, gr.z).lerp(handAim('Right'), hold);
+    if (rl && rl.cock > 0) { T.lerp(G(gr.x - .1, gr.y + .1, gr.z + .02), rl.cock); aim.lerp(G(gr.x - .02, gr.y + .09, gr.z), rl.cock); }   // the thumb up onto the hammer
     reach2(B.RightArm, B.RightForeArm, B.RightHand, T, dirW(-.3, -1, .7).lerp(dirW(0, -1, 1), hold).normalize());
     if (fing('Right')) aimBone(B.RightHand, fing('Right').getWorldPosition(new THREE.Vector3()), aim); }
   if (B.LeftArm && B.LeftForeArm && B.LeftHand) {
     const T = G(fo.x - .075, fo.y + .035, fo.z - .025).lerp(handT('Left'), hold), aim = G(fo.x + .03, fo.y - .005, fo.z).lerp(handAim('Left'), hold);   // wrapped round the rear grip like the right hand on the trigger grip
+    if (rl && rl.hold > 0) { T.lerp(rl.hand, rl.hold); aim.lerp(rl.handAim, rl.hold); }   // or the left hand on the fresh rocket
     reach2(B.LeftArm, B.LeftForeArm, B.LeftHand, T, dirW(0, -1, -.6).lerp(dirW(0, -1, -1), hold).normalize());
     if (fing('Left')) aimBone(B.LeftHand, fing('Left').getWorldPosition(new THREE.Vector3()), aim);
   }
@@ -3621,12 +3673,13 @@ function syncTank(t, dt) {
     if (!m.gunHome) m.gunHome = m.gun.position.clone();
     m.gun.rotation.set(0, 0, t.alive ? t.elev * D2R : 0); m.gun.position.copy(m.gunHome); m.gun.position.x -= t.recoil * .25;
     // reloading the RPG: lower the launcher, a fresh rocket comes up from the pack and slides into the muzzle, shoulder it again
-    if (t.lastW === 'RPG' && t.reload > 0 && t.reloadMax > 0 && t.alive) {
-      const p = 1 - t.reload / t.reloadMax, tilt = sstep(0, .12, p) * (1 - sstep(.86, 1, p)), ins = sstep(.3, .72, p);
+    m.reloadP = t.lastW === 'RPG' && t.reload > 0 && t.reloadMax > 0 && t.alive ? 1 - t.reload / t.reloadMax : null;   // the model soldier runs the full drill in poseSoldier
+    if (m.reloadP != null && !m.bones) {
+      const p = m.reloadP, tilt = sstep(0, .12, p) * (1 - sstep(.86, 1, p)), ins = sstep(.3, .72, p);
       m.gun.rotation.z = lerp(t.elev * D2R, -40 * D2R, tilt);
       m.round.visible = p > .26;
       m.round.position.set((1 - ins) * .3, (1 - ins) * .06 - (1 - sstep(.26, .4, p)) * .25, 0);   // comes up in his left hand, then slides into the muzzle
-    } else { m.round.visible = true; m.round.position.set(0, 0, 0); }
+    } else if (!m.bones) { m.round.visible = true; m.round.position.set(0, 0, 0); }
     // planting C4: he slings the RPG on his back and takes the charge in both hands. On a tank he stands and presses it onto the
     // armour; on the ground he drops into a crouch and sets it down in front of him. Then the RPG comes back to his shoulder.
     if (!auth() && t.plantT > 0) t.plantT = Math.max(0, t.plantT - dt);
