@@ -369,7 +369,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-11.5';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-11.6';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2736,6 +2736,7 @@ RELOAD.rpg = 7.5; RELOAD.c4 = 1.6;
 const FOOT_PRIZES = [
   {id: 'tandem', name: 'TANDEM WARHEAD', short: 'TANDEM', r: 5, dmg: 100, col: '#ff9f43', sp: 120, gk: .12, rocket: true, tag: 'PG-7VR: a two-stage warhead, double damage'},
   {id: 'thermo', name: 'THERMOBARIC', short: 'TBG-7V', r: 16, dmg: 60, col: '#ff5f3a', sp: 120, gk: .12, rocket: true, tag: 'TBG-7V: a huge blast'},
+  {id: 'ftele', name: 'TELEPORT', short: 'TELEPORT', kind: 'teleport', col: '#14b8a6', sp: 120, gk: .12, rocket: true, tag: 'A teleport round from the RPG: he warps to where it lands'},
   {id: 'loader', name: 'LOADER', kind: 'buff', col: '#86efac', tag: 'The next 3 rockets reload in 3 s'},
   {id: 'c4plus', name: 'EXTRA C4', kind: 'buff', col: '#d8d0a0', tag: '+1 C4 charge'},
   {id: 'medkit', name: 'MEDKIT', kind: 'buff', col: '#4ade80', tag: '+40 health'},
@@ -2743,7 +2744,7 @@ const FOOT_PRIZES = [
   {id: 'pgo7', name: 'PGO-7 SCOPE', kind: 'buff', col: '#7fd6f5', tag: '2.7x optic with a range readout, for the rest of the battle'},
 ];
 FOOT_PRIZES.forEach(w => { w.key = w.id; w.n = 1; w.r = w.r || 0; w.dmg = w.dmg || 0; w.foot = true; SPEC[w.id] = w; ALLW[w.id] = w; });
-const isRocketW = name => name === 'RPG' || name === 'TANDEM WARHEAD' || name === 'THERMOBARIC';
+const isRocketW = name => name === 'RPG' || name === 'TANDEM WARHEAD' || name === 'THERMOBARIC' || name === 'TELEPORT';
 function footBuff(t, id) {
   if (id === 'medkit') { const d = Math.min(40, t.maxHp - t.hp); t.hp += d; emit({t: 'heal', i: t.i, d}); }
   else if (id === 'c4plus') t.ammo[1] = (t.ammo[1] || 0) + 1;
@@ -3274,7 +3275,7 @@ function startOffline() {
 // ================================================================ battle flow (host / offline): real-time, no turns
 function startFight() {
   state = 'battle'; stateT = 0;
-  for (const t of tanks) { t.reload = t.reloadMax = t.ai ? rnd(2.5, 4.5) : 2; if (!t.spec.foot) startReel(t, true); }   // everyone opens a free supply crate
+  for (const t of tanks) { t.reload = t.reloadMax = t.ai ? rnd(2.5, 4.5) : 2; startReel(t, true); }   // everyone opens a free supply crate (Ashton gets his own spin)
   emit({t: 'start'});
 }
 // knocked out offline: Enter ends the battle now instead of watching it play out
