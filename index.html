@@ -246,7 +246,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
         <div><h2>OPPONENTS</h2><div class="row seg" id="foeRow"></div></div>
         <div><h2>CPU SKILL</h2><div class="row seg" id="lvlRow"></div></div>
       </section>
-      <section><h2>PLAY AS · ASHTON NEEDS 3 OPPONENTS</h2><div class="row seg" id="ashRow"></div>
+      <section><h2>PLAY AS</h2><div class="row seg" id="ashRow"></div>
       </section>
       <button class="deploy" id="deploy">DEPLOY</button>
       <p class="fine">Real-time free-for-all. Every hit on an enemy spins the supply wheel. Hits, kills and wins earn money for the store.</p>
@@ -369,7 +369,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-11.1';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-11.2';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -2717,7 +2717,7 @@ function spawnPoints(n, rand) {
   return out;
 }
 
-// ================================================================ ASHTON: one player on foot (online, 4 players, the host picks who)
+// ================================================================ ASHTON: one player on foot (offline, or online where the host picks who)
 // He runs (WASD strafes, the body turns with the mouse) and carries an RPG (unlimited, 7.5 s reload, 50 damage) and three
 // C4 charges (150 damage): planted by hand on a tank within reach, they ride along with it and go off after 10 seconds.
 // spec index -1 means Ashton everywhere a seat names its tank.
@@ -3234,7 +3234,7 @@ function needModels(specIdx, go) {
 function startOffline() {
   audioInit();
   if (TANKS[setup.tank].era !== setup.era) setup.tank = eraTanks(setup.era)[0];
-  const ash = setup.ashton && setup.foes === 3;
+  const ash = !!setup.ashton;
   const seats = [{spec: ash ? -1 : setup.tank, name: myName || (ash ? 'ASHTON' : TANKS[setup.tank].name), cos: profile.equip, ai: false}];
   const pool = shuffled(eraTanks(setup.era));   // CPU tanks from the same era
   for (let i = 0; i < setup.foes; i++) seats.push({spec: pool[i % pool.length], name: TANKS[pool[i % pool.length]].name, cos: {...COS_DEFAULT, rider: pick(COSMETICS.rider).id}, ai: true});
@@ -3957,9 +3957,9 @@ function hostData(conn, d) {
 function cleanChat(s) { return String(s).replace(/[^\x20-\x7E]/g, '').trim().slice(0, 40); }
 function bcastLobby() { bcast({t: 'lobby', lb: lobby}); renderOnline(); }
 const allReady = () => !lobby || lobby.seats.every(s => s.k !== 'human' || s.r);   // every joined player has pressed READY
-// Ashton mode: only in a full room of four people, and only one Ashton, chosen by the host
-const ashtonOK = () => !!lobby && lobby.seats.length === 4 && lobby.seats.every(s => s.k !== 'open');
-const ashtonSeat = () => ashtonOK() && lobby.ashton >= 0 && lobby.ashton < lobby.seats.length ? lobby.ashton : -1;
+// Ashton mode: any player in any room (open seats are CPU tanks), one Ashton per game, chosen by the host
+const ashtonOK = () => !!lobby && lobby.seats.some(s => s.k !== 'open');
+const ashtonSeat = () => ashtonOK() && lobby.ashton >= 0 && lobby.ashton < lobby.seats.length && lobby.seats[lobby.ashton].k !== 'open' ? lobby.ashton : -1;
 function hostStart() {
   if (!net || net.role !== 'host' || net.status !== 'ready' || !allReady()) return;
   audioInit();
@@ -5638,8 +5638,8 @@ function renderMenu() {
   [1, 2, 3].forEach(n => fr.appendChild(optBtn(String(n), '', setup.foes === n, () => { setup.foes = n; save('ironrain3d.setup', setup); renderMenu(); })));
   const lr = $('lvlRow'); lr.innerHTML = '';
   CPU_LEVELS.forEach((l, i) => lr.appendChild(optBtn(l.name, '', setup.lvl === i, () => { setup.lvl = i; save('ironrain3d.setup', setup); renderMenu(); }, l.color)));
-  const ar = $('ashRow'); ar.innerHTML = ''; const ashOn = setup.ashton && setup.foes === 3;   // Ashton offline: only in a 4-tank battle
-  [[false, 'TANK'], [true, 'ASHTON · ON FOOT']].forEach(([v, lab]) => { const b = optBtn(lab, '', ashOn === v, () => { setup.ashton = v; if (v) setup.foes = 3; save('ironrain3d.setup', setup); renderMenu(); }); ar.appendChild(b); });
+  const ar = $('ashRow'); ar.innerHTML = ''; const ashOn = !!setup.ashton;   // Ashton offline: against any number of CPU tanks
+  [[false, 'TANK'], [true, 'ASHTON · ON FOOT']].forEach(([v, lab]) => { const b = optBtn(lab, '', ashOn === v, () => { setup.ashton = v; save('ironrain3d.setup', setup); renderMenu(); }); ar.appendChild(b); });
   if (activeTab === 'online') renderOnline();
 }
 $('creditsBtn').addEventListener('click', () => { $('credits').hidden = false; });
