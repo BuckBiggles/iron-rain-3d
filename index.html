@@ -369,7 +369,7 @@ td:first-child{font-family:var(--f-display);font-size:18px}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
-const BUILD = '2026-10-11.2';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
+const BUILD = '2026-10-11.3';   // bump on every deploy: an open, cached copy of the page notices the update and reloads
 if (typeof THREE === 'undefined') {
   document.body.insertAdjacentHTML('beforeend', '<div id="nogl">Three.js could not load. Check your connection and reload.</div>');
   throw new Error('three missing');
@@ -4347,12 +4347,12 @@ const ZERO_MIN = 100, ZERO_MAX = 3000;
 // the RPG-7's iron sights on the model (launcher frame, metres): the rear leaf's notch and the front post's tip. The eye sits
 // just behind the leaf on the line through the post that's tilted down from the tube by the sight's zero: as on the real
 // launcher, raising the rear sight for a longer range makes him lift the tube to put the post back on the target
-const RPG_SIGHT = {rear: .16, notch: .118, post: .47, tip: .12, eye: .07};
+const RPG_SIGHT = {post: .47, tip: .102, z: -.0255, eye: .07};   // the sights sit 2.5 cm left of the tube's axis, as on the real RPG-7
 function rpgSightEye(t, m) {
   m.gun.updateMatrixWorld(true);
   const a = (t.elev - aimPitch) * D2R, S = RPG_SIGHT;   // the gun is laid above the line of sight by exactly the zero's angle
   const y = S.tip + (S.post - S.eye) * Math.tan(a);
-  return m.gun.localToWorld(new THREE.Vector3(S.eye, y, 0));
+  return m.gun.localToWorld(new THREE.Vector3(S.eye, y, S.z));
 }
 function gunElevFor(t, pitchDeg, R, lob) {   // gun elevation (deg) that drops a shell (or Ashton's rocket) on the sight line at range R
   const w = t.spec.foot ? FOOT_W[0] : null, v = w ? w.sp : t.spec.mv || VMAX, G = w ? shellG(w) : G_SHELL, p = pitchDeg * D2R;
